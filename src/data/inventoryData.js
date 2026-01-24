@@ -10,7 +10,7 @@
     { 
         id:2, 
         name:'Fanta',
-        category:'soft rinks',
+        category:'soft drinks',
         quantity: 100,
          minStock:20,
          price : 20
