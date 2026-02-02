@@ -39,7 +39,10 @@ const InventoryTable = ({ inventory,increaseQuantity,decreaseQuantity}) => {
                 <td>
                     <button onClick={()=>
                 increaseQuantity(item.id)}
-                  style = {{ cursor : 'pointer'}}
+                  style = {{ 
+                    cursor : 'pointer'
+                    
+                }}
                 >
                          +
                   </button>
