@@ -4,12 +4,16 @@ import Inventory from './pages/Inventory'
 import Sales from './pages/Sales'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import Sidebar from './components/Sidebar'
 
 
 function App() {
  
   return ( 
         <div>
+          <Sidebar />
+
+          <main>
           <Routes>
              <Route path='/' element={<Dashboard/>}/>
              <Route path = '/inventory'  element={<Inventory/>} />
@@ -18,6 +22,7 @@ function App() {
              <Route path = '/settings'  element={<Settings/>} />
              
           </Routes>
+          </main>
         </div>
   
   )
