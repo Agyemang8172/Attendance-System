@@ -1,28 +1,25 @@
-import { useState } from 'react'
-import { useInventory } from './Context/InventoryContext'
-import InventoryTable from './components/InventoryTable'
+import {Routes,Route} from 'react-router-dom'
+import Dashboard from './pages/Dashboard'
+import Inventory from './pages/Inventory'
+import Sales from './pages/Sales'
+import Reports from './pages/Reports'
+import Settings from './pages/Settings'
 
 
 function App() {
-  const {
-    inventory,
-    error,
-    totalInventoryValue,
-    increaseQuantity,
-    decreaseQuantity
-  } = useInventory()
+ 
   return ( 
-   <div>
-      <h1> Supermarket Inventory</h1>  
-         <h2> Total Inventory Value :{totalInventoryValue}</h2>
-         {error && <p style={{ color: 'red'}}> {error}</p>}
-    <InventoryTable  
-     
-       inventory ={inventory}
-       increaseQuantity ={increaseQuantity}
-       decreaseQuantity ={decreaseQuantity}
-    />
-   </div> 
+        <div>
+          <Routes>
+             <Route path='/' element={<Dashboard/>}/>
+             <Route path = '/inventory'  element={<Inventory/>} />
+             <Route path = '/sales'  element={<Sales/>} />
+             <Route path = '/reports'  element={<Reports/>} />
+             <Route path = '/settings'  element={<Settings/>} />
+             
+          </Routes>
+        </div>
+  
   )
 }
 
