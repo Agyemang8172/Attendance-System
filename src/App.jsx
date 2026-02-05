@@ -1,4 +1,5 @@
 import {Routes,Route} from 'react-router-dom'
+import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Inventory from './pages/Inventory'
 import Sales from './pages/Sales'
@@ -10,11 +11,8 @@ import Sidebar from './components/Sidebar'
 function App() {
  
   return ( 
-        <div>
-          <Sidebar />
-
-          <main>
-          <Routes>
+        <Layout>
+             <Routes>
              <Route path='/' element={<Dashboard/>}/>
              <Route path = '/inventory'  element={<Inventory/>} />
              <Route path = '/sales'  element={<Sales/>} />
@@ -22,8 +20,8 @@ function App() {
              <Route path = '/settings'  element={<Settings/>} />
              
           </Routes>
-          </main>
-        </div>
+        
+        </Layout>
   
   )
 }

@@ -13,7 +13,7 @@ const Header = ({ title }) => {
   return (
     <div>
        {today}
-      {title}
+       {title} 
     </div>
   )
 }

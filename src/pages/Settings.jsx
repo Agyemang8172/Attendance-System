@@ -1,9 +1,10 @@
 import React from 'react'
+import Header from '../components/Header'
 
 const Settings = () => {
   return (
     <div>
-        <h1>Settings Page </h1>
+          <Header  title= "Settings"/>
            <p>Comming Soon</p>      
     </div>
   )
