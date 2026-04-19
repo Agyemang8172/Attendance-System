@@ -1,4 +1,4 @@
-import React, { Children } from 'react'
+import  { children } from 'react'
 import Sidebar from './Sidebar'
 
 const Layout = () => {
@@ -6,7 +6,7 @@ const Layout = () => {
     <div style={{ display: 'flex'}}>
         <Sidebar />
         <div style={{flex: 1}}>
-           {Children}
+           {children}
 
         </div>
       
