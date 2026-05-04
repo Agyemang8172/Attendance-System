@@ -17,4 +17,4 @@ router.put('/:id',authmiddleware,authorizeRole('superadmin','hr','staff'),userCo
 
 router.delete('/:id',authmiddleware,authorizeRole('superadmin'),userController.deleteUser)
 
-module.exports = router 
+module.exports = router      

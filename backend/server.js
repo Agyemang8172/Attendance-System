@@ -6,6 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 const userRoutes = require('./routes/userRoutes')
 const authRoutes = require('./routes/authRoutes')
+const attendanceRoutes =require('./routes/attendanceRoutes')
 
 
 
@@ -13,16 +14,18 @@ const authRoutes = require('./routes/authRoutes')
 
 
 app.use(express.json())
+connectDB()
 
 app.use('/api/users', userRoutes);
-app.use('/api/users/id',userRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/attendance', attendanceRoutes)
 
 
 
 
 const startServer = async ()  => {
     try{
+        await connectDB()
         app.listen(PORT, () =>  {
             console.log(`Server is runnig on port ${PORT}`)
         })
