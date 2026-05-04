@@ -9,9 +9,14 @@ const authorizeRole = (...allowedRoles)  => {
         message: 'The user does not exist, Pls log in'})
 
 
-     if (allowedRoles.includes(req.roles))
+     if (allowedRoles.includes(req.user.role))  {
+        next()
+     } else {
+        return res.status(403).json({
+            message : "Access Denied"
+        })
+     }
     }
-
-    
-
 }
+
+module.exports = authorizeRole

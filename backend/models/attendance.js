@@ -13,14 +13,11 @@ const attendanceSchema = new mongoose.Schema({
      clockIn : {
       type: Date,
       required:true
-     
-     },
+},
 
      clockOut : {
         type: Date,
-    
-       
-     },
+    },
 
     date : {
         type : Date,
@@ -34,8 +31,18 @@ const attendanceSchema = new mongoose.Schema({
 
     notes :{
         type: String
-    }
+    },
 
+    sessionStatus :  {
+        type : String,
+        enum: ['open','closed'],
+        default : 'open'
+    },
+
+    hoursWorked : {
+        type : Number,
+        default : 0
+    }
 
    
 

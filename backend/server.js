@@ -23,7 +23,6 @@ app.use('/api/auth', authRoutes)
 
 const startServer = async ()  => {
     try{
-        await connectDB();
         app.listen(PORT, () =>  {
             console.log(`Server is runnig on port ${PORT}`)
         })

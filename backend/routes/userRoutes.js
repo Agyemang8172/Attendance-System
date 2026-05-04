@@ -2,30 +2,19 @@ const express = require('express')
 const router = express.Router();
 const userController = require('../controllers/userController');
 const authmiddleware = require('../middleware/authMiddleware')
-const authorizeRole = require('../middleware/rolemidlleware')
+const authorizeRole = require('../middleware/rolemiddleware')
 
 
 
-router.get('/', authmiddleware, userController.getAllUsers)
 
-router.get('/:id', authmiddleware,userController.getUserById)
+router.get('/:id',authmiddleware,authorizeRole('superadmin','hr','staff'),userController.getUserById)
 
-router.post('/', userController.createUser)
+router.get('/',authmiddleware,authorizeRole('superadmin','hr'),userController.getAllUsers)
 
-router.put('/:id',authmiddleware, userController.updateUser)
+router.post('/',userController.createUser)
 
-router.delete('/:id',authmiddleware, userController.deleteUser)
-
-router.delete('/:id',authmiddleware,authorizeRole('superadmin'),userController.deleteUser)
-
-router.get('/api/user/:id',authmiddleware,authorizeRole('superadmin,hr,staff'),userController.getUserById)
-
-router.get('/api/user',authmiddleware,authorizeRole('superadmin,hr'),userController.getAllUsers)
-
-router.post('/api/users',authmiddleware,authorizeRole('superadmin,hr'),userController.createUser)
-
-router.put('/api/users/:id',authmiddleware,authorizeRole('superadmin,hr,staff'),userController.updateUser)
+router.put('/:id',authmiddleware,authorizeRole('superadmin','hr','staff'),userController.updateUser)
 
 router.delete('/:id',authmiddleware,authorizeRole('superadmin'),userController.deleteUser)
 
-module.exports = router
+module.exports = router 
