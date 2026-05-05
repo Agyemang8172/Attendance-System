@@ -3,7 +3,7 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const authmiddleware = require('../middleware/authMiddleware')
 const authorizeRole = require('../middleware/rolemiddleware')
-
+    
 
 
 
