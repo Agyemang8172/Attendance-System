@@ -6,10 +6,10 @@ const authorizeRole= require('../middleware/rolemiddleware')
 
 
 
-
 router.post('/clock-in',authMiddleware, authorizeRole('superadmin','hr','staff'),attendanceController.clockIn)
 router.post('/clock-out',authMiddleware, authorizeRole('superadmin','hr','staff'),attendanceController.clockOut)
 router.get('/my-attendance', authMiddleware,attendanceController.getMyAttendance)
+router.get('/all-attendance',authMiddleware,authorizeRole('hr','superadmin'),attendanceController.getAllAttendance )
 
 
-module.exports = router 
+module.exports = router  

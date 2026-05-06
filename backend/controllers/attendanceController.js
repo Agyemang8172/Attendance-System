@@ -1,5 +1,4 @@
 
-const { data } = require('react-router-dom')
 const Attendance = require('../models/attendance')
 
 
@@ -140,3 +139,37 @@ exports.getMyAttendance =  async (req,res)  => {
     }
 
 }
+exports.getAllAttendance = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+
+        const records = await Attendance.find({
+            ...(startDate && endDate && {
+                clockIn: {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                }
+            })
+        }).sort({ clockIn: -1 });
+
+        if (records.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No attendance records found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            count: records.length,
+            data: records
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'server error',
+            error: error.message
+        });
+    }
+};
