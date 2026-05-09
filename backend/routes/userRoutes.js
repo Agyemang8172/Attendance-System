@@ -13,8 +13,12 @@ router.get('/',authmiddleware,authorizeRole('superadmin','hr'),userController.ge
 
 router.post('/',userController.createUser)
 
+router.put('/change-password',authmiddleware,userController.changePassword)
+
+
 router.put('/:id',authmiddleware,authorizeRole('superadmin','hr','staff'),userController.updateUser)
 
 router.delete('/:id',authmiddleware,authorizeRole('superadmin'),userController.deleteUser)
 
-module.exports = router      
+
+module.exports = router 

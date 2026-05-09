@@ -1,4 +1,5 @@
 const User = require('../models/User')
+const bcrypt = require('bcrypt')
 
 
   exports.getAllUsers = async (req,res) => {
@@ -137,3 +138,44 @@ exports.updateUser = async (req,res) =>
       res.status(500).json({message : 'delete Failed', error: error.message})
    }
   }
+
+
+  exports.changePassword = async (req,res) => {
+    try { 
+       const {currentPassword, newPassword} = req.body 
+
+
+       if (!currentPassword || !newPassword) {
+         return res.status(400).json({
+           success : false,
+           message : 'Current password and new password are required'
+         })
+        }
+
+       const userId = req.user.userId
+       const user = await User.findById(userId)
+
+       
+       const isPasswordValid = await bcrypt.compare(currentPassword,user.password)
+
+        if (!isPasswordValid){
+            return res.status(401).json({
+               success : false,
+               message : 'Invalid current password'
+            })
+
+        }
+
+        user.password =  await bcrypt.hash(newPassword,10)
+        await user.save()
+        return res.status(200).json({
+         success : true,
+         message:'Password changed successfully'
+
+        })
+    }
+    catch (error)
+    {
+      res.status(500).json({message : 'change Password Failed', error: error.message})
+    }
+  }      
