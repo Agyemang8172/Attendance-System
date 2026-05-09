@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt')
 
 const userSchema = new mongoose.Schema({
 
+  
        employeeID: {
          type: String   ,
           unique: true,
