@@ -1,32 +1,32 @@
 // User 1 - Staff
 {
   "employeeID": "TEST001",
-  "firstName": "Test",
-  "lastName": "Staff",
-  "email": "staff@test.com",
-  "password": "Staff123!",
+  "firstName": "Godfred",
+  "lastName": "Agyemang",
+  "email": "godfredagyemang31052005@gmail.com",
+  "password": "Godffred123456",
   "department": "IT",
   "role": "staff"
 }
 
-// User 2 - HR
+
 {
   "employeeID": "TEST002",
-  "firstName": "Test",
-  "lastName": "HR",
-  "email": "hr@test.com",
-  "password": "Hr123!",
+  "firstName": "Olives",
+  "lastName": "Technologies",
+  "email": "OliTech@gmail.com",
+  "password": "Olives12345",
   "department": "HR",
   "role": "hr"
 }
 
-// User 3 - Superadmin
+
 {
   "employeeID": "TEST003",
-  "firstName": "Test",
-  "lastName": "Admin",
-  "email": "admin@test123.com",
-  "password": "Admin123!",
+  "firstName": "Joseph",
+  "lastName": "Amoateng",
+  "email": "josephamoah123@gmail.com",
+  "password": "Amoah123",
   "department": "Management",
   "role": "superadmin"
 }

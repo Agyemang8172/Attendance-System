@@ -87,7 +87,7 @@ const handleSubmit = async (e)  => {
                       value={password}
                       onChange= {(e) => setPassword(e.target.value)}
                       placeholder='Enter your password'
-                      disabled = {loading   }
+                      disabled = {loading}
                     />
                   </div>
                    
