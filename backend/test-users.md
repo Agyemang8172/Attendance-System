@@ -4,7 +4,7 @@
   "firstName": "Godfred",
   "lastName": "Agyemang",
   "email": "godfredagyemang31052005@gmail.com",
-  "password": "Godffred123456",
+  "password": "Godfred123456",
   "department": "IT",
   "role": "staff"
 }

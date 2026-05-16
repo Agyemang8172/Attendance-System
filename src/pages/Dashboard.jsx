@@ -71,11 +71,11 @@ function Dashboard() {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="">
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          <h2>AttendPro</h2>
+          <h2 className="flex ">AttendPro</h2>
         </div>
         
         <nav className="sidebar-nav">
