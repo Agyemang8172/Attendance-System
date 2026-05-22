@@ -15,7 +15,7 @@ const Layout = ({children})  => {
                   isOpen= {sidebarOpen}
                   onClose={() => setSidebarOpen(false)}
                 />
-
+                                                                       
                 <div className='lg:hidden bg-[#0f172a] px-4 py-3 flex items-center gap-4'>
                     <button
                         onClick={() => setSidebarOpen(true)}

@@ -1,11 +1,23 @@
 import {BrowserRouter as Router,Routes,Route,Navigate} from 'react-router-dom'
 import Login from './Pages/Login'
+import HrDashboard from './pages/HrDashboard'
 import Dashboard from './Pages/Dashboard'
 import { isAuthenticated } from './utils/auth'
 
 const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to='/login' />
 
+}
+
+const  HrRoute= ({children})  => {
+  const user = getCurrentUser()
+
+ if (!user) return <Navigate to="/login" />;
+
+ if (!['hr','superadmin'].includes(user.role))  {
+  return <Navigate to="/dashboard" />
+ }
+  return children;
 }
 
 
@@ -26,11 +38,22 @@ function App() {
                   }
                 />
 
+         <Route
+            path="/hr-dashboard"
+            element={
+              <HrRoute>
+                <HrDashboard />
+              </HrRoute>
+            }
+          />
+
                  {/* Default route - redirect to login */}
                  <Route path='/'  element={<Navigate to="/login"/>}
                  />
             </Routes>
          </Router>
+
+         
         
     
   
