@@ -4,6 +4,7 @@ import api from '../api/axios'
 import { FaCircle } from 'react-icons/fa'
 import { FaClock, FaFire, FaChartLine } from 'react-icons/fa'
 import Layout from '../Component/Layout'
+import toast from 'react-hot-toast'
 
 function Dashboard() {
   const user = getCurrentUser()
@@ -37,10 +38,10 @@ function Dashboard() {
     setLoading(true)
     try {
       await api.post('/attendance/clock-in')
-      alert('Clocked in successfully')
+     toast.success('Clocked in Successful')
       fetchAttendance()
     } catch (error) {
-      alert(error.response?.data?.message || 'Clock in failed')
+      toast.error(error.response?.data?.message || 'Clock in failed')
     }
     setLoading(false)
   }
@@ -49,7 +50,7 @@ function Dashboard() {
     setLoading(true)
     try {
       await api.post('/attendance/clock-out')
-      alert('Clocked out successfully')
+      toast.success('Clocked out Successful')
       fetchAttendance()
     } catch (error) {
       alert(error.response?.data?.message || 'Clock out failed')
@@ -210,10 +211,10 @@ function Dashboard() {
                 }`}
               >
                 <div>{new Date(record.date).toLocaleDateString()}</div>
-                <div>{new Date(record.clockIn).toLocaleTimeString()}</div>
+                <div>{new Date(record.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                 <div>
                   {record.clockOut
-                    ? new Date(record.clockOut).toLocaleTimeString()
+                    ? new Date(record.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     : '--'}
                 </div>
                 <div>{record.hoursWorked?.toFixed(2) || '--'}</div>

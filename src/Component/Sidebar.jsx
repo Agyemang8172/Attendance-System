@@ -1,26 +1,45 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import {logout}  from '../utils/auth' 
- import { FaHome } from "react-icons/fa";
-  import { FaUser } from "react-icons/fa";
+import { getCurrentUser } from '../utils/auth';
+ import { FaHome, FaUser, FaUsers } from 'react-icons/fa'
   import { SlCalender } from "react-icons/sl";
   import { FaGear } from "react-icons/fa6";
   import { CiLogout } from "react-icons/ci";
+  import { MdDashboardCustomize } from 'react-icons/md'
+
+
+
   
 
 
 
-  const navItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: <FaHome /> },
-  { label: 'Profile', path: '/profile', icon: <FaUser /> },
-  { label: 'Schedule', path: '/schedule', icon: <SlCalender /> },
-  { label: 'Settings', path: '/settings', icon: <FaGear /> },
+  const allNavItems = [
+  // Everyone
+  { label: 'Dashboard', path: '/dashboard', icon: <FaHome />, roles: ['staff', 'hr', 'superadmin'] },
+  { label: 'Settings', path: '/settings', icon: <FaGear />, roles: ['staff', 'hr', 'superadmin'] },
+
+  // Staff only
+  { label: 'My Profile', path: '/profile', icon: <FaUser />, roles: ['staff'] },
+  { label: 'My Schedule', path: '/schedule', icon: <SlCalender />, roles: ['staff'] },
+
+  // HR and superadmin only
+  { label: 'HR Dashboard', path: '/hr-dashboard', icon: <FaUsers />, roles: ['hr', 'superadmin'] },
 ]
+
+
+
 
 
 const Sidebar =   ({isOpen , onClose})  => {
 
     const navigate = useNavigate()
     const location = useLocation()
+    const currentUser = getCurrentUser()
+
+    const allowedNavItems = allNavItems.filter(item =>
+  item.roles.includes(currentUser?.role)
+)
+
 
 
     const handleLogOut = ()  => {
@@ -54,7 +73,7 @@ const Sidebar =   ({isOpen , onClose})  => {
         
         <nav className='flex flex-col gap-2'>
             {
-                navItems.map((item)=> {
+                allowedNavItems.map((item)=> {
                      const isActive = location.pathname === item.path
                      return(
                         <div

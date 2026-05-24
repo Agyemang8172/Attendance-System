@@ -3,6 +3,7 @@ import Login from './Pages/Login'
 import HrDashboard from './pages/HrDashboard'
 import Dashboard from './Pages/Dashboard'
 import { isAuthenticated } from './utils/auth'
+import { Toaster } from 'react-hot-toast'
 
 const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to='/login' />
@@ -25,6 +26,7 @@ function App() {
  return ( 
       
          <Router>
+          <Toaster   position = "top-right" />
             <Routes>
                 {/* Public route - anyone can access */}
                 <Route path="/login"  element= {<Login />} />

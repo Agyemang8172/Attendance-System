@@ -142,7 +142,7 @@ exports.getMyAttendance =  async (req,res)  => {
 exports.getAllAttendance = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-
+ 
         const records = await Attendance.find({
             ...(startDate && endDate && {
                 clockIn: {
@@ -150,7 +150,9 @@ exports.getAllAttendance = async (req, res) => {
                     $lte: new Date(endDate)
                 }
             })
-        }).sort({ clockIn: -1 });
+        })
+        .populate('user','firstName lastName employeeID department role')
+        .sort({ clockIn: -1 });
 
         if (records.length === 0) {
             return res.status(404).json({
