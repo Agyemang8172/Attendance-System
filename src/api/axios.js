@@ -2,7 +2,7 @@ import axios from 'axios'
 
 
 const api = axios.create({
-    baseURL: 'http://localhost:8000/api',
+    baseURL: 'https://attendance-system-t1rk.onrender.com',
     headers: {
         'Content-Type': 'application/json'
       }
@@ -23,4 +23,3 @@ const api = axios.create({
     );
 
     export default api;
-    
