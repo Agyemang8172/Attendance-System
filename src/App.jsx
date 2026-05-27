@@ -1,12 +1,14 @@
 import {BrowserRouter as Router,Routes,Route,Navigate} from 'react-router-dom'
-import Login from './Pages/Login'
+import Login from './pages/Login'
 import HrDashboard from './pages/HrDashboard'
-import Dashboard from './Pages/Dashboard'
+import Dashboard from './pages/Dashboard'
 import { isAuthenticated } from './utils/auth'
 import { Toaster } from 'react-hot-toast'
+import { getCurrentUser } from '../utils/auth'
+
 
 const ProtectedRoute = ({ children }) => {
-  return isAuthenticated ? children : <Navigate to='/login' />
+  return isAuthenticated() ? children : <Navigate to='/login' /> 
 
 }
 
