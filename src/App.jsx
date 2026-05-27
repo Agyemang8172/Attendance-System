@@ -4,7 +4,7 @@ import HrDashboard from './pages/HrDashboard'
 import Dashboard from './pages/Dashboard'
 import { isAuthenticated } from './utils/auth'
 import { Toaster } from 'react-hot-toast'
-import { getCurrentUser } from '../utils/auth'
+import { getCurrentUser } from './utils/auth'
 
 
 const ProtectedRoute = ({ children }) => {

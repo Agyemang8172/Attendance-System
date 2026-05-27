@@ -3,7 +3,7 @@ import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
 import { FaCircle } from 'react-icons/fa'
 import { FaClock, FaFire, FaChartLine } from 'react-icons/fa'
-import Layout from '../Component/Layout'
+import Layout from '../component/Layout'
 import toast from 'react-hot-toast'
 
 function Dashboard() {
@@ -18,6 +18,7 @@ function Dashboard() {
     fetchAttendance()
   }, [])
 
+  
   const fetchAttendance = async () => {
     try {
       const response = await api.get('/attendance/my-attendance')
