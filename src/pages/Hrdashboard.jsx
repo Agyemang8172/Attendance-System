@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
-import Layout from '../component/Layout'
+import Layout from '../components/Layout'
 
 function HrDashboard() {
   const currentUser = getCurrentUser()

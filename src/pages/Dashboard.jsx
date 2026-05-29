@@ -3,7 +3,7 @@ import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
 import { FaCircle } from 'react-icons/fa'
 import { FaClock, FaFire, FaChartLine } from 'react-icons/fa'
-import Layout from '../component/Layout'
+import Layout from '../components/Layout'
 import toast from 'react-hot-toast'
 
 function Dashboard() {
