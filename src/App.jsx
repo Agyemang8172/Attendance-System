@@ -1,6 +1,6 @@
 import {BrowserRouter as Router,Routes,Route,Navigate} from 'react-router-dom'
 import Login from './pages/Login'
-import HrDashboard from './pages/HrDashboard'
+import HrDashboard from './pages/Hrdashboard'
 import Dashboard from './pages/Dashboard'
 import { isAuthenticated } from './utils/auth'
 import { Toaster } from 'react-hot-toast'
