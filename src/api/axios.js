@@ -2,7 +2,7 @@
 
 
   const api = axios.create({
-      baseURL: 'https://attendance-system-t1rk.onrender.com.api',
+      baseURL: 'https://attendance-system-t1rk.onrender.com/api',
       headers: {
           'Content-Type': 'application/json'
         }
