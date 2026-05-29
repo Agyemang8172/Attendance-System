@@ -15,7 +15,7 @@ const attendanceRoutes =require('./routes/attendanceRoutes')
 
 app.use(express.json())
 app.use(cors({
-    origin:'https://attendance-system-q7ypj7pay-godfred-agyemangs-projects.vercel.app',
+    origin:'https://attendance-system-seven-mocha.vercel.app',
     credentials: true
 }))
 
