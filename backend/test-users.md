@@ -17,13 +17,13 @@
   "email": "OliTech@gmail.com",
   "password": "Olives12345",
   "department": "HR",
-  "role": "hr"
+  "role": "hr"  
 }
 
 
 {
   "employeeID": "TEST003",
-  "firstName": "Joseph",
+  "firstName": "Jo seph",
   "lastName": "Amoateng",
   "email": "josephamoah123@gmail.com",
   "password": "Amoah123",

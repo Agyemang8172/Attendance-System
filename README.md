@@ -1,16 +1,116 @@
-# React + Vite
+# AttendPro - Employee Attendance Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack MERN application for managing employee attendance with role-based access control.
 
-Currently, two official plugins are available:
+## 🚀 Live Demo
+[https://attendance-system-seven-mocha.vercel.app](https://attendance-system-seven-mocha.vercel.app)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📸 Screenshots
+(Add screenshots here after pushing)
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Frontend:**
+- React 19 + Vite
+- Tailwind CSS
+- React Router DOM
+- Axios
+- React Hot Toast
+- React Icons
 
-## Expanding the ESLint configuration
+**Backend:**
+- Node.js + Express.js
+- MongoDB + Mongoose
+- JWT Authentication
+- bcrypt
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+**Deployment:**
+- Frontend: Vercel
+- Backend: Render
+- Database: MongoDB Atlas
+
+## ✨ Features
+
+- **JWT Authentication** — secure login with token-based auth
+- **Role-Based Access Control** — staff, HR, and superadmin roles
+- **Clock In/Out** — real-time attendance tracking with hours calculation
+- **KPI Dashboard** — weekly hours, punctuality streak, attendance rate
+- **HR Dashboard** — HR managers can view all employees' attendance
+- **Responsive Design** — works on mobile and desktop
+- **Toast Notifications** — professional UX feedback
+
+## 🔑 Test Credentials
+
+**Staff Account:**
+- Email: godfredagyemang31052005@gmail.com
+- Password: Godfred123456
+
+**HR Account:**
+- Email: OliTech@gmail.com
+- Password: Olives12345
+
+  **Super Admin**
+  -Email : josephamoah123@gmail.com
+  -Password :Amoah123
+
+## 🚀 Running Locally
+
+### Prerequisites
+- Node.js installed
+- MongoDB Atlas account
+
+### Backend Setup
+```bash
+cd backend
+npm install
+```
+
+Create a `.env` file in the backend folder:
+```
+PORT=8000
+MONGODB_URI=mongodb+srv://Godfred:Godfred123456@attendace-clustor.npmoipq.mongodb.net/?appName=attendace-clustor
+JWT_SECRET=attendance_system_secret_key_godfred_2026_minimum_32_chars
+
+```bash
+node server.js
+```
+
+### Frontend Setup
+```bash
+npm install
+npm run dev
+```
+
+## 📡 API Endpoints
+
+### Authentication
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| POST | /api/auth/login | Login user | Public |
+
+### Users
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| POST | /api/users | Register user | Public |
+| GET | /api/users | Get all users | HR, Superadmin |
+| GET | /api/users/:id | Get single user | All roles |
+| PUT | /api/users/:id | Update user | All roles |
+| DELETE | /api/users/:id | Delete user | Superadmin |
+| PUT | /api/users/change-password | Change password | All roles |
+
+### Attendance
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| POST | /api/attendance/clock-in | Clock in | All roles |
+| POST | /api/attendance/clock-out | Clock out | All roles |
+| GET | /api/attendance/my-attendance | Get own attendance | All roles |
+| GET | /api/attendance/all-attendance | Get all attendance | HR, Superadmin |
+
+## 👨‍💻 Author
+
+**Godfred Agyemang**
+- LinkedIn: [your LinkedIn URL]
+- GitHub: [your GitHub URL]
+
+## 📝 License
+MIT
