@@ -6,7 +6,7 @@ A full-stack MERN application for managing employee attendance with role-based a
 [https://attendance-system-seven-mocha.vercel.app](https://attendance-system-seven-mocha.vercel.app)
 
 ## 📸 Screenshots
-(Add screenshots here after pushing)
+
 
 ## 🛠️ Tech Stack
 
@@ -68,9 +68,8 @@ npm install
 Create a `.env` file in the backend folder:
 ```
 PORT=8000
-MONGODB_URI=mongodb+srv://Godfred:Godfred123456@attendace-clustor.npmoipq.mongodb.net/?appName=attendace-clustor
-JWT_SECRET=attendance_system_secret_key_godfred_2026_minimum_32_chars
-
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
 ```bash
 node server.js
 ```
