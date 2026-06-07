@@ -59,8 +59,7 @@ const Login = () => {
       ───────────────────────────────────────── */}
       <div
         className="
-          hidden md:flex
-          w-[45%] min-h-screen
+          hidden md:flex w-[45%] min-h-screen
           bg-[#0D1B2A]
           flex-col
           items-center
