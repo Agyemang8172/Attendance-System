@@ -15,8 +15,20 @@ const attendanceRoutes =require('./routes/attendanceRoutes')
 
 app.use(express.json())
 app.use(cors({
-    origin:'https://attendance-system-a0mcndjtj-godfred-agyemangs-projects.vercel.app',
-    credentials: true
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true)
+    
+    if (
+      origin.endsWith('.vercel.app') ||
+      origin === 'http://localhost:5173' ||
+      origin === 'http://localhost:5174'
+    ) {
+      return callback(null, true)
+    }
+    
+    callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true
 }))
 
 
