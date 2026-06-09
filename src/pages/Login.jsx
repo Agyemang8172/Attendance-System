@@ -44,19 +44,10 @@ const Login = () => {
   }
 
   return (
-    /*
-     * ROOT
-     * Full viewport. Two-column flex on desktop.
-     * Single column (form only) on mobile.
-     */
+   
     <div className="min-h-screen flex font-sans">
 
-      {/* ─────────────────────────────────────────
-          LEFT PANEL
-          Hidden on mobile (hidden md:flex)
-          45% width on desktop
-          Deep navy background
-      ───────────────────────────────────────── */}
+    
       <div
         className="
           hidden md:flex w-[45%] min-h-screen

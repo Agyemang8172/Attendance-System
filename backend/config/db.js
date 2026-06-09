@@ -9,9 +9,6 @@ const connectDB = async () => {
         const conn = await mongoose.connect(dbURI);
         console.log(`MongoDB connected: ${conn.connection.host}`);
        
-        
-       
-        const testUser = await User.findOne();
        
         
     } catch (error) {
