@@ -9,6 +9,7 @@ export default {
       fontFamily: {
         Fraunces: ['Fraunces', 'serif'],
         GeneralSans: ['General Sans', 'sans-serif'],
+         mono: ['IBM Plex Mono', 'monospace'],
       },
     },
   },
