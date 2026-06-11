@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard'
 import { isAuthenticated } from './utils/auth'
 import { Toaster } from 'react-hot-toast'
 import { getCurrentUser } from './utils/auth'
+import Profile from './pages/Profile'
+
 
 
 const ProtectedRoute = ({ children }) => {
@@ -41,6 +43,16 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+
+
+                        <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                      <Profile />
+                  </ProtectedRoute>
+                }
+        />
 
          <Route
             path="/hr-dashboard"
