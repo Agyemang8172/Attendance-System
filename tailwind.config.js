@@ -7,9 +7,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        Fraunces: ['Fraunces', 'serif'],
-        GeneralSans: ['General Sans', 'sans-serif'],
-         mono: ['IBM Plex Mono', 'monospace'],
+        sans: ['General Sans', 'sans-serif'],
+        serif: ['Fraunces', 'serif'],
+        mono: ['IBM Plex Mono', 'monospace'],
       },
     },
   },
