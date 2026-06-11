@@ -6,18 +6,7 @@ import { SlCalender } from 'react-icons/sl'
 import { FaGear } from 'react-icons/fa6'
 import { CiLogout } from 'react-icons/ci'
 
-/*
- * MERIDIAN — Sidebar
- * Pure Tailwind. No custom CSS.
- * Design tokens consistent with Login page.
- *
- * Google Fonts required in index.html <head>:
- * <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
- * General Sans from Fontshare — add @import to index.css
- */
-
 const allNavItems = [
-  // Everyone
   {
     label: 'Dashboard',
     path: '/dashboard',
@@ -25,13 +14,11 @@ const allNavItems = [
     roles: ['staff', 'hr', 'superadmin'],
   },
   {
-    label: 'Settings',
-    path: '/settings',
-    icon: <FaGear />,
-    roles: ['staff', 'hr', 'superadmin'],
+    label: 'HR Dashboard',
+    path: '/hr-dashboard',
+    icon: <FaUsers />,
+    roles: ['hr', 'superadmin'],
   },
-
-  // Staff only
   {
     label: 'My Profile',
     path: '/profile',
@@ -44,15 +31,20 @@ const allNavItems = [
     icon: <SlCalender />,
     roles: ['staff'],
   },
-
-  // HR and superadmin only
   {
-    label: 'HR Dashboard',
-    path: '/hr-dashboard',
-    icon: <FaUsers />,
-    roles: ['hr', 'superadmin'],
+    label: 'Settings',
+    path: '/settings',
+    icon: <FaGear />,
+    roles: ['staff', 'hr', 'superadmin'],
   },
 ]
+
+// Maps role strings to readable labels
+const roleLabel = {
+  staff: 'Staff',
+  hr: 'HR Manager',
+  superadmin: 'Super Admin',
+}
 
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate()
@@ -63,6 +55,12 @@ const Sidebar = ({ isOpen, onClose }) => {
     item.roles.includes(currentUser?.role)
   )
 
+  // Build initials from first + last name
+  const initials = [currentUser?.firstName, currentUser?.lastName]
+    .filter(Boolean)
+    .map((n) => n[0].toUpperCase())
+    .join('')
+
   const handleLogOut = () => {
     logout()
     navigate('/login')
@@ -70,12 +68,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* ─────────────────────────────────────────
-          MOBILE OVERLAY
-          Sits behind sidebar, above page content.
-          Click it to close sidebar.
-          Bumped to bg-black/40 — clearer UX signal.
-      ───────────────────────────────────────── */}
+      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-20 lg:hidden"
@@ -83,16 +76,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         />
       )}
 
-      {/* ─────────────────────────────────────────
-          SIDEBAR SHELL
-          Fixed, full height, deep navy.
-          Slides in from left on mobile.
-          Always visible on desktop (lg:translate-x-0).
-      ───────────────────────────────────────── */}
       <aside
         className={`
           fixed top-0 left-0 h-screen w-64
-          bg-[#0D1B2A]
+          bg-slate-900
           flex flex-col
           z-30
           transition-transform duration-300
@@ -101,39 +88,21 @@ const Sidebar = ({ isOpen, onClose }) => {
         `}
       >
 
-        {/* ── TOP CORNER BRACKET (decorative, ties to Login panel) ── */}
-        <div className="absolute top-6 right-6 w-6 h-6 border-t-2 border-r-2 border-[#D4A843] opacity-30 rounded-tr-sm pointer-events-none" />
+        {/* Top-right corner bracket */}
+        <div className="absolute top-6 right-6 w-6 h-6 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm pointer-events-none" />
 
-        {/* ─────────────────────────────────────────
-            BRAND BLOCK
-            AttendPro in gold Fraunces.
-            Tagline small, muted, uppercase.
-            Gold rule divider beneath.
-        ───────────────────────────────────────── */}
+        {/* ── BRAND BLOCK ── */}
         <div className="px-6 pt-10 pb-6">
-          <h2
-            className="text-2xl font-bold text-[#D4A843] tracking-tight leading-none"
-            style={{ fontFamily: "'Fraunces', serif" }}
-          >
+          <h2 className="text-2xl font-bold text-yellow-500 tracking-tight leading-none font-[Fraunces]">
             AttendPro
           </h2>
-          <p
-            className="text-[10px] text-[#F7F3EE] opacity-40 uppercase tracking-widest mt-2"
-            style={{ fontFamily: "'General Sans', sans-serif" }}
-          >
+          <p className="text-xs text-slate-500 uppercase tracking-widest mt-2 font-[GeneralSans]">
             Attendance Management
           </p>
-
-          {/* Gold rule */}
-          <div className="mt-5 h-px bg-[#D4A843] opacity-20" />
+          <div className="mt-5 h-px bg-yellow-500/20" />
         </div>
 
-        {/* ─────────────────────────────────────────
-            NAV ITEMS
-            flex-1 pushes status + logout to bottom.
-            gap-1 between items — breathing room
-            without wasting vertical space.
-        ───────────────────────────────────────── */}
+        {/* ── NAV ITEMS ── */}
         <nav className="flex-1 flex flex-col gap-1 px-3 overflow-y-auto">
           {allowedNavItems.map((item) => {
             const isActive = location.pathname === item.path
@@ -151,78 +120,81 @@ const Sidebar = ({ isOpen, onClose }) => {
                   rounded-lg
                   text-sm font-medium
                   cursor-pointer
-                  transition duration-150
-                  relative
+                  transition-all duration-150
+                  font-[GeneralSans]
                   ${
                     isActive
-                      ? /*
-                         * ACTIVE STATE — MERIDIAN signature:
-                         * Gold left border bar
-                         * Very subtle gold tint background
-                         * Gold text
-                         * pl-3 compensates for border-l-2
-                         * so text doesn't shift on inactive items
-                         */
-                        'border-l-2 border-[#D4A843] bg-[#D4A843]/10 text-[#D4A843] pl-3'
-                      : 'text-[#6B7280] hover:text-[#F7F3EE] hover:bg-white/5 border-l-2 border-transparent'
+                      ? 'border-l-2 border-yellow-500 bg-yellow-500/10 text-yellow-500 pl-3'
+                      : 'border-l-2 border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/5'
                   }
                 `}
-                style={{ fontFamily: "'General Sans', sans-serif" }}
               >
-                {/* Icon */}
-                <span className={`text-base shrink-0 ${isActive ? 'text-[#D4A843]' : ''}`}>
+                <span className={`text-base shrink-0 ${isActive ? 'text-yellow-500' : ''}`}>
                   {item.icon}
                 </span>
-
-                {/* Label */}
                 <span>{item.label}</span>
               </div>
             )
           })}
         </nav>
 
-        {/* ─────────────────────────────────────────
-            BOTTOM SECTION
-            Status block + Logout pinned to bottom.
-            Separated cleanly — not grouped together.
-        ───────────────────────────────────────── */}
-        <div className="px-6 pb-4 pt-4 border-t border-[#D4A843]/10">
-          {/* Status block */}
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
-            <span
-              className="text-[#6B7280] text-[10px]"
-              style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-            >
-              System Online v1.0
-            </span>
+        {/* ── BOTTOM SECTION ── */}
+        <div className="px-4 pb-6 pt-4 border-t border-yellow-500/10">
+
+          {/* User identity block */}
+          <div className="flex items-center gap-3 px-2 py-3 mb-2">
+            {/* Avatar */}
+            <div className="w-9 h-9 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0">
+              <span className="text-yellow-500 text-xs font-bold font-[GeneralSans]">
+                {initials || '??'}
+              </span>
+            </div>
+
+            {/* Name + role */}
+            <div className="flex flex-col min-w-0">
+              <span className="text-slate-100 text-sm font-medium truncate font-[GeneralSans]">
+                {currentUser?.firstName} {currentUser?.lastName}
+              </span>
+              <span className="text-xs text-slate-500 mt-0.5 font-[GeneralSans]">
+                {roleLabel[currentUser?.role] || currentUser?.role}
+              </span>
+            </div>
           </div>
 
-          {/* Logout button */}
-          <button
+          {/* Logout — nav-style, destructive */}
+          <div
             onClick={handleLogOut}
             className="
               flex items-center gap-3
-              w-full
               px-4 py-3
               rounded-lg
               text-sm font-medium
-              text-[#6B7280]
-              border border-[#374151]
-              hover:bg-red-600
-              hover:text-[#F7F3EE]
-              hover:border-red-600
-              transition duration-200
+              cursor-pointer
+              transition-all duration-150
+              font-[GeneralSans]
+              border-l-2 border-transparent
+              text-slate-400
+              hover:text-red-400
+              hover:bg-red-500/10
+              hover:border-red-500
             "
-            style={{ fontFamily: "'General Sans', sans-serif" }}
           >
             <CiLogout className="text-base shrink-0" />
             <span>Logout</span>
-          </button>
+          </div>
+
+          {/* Status line */}
+          <div className="flex items-center gap-2 mt-4 px-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+            <span className="text-slate-600 text-[10px] font-mono">
+              System Online v1.0
+            </span>
+          </div>
         </div>
 
-        {/* ── BOTTOM CORNER BRACKET (decorative) ── */}
-        <div className="absolute bottom-6 right-6 w-6 h-6 border-b-2 border-r-2 border-[#D4A843] opacity-30 rounded-br-sm pointer-events-none" />
+        {/* Bottom-right corner bracket */}
+        <div className="absolute bottom-6 right-6 w-6 h-6 border-b-2 border-r-2 border-yellow-500 opacity-30 rounded-br-sm pointer-events-none" />
+
       </aside>
     </>
   )

@@ -2,8 +2,6 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import { login as saveAuth } from '../utils/auth'
-
-// Drop your SVG at src/assets/meridian.svg and update this import path
 import MeridianArt from '../assets/meridian.svg'
 
 const Login = () => {
