@@ -1,28 +1,27 @@
-export const login = (token, user)  =>  {
-   localStorage.setItem('token', token);
-   localStorage.setItem('user', JSON.stringify(user));
-}    
+// Save token and user to localStorage after login
+export const login = (token, user) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+}
 
-// Remove token and user data when logging out
+// Clear everything on logout
 export const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-  };
+};
 
-
-  // Check if user is currently logged in
-  export const isAuthenticated  = ()  => {
+// Returns true if token exists, false if not
+export const isAuthenticated = () => {
     return localStorage.getItem('token') !== null;
-  }
+}
 
-  // Get the current logged-in user's info
-
-  export const getCurrentUser = ()  => {
+// Returns the full user object or null
+export const getCurrentUser = () => {
     const user = localStorage.getItem('user');
-    return user ? JSON.parse(user)  : null;
-  }
+    return user ? JSON.parse(user) : null;
+}
 
-  // Get the JWT token
- export const getToken = ()  =>  {
-    localStorage.getItem('token');
- }
+// Returns the raw JWT token string or null
+export const getToken = () => {
+    return localStorage.getItem('token');
+}

@@ -1,12 +1,14 @@
 import {BrowserRouter as Router,Routes,Route,Navigate} from 'react-router-dom'
 import Login from './pages/Login'
 import HrDashboard from './pages/Hrdashboard'
+import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import Dashboard from './pages/Dashboard'
 import { isAuthenticated } from './utils/auth'
 import { Toaster } from 'react-hot-toast'
 import { getCurrentUser } from './utils/auth'
 import Profile from './pages/Profile'
-
+import Settings from './pages/Settings'
+import Schedule from './pages/Schedule'
 
 
 const ProtectedRoute = ({ children }) => {
