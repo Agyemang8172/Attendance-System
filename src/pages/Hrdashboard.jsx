@@ -81,19 +81,22 @@ function HrDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    fetchAllAttendance()
-  }, [])
 
-  const fetchAllAttendance = async () => {
+
+    const fetchAllAttendance = async () => {
     try {
       const res = await api.get('/attendance/all-attendance')
       setRecords(res.data.data || [])
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to load attendance records.')
     } finally {
       setFetching(false)
     }
   }
+    fetchAllAttendance()
+  }, [])
+
+  
 
   // ── KPIs — today only ──────────────────────────────────────────────────────
   const clockedInToday = records.filter(
