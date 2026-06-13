@@ -8,14 +8,13 @@ import AttendanceTable from '../components/ui/AttendanceTable'
 import { FaClock, FaFire, FaChartLine, FaExclamationTriangle } from 'react-icons/fa'
 import { BsCircleFill } from 'react-icons/bs'
 
-// ─── Late threshold helper ────────────────────────────────────────────────────
-// On time = clock in before 06:30. At or after = late.
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const isLate = (clockInStr) => {
   const d = new Date(clockInStr)
   return d.getHours() > 6 || (d.getHours() === 6 && d.getMinutes() >= 30)
 }
 
-// ─── Date helpers ─────────────────────────────────────────────────────────────
 const getGreeting = () => {
   const h = new Date().getHours()
   if (h < 12) return 'Good morning'
@@ -36,47 +35,40 @@ const formatTodayLong = () =>
 function Dashboard() {
   const user = getCurrentUser()
 
-  const [records, setRecords] = useState([])
+  const [records, setRecords]         = useState([])
   const [isClockedIn, setIsClockedIn] = useState(false)
   const [clockLoading, setClockLoading] = useState(false)
-  const [fetching, setFetching] = useState(true)
+  const [fetching, setFetching]       = useState(true)
 
   useEffect(() => {
     fetchAttendance()
   }, [])
 
-  // ── Fetch + derive clock state + check auto-clockout alert ─────────────────
+  // ── Fetch attendance + derive clock state ──────────────────────────────────
   const fetchAttendance = async () => {
     try {
-      const res = await api.get('/attendance/my-attendance')
+      const res  = await api.get('/attendance/my-attendance')
       const data = res.data.data || []
       setRecords(data)
 
-      // Clock state — any open session means currently clocked in
       const openSession = data.find((r) => r.sessionStatus === 'open')
       setIsClockedIn(!!openSession)
 
-      // Auto clock-out alert — fires when backend adds these fields
-      // Safe to run now: if fields don't exist yet, filter returns []
+      // Auto clock-out alert (fires when backend adds these fields — safe to run now)
       const stale = data.filter(
         (r) => r.autoClosedOut === true && r.alertDismissed === false
       )
       stale.forEach(async (r) => {
         const date = new Date(r.date).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
+          day: '2-digit', month: 'short', year: 'numeric',
         })
         toast(
           `You forgot to clock out on ${date}. The system clocked you out at 11:59 PM. Please review your record.`,
           { icon: '⚠️', duration: 7000 }
         )
-        // Dismiss so it never shows again — fails silently if backend not ready
-        try {
-          await api.patch(`/attendance/${r._id}/dismiss-alert`)
-        } catch (_) {}
+        try { await api.patch(`/attendance/${r._id}/dismiss-alert`) } catch (_) {}
       })
-    } catch (error) {
+    } catch {
       toast.error('Failed to load attendance records.')
     } finally {
       setFetching(false)
@@ -89,9 +81,9 @@ function Dashboard() {
     try {
       await api.post('/attendance/clock-in')
       toast.success('Clocked in successfully.')
-      fetchAttendance()
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Clock in failed.')
+      await fetchAttendance()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Clock in failed.')
     } finally {
       setClockLoading(false)
     }
@@ -103,37 +95,52 @@ function Dashboard() {
     try {
       await api.post('/attendance/clock-out')
       toast.success('Clocked out successfully.')
-      fetchAttendance()
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Clock out failed.')
+      await fetchAttendance()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Clock out failed.')
     } finally {
       setClockLoading(false)
     }
   }
 
-  // ── KPI Calculations ───────────────────────────────────────────────────────
+  // ── KPI calculations ───────────────────────────────────────────────────────
 
-  // 1. Weekly Hours — sum hoursWorked for records in last 7 days
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  // 1. Weekly Hours — sum hoursWorked for the last 7 days
+  const sevenDaysAgo = new Date()
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  sevenDaysAgo.setHours(0, 0, 0, 0)
+
   const weeklyHours = records
     .filter((r) => new Date(r.date) >= sevenDaysAgo)
     .reduce((sum, r) => sum + (r.hoursWorked || 0), 0)
     .toFixed(1)
 
-  // 2. Punctuality Streak — consecutive on-time closed sessions from most recent
-  // Records come sorted desc from API. Walk forward, break on first late/open.
-  const streak = (() => {
-    let count = 0
-    for (const r of records) {
-      if (r.sessionStatus !== 'closed') break
-      if (isLate(r.clockIn)) break
-      count++
+  // 2. Streak — consecutive closed sessions going backwards from today
+  const sortedClosed = [...records]
+    .filter((r) => r.sessionStatus === 'closed')
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+
+  let streak = 0
+  let prevDate = null
+  for (const r of sortedClosed) {
+    const d = new Date(r.date)
+    d.setHours(0, 0, 0, 0)
+    if (!prevDate) {
+      streak = 1
+      prevDate = d
+    } else {
+      const diff = (prevDate - d) / (1000 * 60 * 60 * 24)
+      if (diff === 1) {
+        streak++
+        prevDate = d
+      } else {
+        break
+      }
     }
-    return count
-  })()
+  }
 
   // 3. Attendance Rate — closed sessions this calendar month / 22 working days
-  const now = new Date()
+  const now          = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const closedThisMonth = records.filter(
     (r) => r.sessionStatus === 'closed' && new Date(r.date) >= startOfMonth
@@ -148,51 +155,51 @@ function Dashboard() {
     (r) => new Date(r.date) >= startOfMonth && isLate(r.clockIn)
   ).length
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ──────────────────────────────────────────────────────────────────────────
 
   return (
     <Layout>
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
 
-        {/* Left — greeting + date */}
+        {/* Left — date eyebrow + big greeting */}
         <div>
-          <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
+          <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-4">
             {formatTodayLong()}
           </p>
-          <h1 className="text-2xl font-bold text-slate-900 font-serif leading-tight">
-            {getGreeting()}, {user?.firstName}.
+          <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 font-serif leading-none tracking-tight">
+            {getGreeting()},<br />
+            {user?.firstName}.
           </h1>
-          {/* Gold divider — MERIDIAN signature */}
-          <div className="mt-3 h-px w-12 bg-yellow-500/40" />
+          {/* Gold divider — solid, visible */}
+          <div className="mt-5 h-0.5 w-20 bg-yellow-500" />
         </div>
 
-        {/* Right — clock status + action button */}
-        <div className="flex items-center gap-3 sm:mt-1">
+        {/* Right — clock status pill + action button */}
+        <div className="flex items-center gap-4 sm:mb-1">
+
           {/* Status indicator */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3 py-1.5 shadow-sm">
             <BsCircleFill
-              className={`text-[8px] ${
-                isClockedIn ? 'text-green-500' : 'text-red-500'
-              }`}
+              className={`text-[8px] ${isClockedIn ? 'text-green-500' : 'text-red-400'}`}
             />
-            <span className="text-slate-500 text-xs font-mono">
+            <span className="text-slate-600 text-xs font-mono">
               {isClockedIn ? 'Clocked In' : 'Clocked Out'}
             </span>
           </div>
 
-          {/* Clock button */}
+          {/* Primary CTA — solid gold when clocking in, soft red when out */}
           {isClockedIn ? (
             <button
               onClick={handleClockOut}
               disabled={clockLoading}
               className="
-                px-5 py-2 rounded-lg text-sm font-medium font-sans
-                border border-red-500/40
-                text-red-400
-                bg-red-500/10
-                hover:bg-red-500/20
+                px-6 py-2.5 rounded-xl
+                text-sm font-semibold font-sans
+                bg-red-50 text-red-500
+                border border-red-200
+                hover:bg-red-100
                 transition-colors duration-150
                 disabled:opacity-50 disabled:cursor-not-allowed
               "
@@ -204,13 +211,13 @@ function Dashboard() {
               onClick={handleClockIn}
               disabled={clockLoading}
               className="
-                px-5 py-2 rounded-lg text-sm font-medium font-sans
-                border border-yellow-500/40
-                text-yellow-500
-                bg-yellow-500/10
-                hover:bg-yellow-500/20
+                px-6 py-2.5 rounded-xl
+                text-sm font-semibold font-sans
+                bg-yellow-500 text-slate-900
+                hover:bg-yellow-400
                 transition-colors duration-150
                 disabled:opacity-50 disabled:cursor-not-allowed
+                shadow-sm shadow-yellow-500/20
               "
             >
               {clockLoading ? 'Processing…' : 'Clock In'}
@@ -220,12 +227,12 @@ function Dashboard() {
       </header>
 
       {/* ── KPI Grid ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
         <KpiCard
           icon={<FaClock />}
           label="Weekly Hours"
           value={weeklyHours}
-          subtext="/ 40 hrs"
+          subtext="/ 40 hrs target"
           colorScheme="blue"
         />
         <KpiCard
@@ -253,18 +260,16 @@ function Dashboard() {
 
       {/* ── Attendance History ────────────────────────────────────────────── */}
       <section>
-        {/* Section label */}
-        <div className="mb-4">
+        <div className="mb-5">
           <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
             Attendance History
           </p>
-          <div className="mt-2 h-px w-10 bg-yellow-500/40" />
+          <div className="mt-2 h-0.5 w-10 bg-yellow-500/60" />
         </div>
 
         {fetching ? (
-          // Loading state — never blank
-          <div className="bg-slate-900 rounded-2xl p-8 flex items-center justify-center">
-            <p className="text-slate-500 text-sm font-sans animate-pulse">
+          <div className="bg-white rounded-2xl border border-slate-200 p-10 flex items-center justify-center shadow-sm">
+            <p className="text-slate-400 text-sm font-sans animate-pulse">
               Loading records…
             </p>
           </div>
