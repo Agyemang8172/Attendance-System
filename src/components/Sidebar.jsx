@@ -1,6 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { logout } from '../utils/auth'
-import { getCurrentUser } from '../utils/auth'
+import { logout, getCurrentUser } from '../utils/auth'
 import { FaHome, FaUser, FaUsers } from 'react-icons/fa'
 import { SlCalender } from 'react-icons/sl'
 import { FaGear } from 'react-icons/fa6'
@@ -39,7 +38,6 @@ const allNavItems = [
   },
 ]
 
-// Maps role strings to readable labels
 const roleLabel = {
   staff: 'Staff',
   hr: 'HR Manager',
@@ -55,7 +53,6 @@ const Sidebar = ({ isOpen, onClose }) => {
     item.roles.includes(currentUser?.role)
   )
 
-  // Build initials from first + last name
   const initials = [currentUser?.firstName, currentUser?.lastName]
     .filter(Boolean)
     .map((n) => n[0].toUpperCase())
@@ -71,7 +68,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
           onClick={onClose}
         />
       )}
@@ -87,22 +84,24 @@ const Sidebar = ({ isOpen, onClose }) => {
           lg:translate-x-0
         `}
       >
-
-        {/* Top-right corner bracket */}
+        {/* Top-right corner bracket — MERIDIAN signature */}
         <div className="absolute top-6 right-6 w-6 h-6 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm pointer-events-none" />
 
-        {/* ── BRAND BLOCK ── */}
+        {/* ── BRAND BLOCK ────────────────────────────────────────────────── */}
         <div className="px-6 pt-10 pb-6">
-          <h2 className="text-2xl font-bold text-yellow-500 tracking-tight leading-none font-[Fraunces]">
+          {/* Gold strip at very top of sidebar — mirrors Layout gold strip */}
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-yellow-500 via-yellow-400/60 to-transparent" />
+
+          <h2 className="text-2xl font-bold text-yellow-500 tracking-tight leading-none font-serif">
             AttendPro
           </h2>
-          <p className="text-xs text-slate-500 uppercase tracking-widest mt-2 font-[GeneralSans]">
+          <p className="text-xs text-slate-500 uppercase tracking-widest mt-2 font-sans">
             Attendance Management
           </p>
           <div className="mt-5 h-px bg-yellow-500/20" />
         </div>
 
-        {/* ── NAV ITEMS ── */}
+        {/* ── NAV ITEMS ──────────────────────────────────────────────────── */}
         <nav className="flex-1 flex flex-col gap-1 px-3 overflow-y-auto">
           {allowedNavItems.map((item) => {
             const isActive = location.pathname === item.path
@@ -118,10 +117,9 @@ const Sidebar = ({ isOpen, onClose }) => {
                   flex items-center gap-3
                   px-4 py-3
                   rounded-lg
-                  text-sm font-medium
+                  text-sm font-medium font-sans
                   cursor-pointer
                   transition-all duration-150
-                  font-[GeneralSans]
                   ${
                     isActive
                       ? 'border-l-2 border-yellow-500 bg-yellow-500/10 text-yellow-500 pl-3'
@@ -138,40 +136,36 @@ const Sidebar = ({ isOpen, onClose }) => {
           })}
         </nav>
 
-        {/* ── BOTTOM SECTION ── */}
+        {/* ── BOTTOM SECTION ─────────────────────────────────────────────── */}
         <div className="px-4 pb-6 pt-4 border-t border-yellow-500/10">
 
           {/* User identity block */}
           <div className="flex items-center gap-3 px-2 py-3 mb-2">
-            {/* Avatar */}
             <div className="w-9 h-9 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0">
-              <span className="text-yellow-500 text-xs font-bold font-[GeneralSans]">
+              <span className="text-yellow-500 text-xs font-bold font-sans">
                 {initials || '??'}
               </span>
             </div>
-
-            {/* Name + role */}
             <div className="flex flex-col min-w-0">
-              <span className="text-slate-100 text-sm font-medium truncate font-[GeneralSans]">
+              <span className="text-slate-100 text-sm font-medium truncate font-sans">
                 {currentUser?.firstName} {currentUser?.lastName}
               </span>
-              <span className="text-xs text-slate-500 mt-0.5 font-[GeneralSans]">
+              <span className="text-xs text-slate-500 mt-0.5 font-sans">
                 {roleLabel[currentUser?.role] || currentUser?.role}
               </span>
             </div>
           </div>
 
-          {/* Logout — nav-style, destructive */}
+          {/* Logout */}
           <div
             onClick={handleLogOut}
             className="
               flex items-center gap-3
               px-4 py-3
               rounded-lg
-              text-sm font-medium
+              text-sm font-medium font-sans
               cursor-pointer
               transition-all duration-150
-              font-[GeneralSans]
               border-l-2 border-transparent
               text-slate-400
               hover:text-red-400
