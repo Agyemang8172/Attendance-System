@@ -19,11 +19,13 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Catch 401 — token expired or invalid
+// Catch 401 — token expired or invalid (but NOT a failed login attempt)
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        const isLoginRequest = error.config?.url?.includes('/auth/login');
+
+        if (error.response?.status === 401 && !isLoginRequest) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/login';
@@ -31,5 +33,3 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
-
-export default api;
