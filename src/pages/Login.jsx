@@ -32,7 +32,13 @@ const Login = () => {
 
       const { token, user } = response.data
       saveAuth(token, user)
+        if (user.role === 'hr') {
+      navigate('/hr-dashboard')
+    } else if (user.role === 'superadmin') {
+      navigate('/superadmin-dashboard')
+    } else {
       navigate('/dashboard')
+    }
     } catch (err) {
       const errorMessage =
         err.response?.data?.message || 'Login failed. Please try again.'
