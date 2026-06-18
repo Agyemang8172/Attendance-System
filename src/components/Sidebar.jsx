@@ -10,7 +10,7 @@ const allNavItems = [
     label: 'Dashboard',
     path: '/dashboard',
     icon: <FaHome />,
-    roles: ['staff', 'hr', 'superadmin'],
+    roles: ['staff'],
   },
   {
     label: 'HR Dashboard',

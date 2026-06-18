@@ -66,7 +66,7 @@ const HoursChart = ({ records = [] }) => {
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={data} barSize={28}>
           <CartesianGrid
-            strokeDasharray="3 3"
+            strokeDasharray="33"
             stroke="#1e293b"
             vertical={false}
           />

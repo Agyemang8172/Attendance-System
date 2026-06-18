@@ -24,7 +24,7 @@ const StaffRoute = ({ children }) => {
 const HrRoute = ({ children }) => {
     const user = getCurrentUser()
     if (!isAuthenticated()) return <Navigate to="/login" />
-    if (user?.role !== 'hr') return <Navigate to="/hr-dashboard" />
+   if (user?.role !== 'hr' && user?.role !== 'superadmin') return <Navigate to="/login" />
     return children
 }
 
