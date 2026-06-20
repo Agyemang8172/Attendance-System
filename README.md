@@ -41,17 +41,15 @@ A full-stack MERN application for managing employee attendance with role-based a
 
 ## 🔑 Test Credentials
 
-**Staff Account:**
-- Email: godfredagyemang31052005@gmail.com
-- Password: Godfred123456
+## 🔑 Demo Access
 
-**HR Account:**
-- Email: OliTech@gmail.com
-- Password: Olives12345
+A staff-level demo account is available so you can explore the app:
 
-  **Super Admin**
-  -Email : josephamoah123@gmail.com
-  -Password :Amoah123
+- **Email:** godfredagyemang31052005@gmail.com
+- **Password:** (request via the contact links below)
+
+> HR and Super Admin views are restricted. If you're reviewing this for a role
+> and want a walkthrough of those dashboards, reach out — I'll provision access.
 
 ## 🚀 Running Locally
 
