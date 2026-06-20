@@ -108,8 +108,8 @@ npm run dev
 ## 👨‍💻 Author
 
 **Godfred Agyemang**
-- LinkedIn: [your LinkedIn URL]
-- GitHub: [your GitHub URL]
+
+- GitHub: [https://github.com/Agyemang8172/Inventory-Management]
 
 ## 📝 License
 MIT
