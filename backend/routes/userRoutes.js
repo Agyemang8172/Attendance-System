@@ -11,7 +11,7 @@ router.get('/:id',authmiddleware,authorizeRole('superadmin','hr','staff'),userCo
 
 router.get('/',authmiddleware,authorizeRole('superadmin','hr'),userController.getAllUsers)
 
-router.post('/',userController.createUser)
+router.post('/',authmiddleware,authorizeRole('superadmin'),userController.createUser)
 
 router.put('/change-password',authmiddleware,userController.changePassword)
 
