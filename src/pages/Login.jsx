@@ -32,13 +32,13 @@ const Login = () => {
 
       const { token, user } = response.data
       saveAuth(token, user)
-        if (user.role === 'hr') {
-      navigate('/hr-dashboard')
-    } else if (user.role === 'superadmin') {
-      navigate('/superadmin-dashboard')
-    } else {
-      navigate('/dashboard')
-    }
+      if (user.role === 'hr') {
+        navigate('/hr-dashboard')
+      } else if (user.role === 'superadmin') {
+        navigate('/superadmin-dashboard')
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err) {
       const errorMessage =
         err.response?.data?.message || 'Login failed. Please try again.'
@@ -48,14 +48,16 @@ const Login = () => {
   }
 
   return (
-   
     <div className="min-h-screen flex font-sans">
 
-    
+      {/* ─────────────────────────────────────────
+          LEFT PANEL — Brand / visual side
+          Hidden on mobile, 45% width on desktop
+      ───────────────────────────────────────── */}
       <div
         className="
           hidden md:flex w-[45%] min-h-screen
-          bg-[#0D1B2A]
+          bg-slate-900
           flex-col
           items-center
           justify-center
@@ -65,7 +67,7 @@ const Login = () => {
         "
       >
         {/* Subtle radial glow behind SVG — pure Tailwind, no custom CSS */}
-        <div className="absolute w-72 h-72 rounded-full bg-[#D4A843] opacity-5 blur-3xl top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+        <div className="absolute w-72 h-72 rounded-full bg-yellow-500 opacity-5 blur-3xl top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
         {/* SVG Art */}
         <div className="w-48 h-48 mb-10 opacity-90">
@@ -77,33 +79,23 @@ const Login = () => {
         </div>
 
         {/* Brand Name */}
-        <h1
-          className="
-            text-4xl font-bold tracking-tight
-            text-[#D4A843]
-            mb-3
-          "
-          style={{ fontFamily: "'Fraunces', serif" }}
-        >
+        <h1 className="text-4xl font-bold tracking-tight text-yellow-500 mb-3 font-serif">
           AttendPro
         </h1>
 
         {/* Tagline */}
-        <p
-          className="text-sm text-[#F7F3EE] opacity-50 tracking-widest uppercase"
-          style={{ fontFamily: "'General Sans', sans-serif" }}
-        >
+        <p className="text-sm text-stone-50 opacity-50 tracking-widest uppercase font-sans">
           Employee Attendance System
         </p>
 
         {/* Bottom decorative gold rule */}
-        <div className="absolute bottom-10 left-12 right-12 h-px bg-[#D4A843] opacity-20" />
+        <div className="absolute bottom-10 left-12 right-12 h-px bg-yellow-500 opacity-20" />
 
         {/* Corner accent top-right */}
-        <div className="absolute top-8 right-8 w-8 h-8 border-t-2 border-r-2 border-[#D4A843] opacity-30 rounded-tr-sm" />
+        <div className="absolute top-8 right-8 w-8 h-8 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm" />
 
         {/* Corner accent bottom-left */}
-        <div className="absolute bottom-8 left-8 w-8 h-8 border-b-2 border-l-2 border-[#D4A843] opacity-30 rounded-bl-sm" />
+        <div className="absolute bottom-8 left-8 w-8 h-8 border-b-2 border-l-2 border-yellow-500 opacity-30 rounded-bl-sm" />
       </div>
 
       {/* ─────────────────────────────────────────
@@ -116,7 +108,7 @@ const Login = () => {
         className="
           flex-1
           min-h-screen
-          bg-[#F7F3EE]
+          bg-stone-50
           flex
           flex-col
           justify-center
@@ -126,13 +118,10 @@ const Login = () => {
       >
         {/* Mobile-only brand header (left panel is hidden on mobile) */}
         <div className="flex md:hidden items-center gap-2 mb-10">
-          <span
-            className="text-2xl font-bold text-[#0D1B2A]"
-            style={{ fontFamily: "'Fraunces', serif" }}
-          >
+          <span className="text-2xl font-bold text-slate-900 font-serif">
             AttendPro
           </span>
-          <span className="text-xs text-[#6B7280] uppercase tracking-widest mt-1">
+          <span className="text-xs text-slate-400 uppercase tracking-widest mt-1 font-sans">
             / Attendance
           </span>
         </div>
@@ -141,23 +130,17 @@ const Login = () => {
         <div className="w-full max-w-sm">
 
           {/* Heading */}
-          <h2
-            className="text-3xl font-bold text-[#0D1B2A] mb-2 leading-tight"
-            style={{ fontFamily: "'Fraunces', serif" }}
-          >
+          <h2 className="text-3xl font-bold text-slate-900 mb-2 leading-tight font-serif">
             Welcome back.
           </h2>
 
           {/* Subheading */}
-          <p
-            className="text-sm text-[#6B7280] mb-8"
-            style={{ fontFamily: "'General Sans', sans-serif" }}
-          >
+          <p className="text-sm text-slate-400 mb-8 font-sans">
             Sign in to continue to your workspace.
           </p>
 
           {/* Gold accent rule under heading */}
-          <div className="w-10 h-0.5 bg-[#D4A843] mb-8" />
+          <div className="w-10 h-0.5 bg-yellow-500 mb-8" />
 
           {/* ── ERROR BAR ── */}
           {error && (
@@ -167,8 +150,8 @@ const Login = () => {
                 bg-red-50 border border-red-200
                 text-red-700 text-sm
                 px-4 py-3 rounded-lg mb-6
+                font-sans
               "
-              style={{ fontFamily: "'General Sans', sans-serif" }}
             >
               {/* Warning icon */}
               <svg
@@ -195,8 +178,7 @@ const Login = () => {
             <div>
               <label
                 htmlFor="email"
-                className="block text-xs font-semibold text-[#0D1B2A] uppercase tracking-widest mb-2"
-                style={{ fontFamily: "'General Sans', sans-serif" }}
+                className="block text-xs font-semibold text-slate-900 uppercase tracking-widest mb-2 font-sans"
               >
                 Email
               </label>
@@ -209,15 +191,15 @@ const Login = () => {
                 disabled={loading}
                 className="
                   w-full px-4 py-3
-                  bg-[#EDE8E1]
-                  border border-[#D6CFC6]
-                  rounded-lg text-sm text-[#0D1B2A]
-                  placeholder-[#9CA3AF]
-                  focus:outline-none focus:ring-2 focus:ring-[#D4A843] focus:border-transparent
+                  bg-stone-100
+                  border border-stone-300
+                  rounded-lg text-sm text-slate-900
+                  placeholder-slate-400
+                  font-sans
+                  focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent
                   disabled:opacity-50 disabled:cursor-not-allowed
                   transition duration-150
                 "
-                style={{ fontFamily: "'General Sans', sans-serif" }}
               />
             </div>
 
@@ -225,8 +207,7 @@ const Login = () => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-xs font-semibold text-[#0D1B2A] uppercase tracking-widest mb-2"
-                style={{ fontFamily: "'General Sans', sans-serif" }}
+                className="block text-xs font-semibold text-slate-900 uppercase tracking-widest mb-2 font-sans"
               >
                 Password
               </label>
@@ -240,15 +221,15 @@ const Login = () => {
                   disabled={loading}
                   className="
                     w-full px-4 py-3 pr-11
-                    bg-[#EDE8E1]
-                    border border-[#D6CFC6]
-                    rounded-lg text-sm text-[#0D1B2A]
-                    placeholder-[#9CA3AF]
-                    focus:outline-none focus:ring-2 focus:ring-[#D4A843] focus:border-transparent
+                    bg-stone-100
+                    border border-stone-300
+                    rounded-lg text-sm text-slate-900
+                    placeholder-slate-400
+                    font-sans
+                    focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent
                     disabled:opacity-50 disabled:cursor-not-allowed
                     transition duration-150
                   "
-                  style={{ fontFamily: "'General Sans', sans-serif" }}
                 />
 
                 {/* Show / hide password toggle */}
@@ -257,7 +238,7 @@ const Login = () => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="
                     absolute right-3 top-1/2 -translate-y-1/2
-                    text-[#9CA3AF] hover:text-[#0D1B2A]
+                    text-slate-400 hover:text-slate-900
                     transition duration-150
                     focus:outline-none
                   "
@@ -285,16 +266,16 @@ const Login = () => {
               disabled={loading}
               className="
                 w-full
-                bg-[#0D1B2A] hover:bg-[#D4A843]
-                text-[#F7F3EE] hover:text-[#0D1B2A]
+                bg-slate-900 hover:bg-yellow-500
+                text-stone-50 hover:text-slate-900
                 font-semibold text-sm
                 py-3 rounded-lg
                 transition duration-200
                 disabled:opacity-50 disabled:cursor-not-allowed
                 flex items-center justify-center gap-2
                 mt-2
+                font-sans
               "
-              style={{ fontFamily: "'General Sans', sans-serif" }}
             >
               {loading ? (
                 <>
@@ -318,10 +299,7 @@ const Login = () => {
         </div>
 
         {/* Footer */}
-        <div
-          className="absolute bottom-8 left-8 sm:left-16 lg:left-24 text-xs text-[#9CA3AF]"
-          style={{ fontFamily: "'General Sans', sans-serif" }}
-        >
+        <div className="absolute bottom-8 left-8 sm:left-16 lg:left-24 text-xs text-slate-400 font-sans">
           © 2026 AttendPro. All rights reserved.
         </div>
       </div>
