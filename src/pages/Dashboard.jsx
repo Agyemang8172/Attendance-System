@@ -156,6 +156,7 @@ function Dashboard() {
   ).length
 
   // ──────────────────────────────────────────────────────────────────────────
+throw new Error('test crash')
 
   return (
     <Layout>
