@@ -195,7 +195,7 @@ function Profile() {
       try {
         const res = await api.get('/attendance/my-attendance')
         setRecords(res.data.data || [])
-      } catch (_err) {
+      } catch (err) {
         toast.error('Failed to load profile data.')
       } finally {
         setFetching(false)

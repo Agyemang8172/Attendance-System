@@ -334,7 +334,7 @@ function SuperAdminDashboard() {
           icon={<FaClock />}
           label="Late Today"
           value={fetching ? '—' : lateToday}
-          subtext="after 06:30"
+          subtext="late today"
           colorScheme="gold"
         />
       </div>
