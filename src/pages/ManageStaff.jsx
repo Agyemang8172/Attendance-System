@@ -4,6 +4,7 @@ import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
 import StaffTable from '../components/ui/StaffTable'
+import AddEmployeeModal from '../components/ui/AddEmployeeModal'
 
 // ─── ManageStaff ────────────────────────────────────────────────────────────
 //
@@ -232,9 +233,12 @@ const ManageStaff = () => {
         </div>
       )}
 
-      {/* ── Add Employee Popup — built in the next step ──────────────────── */}
-      {/* {showAddModal && <AddEmployeeModal onClose={() => setShowAddModal(false)} onCreated={() => fetchUsers(1)} />} */}
-
+      {showAddModal && (
+  <AddEmployeeModal
+    onClose={() => setShowAddModal(false)}
+    onCreated={() => fetchUsers(1)}
+  />
+)}
     </Layout>
   )
 }
