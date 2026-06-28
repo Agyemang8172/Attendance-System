@@ -2,6 +2,38 @@ const User = require('../models/User')
 const bcrypt = require('bcrypt')
 
 
+
+// ── Account-creation helpers ─────────────────────────────────────────────────
+
+// Memorable temp password: word-word-#### (e.g. "amber-tiger-4821").
+// It's single-use — the user is forced to change it on first login — so this
+// modest strength is fine for a short-lived credential.
+const ADJECTIVES = ['amber','brave','calm','clever','swift','bright','bold','lucky','quiet','sunny','royal','noble','keen','warm','cool','eager','gentle','jolly','merry','witty','zesty','prime','vivid','crisp','snug','plucky','dapper','breezy','mellow','rapid']
+const NOUNS = ['tiger','river','falcon','maple','cedar','otter','comet','harbor','meadow','willow','ember','pebble','lantern','summit','breeze','canyon','beacon','garnet','quartz','sparrow','badger','marlin','cobra','walrus','pelican','heron','jaguar','panther','dolphin','raven']
+
+const generateTempPassword = () => {
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
+  const digits = Math.floor(1000 + Math.random() * 9000) // 1000–9999
+  return `${pick(ADJECTIVES)}-${pick(NOUNS)}-${digits}`
+}
+
+// Next employee ID like EMP-0001. Reads the current highest EMP-#### and adds 1.
+// Zero-padding to 4 digits keeps string order the same as numeric order.
+const generateEmployeeID = async () => {
+  const last = await User.findOne({ employeeID: /^EMP-\d+$/ })
+    .sort({ employeeID: -1 })
+    .select('employeeID')
+
+  let next = 1
+  if (last?.employeeID) {
+    const n = parseInt(last.employeeID.split('-')[1], 10)
+    if (!Number.isNaN(n)) next = n + 1
+  }
+  return `EMP-${String(next).padStart(4, '0')}`
+}
+
+
+
   exports.getAllUsers = async (req,res) => {
     const page =  parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
