@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt')
 
 // ── Account-creation helpers ─────────────────────────────────────────────────
 
-// Memorable temp password: word-word-#### (e.g. "amber-tiger-4821").
+
 // It's single-use — the user is forced to change it on first login — so this
 // modest strength is fine for a short-lived credential.
 const ADJECTIVES = ['amber','brave','calm','clever','swift','bright','bold','lucky','quiet','sunny','royal','noble','keen','warm','cool','eager','gentle','jolly','merry','witty','zesty','prime','vivid','crisp','snug','plucky','dapper','breezy','mellow','rapid']
@@ -82,26 +82,48 @@ const generateEmployeeID = async () => {
 
 }
 
-exports.createUser = async (req,res)  => {
-    try {
-       
-       const newUser =  new User(req.body)
-          await newUser.save()
+exports.createUser = async (req, res) => {
+  try {
+    const { firstName, lastName, email, department, role } = req.body
 
-          const userObject = newUser.toObject()
-          delete userObject.password
+    if (!firstName || !lastName || !email || !department) {
+      return res.status(400).json({
+        success: false,
+        message: 'firstName, lastName, email and department are required.',
+      })
+    }
 
-         res.status(201).json(
-            { success : true,
-               data : userObject
-            }
-         )
-         }   catch(error)  {
-            res.status(500).json({message : 'server Error',error : error.message})
+    const employeeID = await generateEmployeeID()
+    const tempPassword = generateTempPassword()
 
-         }
+    const newUser = new User({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.trim(),
+      department: department.trim(),
+      role: role || 'staff',
+      employeeID,
+      password: tempPassword,        // hashed by your pre-save hook
+      mustChangePassword: true,
+    })
+
+    await newUser.save()
+
+    const userObject = newUser.toObject()
+    delete userObject.password
+
+    res.status(201).json({
+      success: true,
+      data: userObject,   // includes the generated employeeID
+      tempPassword,       // PLAINTEXT — the only moment it can be read
+    })
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ success: false, message: 'That email is already taken.' })
+    }
+    res.status(500).json({ success: false, message: 'Server error', error: error.message })
+  }
 }
-
 
 exports.updateUser = async (req,res) =>
   {
