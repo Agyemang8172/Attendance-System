@@ -8,13 +8,12 @@ const userSchema = new mongoose.Schema({
        employeeID: {
          type: String,
           unique: true,
-          required:true
+        
        },
 
       firstName : {
         type:String,
-        required: true,
-
+        required: true
       },
       lastName : {
         type:String, 
