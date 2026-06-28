@@ -139,7 +139,8 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
       const data = res.data?.data || {}
       setCreated({
         name: `${form.firstName} ${form.lastName}`.trim(),
-        employeeID: data.employeeID || '—',
+          email: form.email.trim(),
+           employeeID: data.employeeID || '—',
         tempPassword: res.data?.tempPassword || null,
       })
     } catch (err) {
@@ -185,21 +186,22 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
               {created.name} is set up
             </h2>
             <p className="text-slate-400 text-sm font-sans mb-6">
-              Give these to {created.name.split(' ')[0]}. They'll be asked to set
-              their own password the first time they log in.
+              Give {created.name.split(' ')[0]} their email and temporary password — that's
+what they log in with. They'll set their own password on first login.
             </p>
 
             <div className="space-y-4">
-              <CopyRow label="Employee ID" value={created.employeeID} />
-              {created.tempPassword ? (
-                <CopyRow label="Temporary Password" value={created.tempPassword} />
-              ) : (
-                <p className="text-red-400 text-xs font-sans">
-                  The server didn't send a temporary password. Make sure
-                  createUser returns a <span className="font-mono">tempPassword</span> field.
-                </p>
-              )}
-            </div>
+  <CopyRow label="Email" value={created.email} />
+  {created.tempPassword ? (
+    <CopyRow label="Temporary Password" value={created.tempPassword} />
+  ) : (
+    <p className="text-red-400 text-xs font-sans">
+      The server didn't send a temporary password. Make sure
+      createUser returns a <span className="font-mono">tempPassword</span> field.
+    </p>
+  )}
+  <CopyRow label="Employee ID (for reference)" value={created.employeeID} />
+</div>
 
             <p className="text-slate-500 text-xs font-sans mt-6">
               This is the only time the temporary password is shown — copy it now.

@@ -32,7 +32,7 @@ const Login = () => {
 
       const { token, user } = response.data
       saveAuth(token, user)
-     saveAuth(token, user)
+     
 
 // New / reset accounts must set their own password first.
 if (user.mustChangePassword) {
