@@ -221,6 +221,7 @@ exports.updateUser = async (req,res) =>
         }
 
         user.password = newPassword
+        user.mustChangePassword = false
         await user.save()
         return res.status(200).json({
          success : true,
