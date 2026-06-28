@@ -4,7 +4,7 @@ import { FaHome, FaUser, FaUsers } from 'react-icons/fa'
 import { SlCalender } from 'react-icons/sl'
 import { FaGear } from 'react-icons/fa6'
 import { CiLogout } from 'react-icons/ci'
-import { FaGear, FaUsersGear } from 'react-icons/fa6'
+import {  FaUsersGear } from 'react-icons/fa6'
 
 const allNavItems = [
   {
@@ -37,6 +37,7 @@ const allNavItems = [
     icon: <FaGear />,
     roles: ['staff', 'hr', 'superadmin'],
   },
+
   {
     label: 'Manage Staff',
     path: '/manage-staff',

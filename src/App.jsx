@@ -9,6 +9,7 @@ import { getCurrentUser } from './utils/auth'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Schedule from './pages/Schedule'
+import ManageStaff from './pages/ManageStaff'
 
 // ── Route Guards ──────────────────────────────────────────
 
@@ -96,6 +97,15 @@ function App() {
                         </SuperAdminRoute>
                     }
                 />
+
+                {/* SuperAdmin only */}
+        <Route path="/manage-staff"
+            element={
+                <SuperAdminRoute>
+                    <ManageStaff />
+                </SuperAdminRoute>
+            }
+        />
   
 
                  {/* All logged in roles */}
