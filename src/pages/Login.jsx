@@ -17,6 +17,7 @@ const Login = () => {
     e.preventDefault()
     setError('')
 
+
     if (!email || !password) {
       setError('Please enter both your email and password.')
       return
@@ -30,7 +31,9 @@ const Login = () => {
         password,
       })
 
+
       const { token, user } = response.data
+      console.log('LOGIN RESPONSE USER:', user)
       saveAuth(token, user)
      
 
