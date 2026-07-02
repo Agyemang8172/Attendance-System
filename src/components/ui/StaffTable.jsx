@@ -65,7 +65,7 @@ const EmptyState = () => (
 
 // ─── StaffTable ─────────────────────────────────────────────────────────────────
 
-const StaffTable = ({ users = [], onDeactivate }) => {
+const StaffTable = ({ users = [], onEdit, onDeactivate }) => {
   return (
     <div className="relative bg-slate-900 rounded-2xl overflow-hidden border border-slate-800">
 
@@ -111,6 +111,13 @@ const StaffTable = ({ users = [], onDeactivate }) => {
                   </td>
 
                   <td className="px-4 py-3 whitespace-nowrap">
+                    <button
+                      onClick={() => onEdit?.(user)}
+                      className="text-yellow-500 font-mono text-sm hover:text-yellow-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500 rounded px-1"
+                    >
+                      Edit
+                    </button>
+                    <span className="text-slate-700 mx-1">·</span>
                     <button
                       onClick={() => onDeactivate?.(user)}
                       className="text-red-400 font-mono text-sm hover:text-red-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-red-400 rounded px-1"
