@@ -39,7 +39,7 @@ const Login = () => {
 
 // New / reset accounts must set their own password first.
 if (user.mustChangePassword) {
-  navigate('/settings')
+  navigate('/set-password')
   return
 }
 

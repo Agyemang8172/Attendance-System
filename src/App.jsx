@@ -10,6 +10,7 @@ import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Schedule from './pages/Schedule'
 import ManageStaff from './pages/ManageStaff'
+import SetPassword from './pages/SetPassword'
 
 // ── Route Guards ──────────────────────────────────────────
 
@@ -116,6 +117,7 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+
                 <Route path="/settings"
                     element={
                         <ProtectedRoute>
@@ -123,6 +125,14 @@ function App() {
                         </ProtectedRoute>
                     }
                 />
+
+                <Route path="/set-password"
+                    element={
+                        <ProtectedRoute>
+                            <SetPassword />
+                        </ProtectedRoute>
+                    }
+                 />
 
                 {/* Fallback — catch everything else */}
                 <Route path="/" element={<Navigate to="/login" />} />
