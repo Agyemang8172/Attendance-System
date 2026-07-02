@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
 import StaffTable from '../components/ui/StaffTable'
 import AddEmployeeModal from '../components/ui/AddEmployeeModal'
+import EditEmployeeModal from '../components/ui/EditEmployeeModal'
 
 // ─── ManageStaff ────────────────────────────────────────────────────────────
 //
@@ -31,6 +32,8 @@ const ManageStaff = () => {
   // Deactivate confirm: holds the user awaiting confirmation, or null.
   const [pendingUser, setPendingUser] = useState(null)
   const [deactivating, setDeactivating] = useState(false)
+  // Edit employee: holds the user being edited, or null.
+  const [editingUser, setEditingUser] = useState(null)
 
   // ── Load users for a given page ────────────────────────────────────────────
   const fetchUsers = async (targetPage = 1) => {
@@ -137,7 +140,8 @@ const ManageStaff = () => {
           </p>
         </div>
       ) : (
-        <StaffTable users={users} onDeactivate={handleDeactivateRequest} />
+
+        <StaffTable users={users}   onEdit={setEditingUser} onDeactivate={handleDeactivateRequest} />
       )}
 
       {/* ── Pagination footer (only when more than one page) ─────────────── */}
@@ -239,6 +243,15 @@ const ManageStaff = () => {
     onCreated={() => fetchUsers(1)}
   />
 )}
+
+
+        {editingUser && (
+        <EditEmployeeModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onUpdated={() => fetchUsers(page)}
+        />
+      )}
     </Layout>
   )
 }
