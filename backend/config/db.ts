@@ -1,0 +1,23 @@
+
+import mongoose from 'mongoose';
+
+
+const connectDB = async () => {
+    try {
+        const dbURI = process.env.MONGODB_URI.trim();
+        console.log('Attempting to connect to:', dbURI.replace(/:[^:]*@/, ':****@'));
+        
+        const conn = await mongoose.connect(dbURI);
+        console.log(`MongoDB connected: ${conn.connection.host}`);
+       
+       
+        
+    } catch (error) {
+         if (error instanceof Error) {
+        console.log(`Error: ${error.message}`);
+    }
+    
+    }
+};
+
+ export default connectDB
