@@ -44,6 +44,7 @@ if (user.mustChangePassword) {
   return
 }
 
+
 if (user.role === 'hr') {
   navigate('/hr-dashboard')
 } else if (user.role === 'superadmin') {
@@ -51,6 +52,7 @@ if (user.role === 'hr') {
 } else {
   navigate('/dashboard')
 }
+
     } catch (err :unknown) {
       const errorMessage =
         (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
@@ -77,8 +79,7 @@ if (user.role === 'hr') {
           px-12
           relative
           overflow-hidden
-        "
-      >
+        ">
         {/* Subtle radial glow behind SVG — pure Tailwind, no custom CSS */}
         <div className="absolute w-72 h-72 rounded-full bg-yellow-500 opacity-5 blur-3xl top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 

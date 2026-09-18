@@ -6,7 +6,8 @@ import {login} from '../controllers/authcontroller';
 
 router.post('/login',login);
 
-module.exports = router;
+
+export default router
 
 
 
