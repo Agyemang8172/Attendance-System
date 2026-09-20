@@ -1,5 +1,6 @@
-const User = require('../models/User')
-const bcrypt = require('bcrypt')
+import User from '../models/User'
+import bcrypt from 'bcrypt'
+import { Request, Response } from 'express'
 
 
 
@@ -12,7 +13,8 @@ const ADJECTIVES = ['amber','brave','calm','clever','swift','bright','bold','luc
 const NOUNS = ['tiger','river','falcon','maple','cedar','otter','comet','harbor','meadow','willow','ember','pebble','lantern','summit','breeze','canyon','beacon','garnet','quartz','sparrow','badger','marlin','cobra','walrus','pelican','heron','jaguar','panther','dolphin','raven']
 
 const generateTempPassword = () => {
-  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
+  const pick = (arr:string[]) =>
+     arr[Math.floor(Math.random() * arr.length)]
   const digits = Math.floor(1000 + Math.random() * 9000) // 1000–9999
   return `${pick(ADJECTIVES)}-${pick(NOUNS)}-${digits}`
 }
@@ -34,9 +36,11 @@ const generateEmployeeID = async () => {
 
 
 
-  exports.getAllUsers = async (req,res) => {
-    const page =  parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+  export const getAllUsers = async (
+    req: Request,
+    res: Response) => {
+    const page =  parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page-1) * limit;
 
     try {
@@ -56,17 +60,24 @@ const generateEmployeeID = async () => {
        })
        
     } catch(error) {
+       if ( error instanceof Error)  {
         res.status(500).json({
-            message : 'Error  fetching users', error: error.message
+            message : 'Error  fetching users', 
+            error: error.message
+          })
+        }
+        }
+      }
+      
 
-        })
-
-    }
-  }
+    
+  
 
 
-
- exports.getUserById = async (req,res) => {
+ export const getUserById = async (
+  req: Request,
+  res: Response
+) => {
     try{
              const userId = req.params.id
 
@@ -76,13 +87,19 @@ const generateEmployeeID = async () => {
                 return res.status(404).send('User not found')
              }
              res.status(200).json(user)
-    } catch(error) {
-        res.status(500).send('Server Error',error)
-      }
-
+    } catch (error) {
+  if (error instanceof Error) {
+    res.status(500).json({
+      message: 'Server Error',
+      error: error.message
+    })
+  }
+}
 }
 
-exports.createUser = async (req, res) => {
+export const createUser = async (
+req: Request, 
+res: Response) => {
   try {
     const { firstName, lastName, email, department, role } = req.body
 
@@ -107,25 +124,38 @@ exports.createUser = async (req, res) => {
       mustChangePassword: true,
     })
 
-    await newUser.save()
+   await newUser.save()
 
-    const userObject = newUser.toObject()
-    delete userObject.password
+const { password, ...userObject } = newUser.toObject()
 
-    res.status(201).json({
-      success: true,
-      data: userObject,   // includes the generated employeeID
-      tempPassword,       // PLAINTEXT — the only moment it can be read
-    })
+res.status(201).json({
+  success: true,
+  data: userObject,
+  tempPassword,
+})
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(409).json({ success: false, message: 'That email is already taken.' })
+  if (error instanceof Error) {
+    const err = error as Error & { code?: number }
+    if (err.code === 11000) {
+      return res.status(409).json({
+        success: false, 
+        message: 'That email is already taken.'
+      })
     }
-    res.status(500).json({ success: false, message: 'Server error', error: error.message })
+
+
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    })
   }
 }
+}
 
-exports.updateUser = async (req,res) =>
+export const updateUser = async (
+req: Request, 
+res: Response) =>
   {
    try {
       const userId = req.params.id
@@ -152,16 +182,21 @@ exports.updateUser = async (req,res) =>
           res.status(200).json({
             success : true, data : updateUser
           })
-   }  catch (error)   {
-        res.status(500).json({ message : 'update failed', error : error.message})
-   }
-
-      
-
-}
+   }  catch (error) { 
+    if (error instanceof Error) {
+       {
+        res.status(500).json
+        ({ message : 'update failed',
+         error : error.message})
+       
+     }
+  }
+}}
 
   
-  exports.deleteUser = async (req,res)  => {
+  export const deleteUser = async (
+    req: Request, 
+    res: Response)  => {
    try {
            const userId = req.params.id
            const user = await User.findById(userId)
@@ -188,13 +223,21 @@ exports.updateUser = async (req,res) =>
             success: true,
             message : 'User deactivated successfully'
          })
-   }   catch(error)  {
-      res.status(500).json({message : 'delete Failed', error: error.message})
-   }
+   }   catch (error) {
+  if (error instanceof Error) {
+    res.status(500).json({
+      message: 'delete failed',
+      error: error.message
+    })
+  }
+}
   }
 
 
-  exports.changePassword = async (req,res) => {
+  export const changePassword = async (
+    req: Request, 
+   res: Response
+  ) => {
     try { 
        const {currentPassword, newPassword} = req.body 
 
@@ -205,11 +248,24 @@ exports.updateUser = async (req,res) =>
            message : 'Current password and new password are required'
          })
         }
+            if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      })
+    }
 
        const userId = req.user.userId
        const user = await User.findById(userId)
 
-       
+              if (!user) {
+                  return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                  })
+        }
+
+        
        const isPasswordValid = await bcrypt.compare(currentPassword,user.password)
 
         if (!isPasswordValid){
@@ -227,10 +283,24 @@ exports.updateUser = async (req,res) =>
          success : true,
          message:'Password changed successfully'
 
-        })
-    }
-    catch (error)
-    {
-      res.status(500).json({message : 'change Password Failed', error: error.message})
-    }
-  }      
+                  })
+              }
+              catch (error) {
+            if (error instanceof Error) {
+              res.status(500).json({
+                message: 'Change password failed',
+                error: error.message
+              })
+            }
+          }
+          }
+
+
+          export default {
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
+  changePassword
+}
