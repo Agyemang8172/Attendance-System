@@ -1,0 +1,91 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String       @id @default(uuid())
+  employeeCode    String       @unique @map("employee_code")
+  firstName       String       @map("first_name")
+  lastName        String       @map("last_name")
+  email           String       @unique
+  password        String       // hashed password
+  phoneNumber     String?      @map("phone_number")
+  role            Role         @default(STAFF)
+  department      String?
+  jobTitle        String?      @map("job_title")
+  isActive        Boolean      @default(true) @map("is_active")
+  profileImageUrl String?      @map("profile_image_url")
+  mustChangePassword Boolean   @default(true) @map("must_change_password")
+  shiftId         String?      @map("shift_id")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  attendances     Attendance[]
+  shift           Shift?       @relation(fields: [shiftId], references: [id])
+
+  @@index([email])
+  @@index([employeeCode])
+  @@index([department])
+  @@index([isActive])
+  @@map("users")
+}
+
+model Shift {
+  id        String   @id @default(uuid())
+  name      String
+  startTime String   @map("start_time")
+  endTime   String   @map("end_time")
+  createdAt DateTime @default(now()) @map("created_at")
+  users     User[]
+
+  @@map("shifts")
+}
+
+model Attendance {
+  id           String           @id @default(uuid())
+  date         DateTime         @default(now())
+  clockIn      DateTime         @default(now()) @map("clock_in")
+  clockOut     DateTime?        @map("clock_out")
+  status       AttendanceStatus @default(PRESENT)
+  sessionStatus SessionStatus   @default(OPEN) @map("session_status")
+  hoursWorked  Float            @default(0) @map("hours_worked")
+  checkInIp    String?          @map("check_in_ip")
+  checkInLat   Float?           @map("check_in_lat")
+  checkInLng   Float?           @map("check_in_lng")
+  remarks      String?
+  userId       String           @map("user_id")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([date])
+  @@index([sessionStatus])
+  @@index([userId, date])
+  @@map("attendances")
+}
+
+enum Role {
+  SUPERADMIN
+  HR
+  STAFF
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  ON_LEAVE
+}
+
+enum SessionStatus {
+  OPEN
+  CLOSED
+}

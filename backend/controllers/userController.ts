@@ -1,306 +1,377 @@
-import User from '../models/User'
-import bcrypt from 'bcrypt'
-import { Request, Response } from 'express'
-
-
+import bcrypt from "bcrypt";
+import { Request, Response } from "express";
+import prisma from "../config/prismaClient.js";
 
 // ── Account-creation helpers ─────────────────────────────────────────────────
 
-
-// It's single-use — the user is forced to change it on first login — so this
-// modest strength is fine for a short-lived credential.
-const ADJECTIVES = ['amber','brave','calm','clever','swift','bright','bold','lucky','quiet','sunny','royal','noble','keen','warm','cool','eager','gentle','jolly','merry','witty','zesty','prime','vivid','crisp','snug','plucky','dapper','breezy','mellow','rapid']
-const NOUNS = ['tiger','river','falcon','maple','cedar','otter','comet','harbor','meadow','willow','ember','pebble','lantern','summit','breeze','canyon','beacon','garnet','quartz','sparrow','badger','marlin','cobra','walrus','pelican','heron','jaguar','panther','dolphin','raven']
+const ADJECTIVES = ["amber","brave","calm","clever","swift","bright","bold","lucky","quiet","sunny","royal","noble","keen","warm","cool","eager","gentle","jolly","merry","witty","zesty","prime","vivid","crisp","snug","plucky","dapper","breezy","mellow","rapid"];
+const NOUNS = ["tiger","river","falcon","maple","cedar","otter","comet","harbor","meadow","willow","ember","pebble","lantern","summit","breeze","canyon","beacon","garnet","quartz","sparrow","badger","marlin","cobra","walrus","pelican","heron","jaguar","panther","dolphin","raven"];
 
 const generateTempPassword = () => {
-  const pick = (arr:string[]) =>
-     arr[Math.floor(Math.random() * arr.length)]
-  const digits = Math.floor(1000 + Math.random() * 9000) // 1000–9999
-  return `${pick(ADJECTIVES)}-${pick(NOUNS)}-${digits}`
-}
+  const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+  const digits = Math.floor(1000 + Math.random() * 9000);
+  return `${pick(ADJECTIVES)}-${pick(NOUNS)}-${digits}`;
+};
 
-// Next employee ID like EMP-0001. Reads the current highest EMP-#### and adds 1.
-// Zero-padding to 4 digits keeps string order the same as numeric order.
-const generateEmployeeID = async () => {
-  const last = await User.findOne({ employeeID: /^EMP-\d+$/ })
-    .sort({ employeeID: -1 })
-    .select('employeeID')
+const generateEmployeeCode = async () => {
+  const last = await prisma.user.findFirst({
+    where: { employeeCode: { startsWith: "EMP-" } },
+    orderBy: { employeeCode: "desc" },
+    select: { employeeCode: true },
+  });
 
-  let next = 1
-  if (last?.employeeID) {
-    const n = parseInt(last.employeeID.split('-')[1], 10)
-    if (!Number.isNaN(n)) next = n + 1
+  let next = 1;
+  if (last?.employeeCode) {
+    const n = parseInt(last.employeeCode.split("-")[1], 10);
+    if (!Number.isNaN(n)) next = n + 1;
   }
-  return `EMP-${String(next).padStart(4, '0')}`
-}
+  return `EMP-${String(next).padStart(4, "0")}`;
+};
 
+// ── CRUD Controllers ──────────────────────────────────────────────────────────
 
+export const getAllUsers = async (req: Request, res: Response) => {
+  const page = parseInt((req.query.page as string) || "1") || 1;
+  const limit = parseInt((req.query.limit as string) || "10") || 10;
+  const skip = (page - 1) * limit;
+  const search = req.query.search as string | undefined;
+  const department = req.query.department as string | undefined;
+  const role = req.query.role as string | undefined;
+  const isActive = (req.query.isActive as string) !== "false";
 
-  export const getAllUsers = async (
-    req: Request,
-    res: Response) => {
-    const page =  parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = (page-1) * limit;
-
-    try {
-       const Users = await User.find({ isActive : true}).select('-password').sort({createdAt : -1}).skip(skip).limit(limit)
-
-       const totalUser = await User.countDocuments({ isActive : true})
-       const totalPages = Math.ceil(totalUser/limit);
-
-       res.status(200).json({   
-          success : true,
-          data : Users,
-          pagination : {
-            currentPage : page,
-            totalPages: totalPages,
-            totalUsers : totalUser
-          }
-       })
-       
-    } catch(error) {
-       if ( error instanceof Error)  {
-        res.status(500).json({
-            message : 'Error  fetching users', 
-            error: error.message
-          })
-        }
-        }
-      }
-      
-
-    
-  
-
-
- export const getUserById = async (
-  req: Request,
-  res: Response
-) => {
-    try{
-             const userId = req.params.id
-
-             const user = await User.findById(userId).select('-password')
-
-             if (!user) {
-                return res.status(404).send('User not found')
-             }
-             res.status(200).json(user)
-    } catch (error) {
-  if (error instanceof Error) {
-    res.status(500).json({
-      message: 'Server Error',
-      error: error.message
-    })
-  }
-}
-}
-
-export const createUser = async (
-req: Request, 
-res: Response) => {
   try {
-    const { firstName, lastName, email, department, role } = req.body
+    const where: Record<string, unknown> = { isActive };
+
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: "insensitive" } },
+        { lastName: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { employeeCode: { contains: search, mode: "insensitive" } },
+      ];
+    }
+    if (department) where.department = department;
+    if (role) where.role = role;
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: where as any,
+        select: {
+          id: true,
+          employeeCode: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phoneNumber: true,
+          role: true,
+          department: true,
+          jobTitle: true,
+          isActive: true,
+          mustChangePassword: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.user.count({ where: where as any }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: users,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        totalUsers: total,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({
+        message: "Error fetching users",
+        error: error.message,
+      });
+    }
+  }
+};
+
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const userId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        employeeCode: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phoneNumber: true,
+        role: true,
+        department: true,
+        jobTitle: true,
+        isActive: true,
+        mustChangePassword: true,
+        shiftId: true,
+        profileImageUrl: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ success: false, message: "User not found" });
+      return;
+    }
+
+    res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({
+        message: "Server Error",
+        error: error.message,
+      });
+    }
+  }
+};
+
+export const createUser = async (req: Request, res: Response) => {
+  try {
+    const { firstName, lastName, email, department, role, phoneNumber, jobTitle } = req.body;
 
     if (!firstName || !lastName || !email || !department) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
-        message: 'firstName, lastName, email and department are required.',
-      })
+        message: "firstName, lastName, email and department are required.",
+      });
+      return;
     }
 
-    const employeeID = await generateEmployeeID()
-    const tempPassword = generateTempPassword()
+    const employeeCode = await generateEmployeeCode();
+    const tempPassword = generateTempPassword();
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-    const newUser = new User({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim(),
-      department: department.trim(),
-      role: role || 'staff',
-      employeeID,
-      password: tempPassword,        // hashed by your pre-save hook
-      mustChangePassword: true,
-    })
+    const newUser = await prisma.user.create({
+      data: {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        department: department.trim(),
+        role: role || "STAFF",
+        employeeCode,
+        password: hashedPassword,
+        mustChangePassword: true,
+        phoneNumber: phoneNumber?.trim(),
+        jobTitle: jobTitle?.trim(),
+      },
+      select: {
+        id: true,
+        employeeCode: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phoneNumber: true,
+        role: true,
+        department: true,
+        jobTitle: true,
+        isActive: true,
+        mustChangePassword: true,
+        createdAt: true,
+      },
+    });
 
-   await newUser.save()
-
-const { password, ...userObject } = newUser.toObject()
-
-res.status(201).json({
-  success: true,
-  data: userObject,
-  tempPassword,
-})
+    res.status(201).json({
+      success: true,
+      data: newUser,
+      tempPassword,
+    });
   } catch (error) {
-  if (error instanceof Error) {
-    const err = error as Error & { code?: number }
-    if (err.code === 11000) {
-      return res.status(409).json({
-        success: false, 
-        message: 'That email is already taken.'
-      })
-    }
-
-
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    })
-  }
-}
-}
-
-export const updateUser = async (
-req: Request, 
-res: Response) =>
-  {
-   try {
-      const userId = req.params.id
-      const updates = req.body
-
-
-      delete updates.employeeID
-      delete updates.password
-
-
-      const updateUser = await 
-      User.findByIdAndUpdate(
-         userId,
-         updates, {
-            new : true,
-            runValidators : true 
-         }
-      ).select('-password')
-
-          if (!updateUser)    {
-            return res.status(404).json({ message : 'User not found!'})
-          }
-
-          res.status(200).json({
-            success : true, data : updateUser
-          })
-   }  catch (error) { 
     if (error instanceof Error) {
-       {
-        res.status(500).json
-        ({ message : 'update failed',
-         error : error.message})
-       
-     }
-  }
-}}
+      const err = error as Error & { code?: string };
+      if (err.code === "P2002") {
+        res.status(409).json({
+          success: false,
+          message: "That email is already taken.",
+        });
+        return;
+      }
 
-  
-  export const deleteUser = async (
-    req: Request, 
-    res: Response)  => {
-   try {
-           const userId = req.params.id
-           const user = await User.findById(userId)
-
-        if (!user)  {
-         return res.status(404).json({
-            success : false,
-            message : 'User not found'
-         })
-        }
-
-        if (!user.isActive)  {
-
-          return res.status(400).json({
-            success : false,
-            message : 'User already deactivated'
-         })
-        }
-
-         user.isActive = false
-         await user.save()
-            
-         res.status(200).json({
-            success: true,
-            message : 'User deactivated successfully'
-         })
-   }   catch (error) {
-  if (error instanceof Error) {
-    res.status(500).json({
-      message: 'delete failed',
-      error: error.message
-    })
-  }
-}
-  }
-
-
-  export const changePassword = async (
-    req: Request, 
-   res: Response
-  ) => {
-    try { 
-       const {currentPassword, newPassword} = req.body 
-
-
-       if (!currentPassword || !newPassword) {
-         return res.status(400).json({
-           success : false,
-           message : 'Current password and new password are required'
-         })
-        }
-            if (!req.user) {
-      return res.status(401).json({
+      res.status(500).json({
         success: false,
-        message: 'Authentication required'
-      })
+        message: "Server error",
+        error: error.message,
+      });
+    }
+  }
+};
+
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const userId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const updates = req.body;
+
+    // Prevent sensitive field updates
+    delete updates.employeeCode;
+    delete updates.password;
+    delete updates.id;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: updates,
+      select: {
+        id: true,
+        employeeCode: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phoneNumber: true,
+        role: true,
+        department: true,
+        jobTitle: true,
+        isActive: true,
+        mustChangePassword: true,
+        shiftId: true,
+        updatedAt: true,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: updatedUser,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      const prismaError = error as Error & { code?: string };
+      if (prismaError.code === "P2025") {
+        res.status(404).json({ message: "User not found!" });
+        return;
+      }
+      res.status(500).json({
+        message: "Update failed",
+        error: error.message,
+      });
+    }
+  }
+};
+
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const userId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
     }
 
-       const userId = req.user.userId
-       const user = await User.findById(userId)
+    if (!user.isActive) {
+      res.status(400).json({
+        success: false,
+        message: "User already deactivated",
+      });
+      return;
+    }
 
-              if (!user) {
-                  return res.status(404).json({
-                    success: false,
-                    message: 'User not found'
-                  })
-        }
+    await prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+    });
 
-        
-       const isPasswordValid = await bcrypt.compare(currentPassword,user.password)
+    res.status(200).json({
+      success: true,
+      message: "User deactivated successfully",
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({
+        message: "Delete failed",
+        error: error.message,
+      });
+    }
+  }
+};
 
-        if (!isPasswordValid){
-            return res.status(401).json({
-               success : false,
-               message : 'Invalid current password'
-            })
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
 
-        }
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({
+        success: false,
+        message: "Current password and new password are required",
+      });
+      return;
+    }
 
-        user.password = newPassword
-        user.mustChangePassword = false
-        await user.save()
-        return res.status(200).json({
-         success : true,
-         message:'Password changed successfully'
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+      return;
+    }
 
-                  })
-              }
-              catch (error) {
-            if (error instanceof Error) {
-              res.status(500).json({
-                message: 'Change password failed',
-                error: error.message
-              })
-            }
-          }
-          }
+    const userId = req.user.userId;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
 
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
 
-          export default {
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isPasswordValid) {
+      res.status(401).json({
+        success: false,
+        message: "Invalid current password",
+      });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        mustChangePassword: false,
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({
+        message: "Change password failed",
+        error: error.message,
+      });
+    }
+  }
+};
+
+export default {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
-  changePassword
-}
+  changePassword,
+};
