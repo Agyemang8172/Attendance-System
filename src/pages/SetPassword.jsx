@@ -40,7 +40,7 @@ const PasswordField = ({ label, hint, value, onChange, show, onToggle, disabled 
           rounded-lg text-sm text-slate-900
           placeholder-slate-400
           font-sans
-          focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
           disabled:opacity-50 disabled:cursor-not-allowed
           transition duration-150
         "
@@ -53,7 +53,7 @@ const PasswordField = ({ label, hint, value, onChange, show, onToggle, disabled 
           absolute right-3 top-1/2 -translate-y-1/2
           text-slate-400 hover:text-slate-900
           transition duration-150
-          focus:outline-none
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500
         "
       >
         {show ? <FaEyeSlash /> : <FaEye />}
@@ -111,9 +111,9 @@ const SetPassword = () => {
       toast.success('Password set! Welcome to AttendPro.')
 
       // Navigate to the right dashboard based on role.
-      if (user?.role === 'hr') {
+      if (user?.role === 'HR') {
         navigate('/hr-dashboard')
-      } else if (user?.role === 'superadmin') {
+      } else if (user?.role === 'SUPERADMIN') {
         navigate('/superadmin-dashboard')
       } else {
         navigate('/dashboard')
@@ -244,7 +244,7 @@ const SetPassword = () => {
                 text-sm font-semibold font-sans
                 bg-yellow-500 text-slate-900
                 hover:bg-yellow-400
-                focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-stone-50
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-50
                 transition-colors duration-150
                 shadow-sm shadow-yellow-500/20
                 disabled:opacity-50 disabled:cursor-not-allowed

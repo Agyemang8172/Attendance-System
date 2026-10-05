@@ -58,12 +58,12 @@ const buildSessionsChartData = (records) => {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const week = records.filter((r) => new Date(r.date) >= sevenDaysAgo)
   const closed = week.filter(
-    (r) => r.sessionStatus === 'closed' && !isLate(r.clockIn)
+    (r) => r.sessionStatus === 'CLOSED' && !isLate(r.clockIn)
   ).length
   const late = week.filter(
-    (r) => r.sessionStatus === 'closed' && isLate(r.clockIn)
+    (r) => r.sessionStatus === 'CLOSED' && isLate(r.clockIn)
   ).length
-  const open = week.filter((r) => r.sessionStatus === 'open').length
+  const open = week.filter((r) => r.sessionStatus === 'OPEN').length
   return [
     { name: 'Closed', value: closed },
     { name: 'Late', value: late },
@@ -81,26 +81,22 @@ function HrDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-
-
     const fetchAllAttendance = async () => {
-    try {
-      const res = await api.get('/attendance/all-attendance')
-      setRecords(res.data.data || [])
-    } catch (_error) {
-      toast.error('Failed to load attendance records.')
-    } finally {
-      setFetching(false)
+      try {
+        const res = await api.get('/attendance/all-attendance')
+        setRecords(res.data.data || [])
+      } catch (_error) {
+        toast.error('Failed to load attendance records.')
+      } finally {
+        setFetching(false)
+      }
     }
-  }
     fetchAllAttendance()
   }, [])
 
-  
-
   // ── KPIs — today only ──────────────────────────────────────────────────────
   const clockedInToday = records.filter(
-    (r) => isToday(r.date) && r.sessionStatus === 'open'
+    (r) => isToday(r.date) && r.sessionStatus === 'OPEN'
   ).length
 
   const lateToday = records.filter(
@@ -240,9 +236,8 @@ function HrDashboard() {
               text-sm text-slate-200
               placeholder-slate-500
               font-sans
-              focus:outline-none
-              focus:border-yellow-500/50
-              focus:ring-1 focus:ring-yellow-500/30
+              focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500/30
+              focus-visible:border-yellow-500/50
               transition-colors duration-150
             "
           />

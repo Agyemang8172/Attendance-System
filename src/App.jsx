@@ -14,27 +14,27 @@ import SetPassword from './pages/SetPassword'
 
 // ── Route Guards ──────────────────────────────────────────
 
-// Staff only — logged in + role is staff
+// Staff only — logged in + role is STAFF
 const StaffRoute = ({ children }) => {
     const user = getCurrentUser()
     if (!isAuthenticated()) return <Navigate to="/login" />
-    if (user?.role !== 'staff') return <Navigate to="/login" />
+    if (user?.role !== 'STAFF') return <Navigate to="/login" />
     return children
 }
 
-// HR only — logged in + role is hr
+// HR only — logged in + role is HR or SUPERADMIN
 const HrRoute = ({ children }) => {
     const user = getCurrentUser()
     if (!isAuthenticated()) return <Navigate to="/login" />
-   if (user?.role !== 'hr' && user?.role !== 'superadmin') return <Navigate to="/login" />
+   if (user?.role !== 'HR' && user?.role !== 'SUPERADMIN') return <Navigate to="/login" />
     return children
 }
 
-// SuperAdmin only — logged in + role is superadmin
+// SuperAdmin only — logged in + role is SUPERADMIN
 const SuperAdminRoute = ({ children }) => {
     const user = getCurrentUser()
     if (!isAuthenticated()) return <Navigate to="/login" />
-    if (user?.role !== 'superadmin') return <Navigate to="/login" />
+    if (user?.role !== 'SUPERADMIN') return <Navigate to="/login" />
     return children
 }
 

@@ -5,9 +5,6 @@ import toast from 'react-hot-toast'
 
 // ─── EditEmployeeModal ────────────────────────────────────────────────────────
 //
-//  Edit an existing employee's details. Sibling of AddEmployeeModal — same
-//  overlay, same panel, same input classes, different job.
-//
 //  Props:
 //    user      → the employee object being edited (from the table row)
 //    onClose   → () => void · close without saving
@@ -15,18 +12,16 @@ import toast from 'react-hot-toast'
 //                refetches the list
 //
 //  What CAN be edited:    firstName, lastName, email, department, role
-//  What CANNOT be edited: employeeID (stripped by backend), password (own endpoint)
+//  What CANNOT be edited: employeeCode (stripped by backend), password (own endpoint)
 //
 //  Guards:
 //    - Self-role-change blocked: if the logged-in superadmin edits their own
-//      row, the Role dropdown is disabled. They can still edit their own name,
-//      email, department — just not demote themselves.
+//      row, the Role dropdown is disabled.
 //    - "Nothing changed" detection: if all fields match the original, Save
 //      closes the modal without calling the API.
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Module-scope so React doesn't remount on every keystroke.
 const Field = ({ label, ...inputProps }) => (
   <div>
     <label className="block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2 font-sans">
@@ -39,7 +34,7 @@ const Field = ({ label, ...inputProps }) => (
         bg-slate-800 border border-slate-700
         rounded-lg text-sm text-slate-200
         placeholder-slate-500 font-sans
-        focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
         disabled:opacity-50 disabled:cursor-not-allowed
         transition duration-150
       "
@@ -57,7 +52,7 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
     lastName: user.lastName || '',
     email: user.email || '',
     department: user.department || '',
-    role: user.role || 'staff',
+    role: user.role || 'STAFF',
   })
 
   const [submitting, setSubmitting] = useState(false)
@@ -75,7 +70,6 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
   const update = (key) => (e) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }))
   
-
   // Check whether anything actually changed.
   const hasChanges = () => {
     return (
@@ -83,16 +77,13 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
       form.lastName.trim() !== (user.lastName || '') ||
       form.email.trim() !== (user.email || '') ||
       form.department.trim() !== (user.department || '') ||
-      form.role !== (user.role || 'staff')
-
-
+      form.role !== (user.role || 'STAFF')
     )
   }
 
   const handleSubmit = async () => {
     setError('')
 
-    // Validate — same checks as Add, minus password.
     const required = ['firstName', 'lastName', 'email', 'department']
     const missing = required.find((k) => !form[k].trim())
     if (missing) {
@@ -100,7 +91,6 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
       return
     }
 
-    // If nothing changed, just close — no API call, no fake success toast.
     if (!hasChanges()) {
       onClose()
       return
@@ -108,7 +98,7 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
 
     setSubmitting(true)
     try {
-      await api.put(`/users/${user._id}`, {
+      await api.put(`/users/${user.id}`, {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         email: form.email.trim(),
@@ -120,7 +110,7 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
       onClose()
     } catch (err) {
       const raw = err.response?.data?.error || err.response?.data?.message || ''
-      const friendly = /duplicate|E11000/i.test(raw)
+      const friendly = /duplicate|E11000|P2002/i.test(raw)
         ? 'That email is already taken.'
         : raw || 'Failed to update employee.'
       setError(friendly)
@@ -159,9 +149,9 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
             {user.firstName} {user.lastName}
           </span>
         </p>
-        {user.employeeID && (
+        {user.employeeCode && (
           <p className="text-slate-500 text-xs font-mono mb-6">
-            {user.employeeID}
+            {user.employeeCode}
           </p>
         )}
 
@@ -215,14 +205,14 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
                 w-full px-4 py-3
                 bg-slate-800 border border-slate-700
                 rounded-lg text-sm text-slate-200 font-sans
-                focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
                 disabled:opacity-50 disabled:cursor-not-allowed
                 transition duration-150
               "
             >
-              <option value="staff">Staff</option>
-              <option value="hr">HR</option>
-              <option value="superadmin">Superadmin</option>
+              <option value="STAFF">Staff</option>
+              <option value="HR">HR</option>
+              <option value="SUPERADMIN">Superadmin</option>
             </select>
             {isEditingSelf && (
               <p className="text-slate-500 text-xs font-sans mt-1">

@@ -1,70 +1,68 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { logout, getCurrentUser } from '../utils/auth'
-import  { Roles }  from '../types'
+import type { Role } from '../types'
 import { FaHome, FaUser, FaUsers } from 'react-icons/fa'
 import { SlCalender } from 'react-icons/sl'
 import { FaGear } from 'react-icons/fa6'
 import { CiLogout } from 'react-icons/ci'
-import {  FaUsersGear } from 'react-icons/fa6'
-import {ReactNode} from 'react'
-
+import { FaUsersGear } from 'react-icons/fa6'
+import { ReactNode } from 'react'
 
 interface NavItem {
-  label:string,
-  path: String,
-  icon:ReactNode,
-  roles:Role[]
+  label: string
+  path: string
+  icon: ReactNode
+  roles: Role[]
 }
 
 interface SidebarProps {
   isOpen: boolean
-  onClose: () => void    // a function that takes no args and returns nothing
+  onClose: () => void
 }
 
-const allNavItems = [
+const allNavItems: NavItem[] = [
   {
     label: 'Dashboard',
     path: '/dashboard',
     icon: <FaHome />,
-    roles: ['staff'],
+    roles: ['STAFF'],
   },
   {
     label: 'HR Dashboard',
     path: '/hr-dashboard',
     icon: <FaUsers />,
-    roles: ['hr', 'superadmin'],
+    roles: ['HR', 'SUPERADMIN'],
   },
   {
     label: 'My Profile',
     path: '/profile',
     icon: <FaUser />,
-    roles: ['staff'],
+    roles: ['STAFF', 'HR', 'SUPERADMIN'],
   },
   {
     label: 'My Schedule',
     path: '/schedule',
     icon: <SlCalender />,
-    roles: ['staff'],
+    roles: ['STAFF'],
   },
   {
     label: 'Settings',
     path: '/settings',
     icon: <FaGear />,
-    roles: ['staff', 'hr', 'superadmin'],
+    roles: ['STAFF', 'HR', 'SUPERADMIN'],
   },
-
   {
     label: 'Manage Staff',
     path: '/manage-staff',
     icon: <FaUsersGear />,
-    roles: ['superadmin'],
+    roles: ['SUPERADMIN'],
   },
 ]
 
 const roleLabel: Record<Role, string> = {
-  staff: 'Staff',
-  hr: 'HR Manager',
-  superadmin: 'Super Admin',
+  STAFF: 'Staff',
+  HR: 'HR Manager',
+  SUPERADMIN: 'Super Admin',
 }
 
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
@@ -73,7 +71,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const currentUser = getCurrentUser()
 
   const allowedNavItems = allNavItems.filter((item) =>
-    item.roles.includes(currentUser?.role)
+    item.roles.includes(currentUser?.role as Role)
   )
 
   const initials = [currentUser?.firstName, currentUser?.lastName]
@@ -174,7 +172,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                 {currentUser?.firstName} {currentUser?.lastName}
               </span>
               <span className="text-xs text-slate-500 mt-0.5 font-sans">
-                {roleLabel[currentUser?.role] || currentUser?.role}
+                {roleLabel[currentUser?.role as Role] || currentUser?.role}
               </span>
             </div>
           </div>

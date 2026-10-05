@@ -25,8 +25,8 @@ const PasswordField = ({ label, value, onChange, show, onToggle, disabled }) => 
           rounded-lg text-sm text-slate-200
           placeholder-slate-600
           font-sans
-          focus:outline-none focus:border-yellow-500/50
-          focus:ring-1 focus:ring-yellow-500/30
+          focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500/30
+          focus-visible:border-yellow-500/50
           disabled:opacity-50 disabled:cursor-not-allowed
           transition-colors duration-150
         "
@@ -35,7 +35,7 @@ const PasswordField = ({ label, value, onChange, show, onToggle, disabled }) => 
         type="button"
         onClick={onToggle}
         tabIndex={-1}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-yellow-500 transition-colors text-sm focus:outline-none"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-yellow-500 transition-colors text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500"
       >
         {show ? <FaEyeSlash /> : <FaEye />}
       </button>

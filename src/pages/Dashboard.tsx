@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
@@ -40,18 +40,14 @@ function Dashboard() {
   const [clockLoading, setClockLoading] = useState(false)
   const [fetching, setFetching]       = useState(true)
 
-  useEffect(() => {
-    fetchAttendance()
-  }, [])
-
   // ── Fetch attendance + derive clock state ──────────────────────────────────
-  const fetchAttendance = async () => {
+  const fetchAttendance = useCallback(async () => {
     try {
       const res  = await api.get('/attendance/my-attendance')
       const data = res.data.data || []
       setRecords(data)
 
-      const openSession = data.find((r) => r.sessionStatus === 'open')
+      const openSession = data.find((r) => r.sessionStatus === 'OPEN')
       setIsClockedIn(!!openSession)
 
       // Auto clock-out alert (fires when backend adds these fields — safe to run now)
@@ -66,14 +62,18 @@ function Dashboard() {
           `You forgot to clock out on ${date}. The system clocked you out at 11:59 PM. Please review your record.`,
           { icon: '⚠️', duration: 7000 }
         )
-        try { await api.patch(`/attendance/${r._id}/dismiss-alert`) } catch (_) {}
+        try { await api.patch(`/attendance/${r.id}/dismiss-alert`) } catch (_) {}
       })
     } catch {
       toast.error('Failed to load attendance records.')
     } finally {
       setFetching(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchAttendance()
+  }, [fetchAttendance])
 
   // ── Clock In ───────────────────────────────────────────────────────────────
   const handleClockIn = async () => {
@@ -117,7 +117,7 @@ function Dashboard() {
 
   // 2. Streak — consecutive closed sessions going backwards from today
   const sortedClosed = [...records]
-    .filter((r) => r.sessionStatus === 'closed')
+    .filter((r) => r.sessionStatus === 'CLOSED')
     .sort((a, b) => new Date(b.date) - new Date(a.date))
 
   let streak = 0
@@ -143,7 +143,7 @@ function Dashboard() {
   const now          = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const closedThisMonth = records.filter(
-    (r) => r.sessionStatus === 'closed' && new Date(r.date) >= startOfMonth
+    (r) => r.sessionStatus === 'CLOSED' && new Date(r.date) >= startOfMonth
   ).length
   const attendanceRate =
     closedThisMonth > 0

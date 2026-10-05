@@ -78,7 +78,7 @@ const ManageStaff = () => {
     if (!pendingUser) return
     setDeactivating(true)
     try {
-      await api.delete(`/users/${pendingUser._id}`)
+      await api.delete(`/users/${pendingUser.id}`)
       toast.success(`${pendingUser.firstName || 'Employee'} deactivated.`)
       setPendingUser(null)
       // Refetch the current page so the list reflects the change.

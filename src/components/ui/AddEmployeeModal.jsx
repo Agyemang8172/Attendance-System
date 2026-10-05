@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 //
 //    STEP 1 (form):   admin types name, email, department, role.
 //                     No employee ID, no password — the backend generates both.
-//    STEP 2 (reveal): the popup shows the generated Employee ID and the
+//    STEP 2 (reveal): the popup shows the generated Employee Code and the
 //                     temporary password ONCE, with copy buttons, so the admin
 //                     can hand them to the new employee.
 //
@@ -25,16 +25,11 @@ import toast from 'react-hot-toast'
 //    On success (201), the response must be:
 //      {
 //        success: true,
-//        data: { _id, employeeID, firstName, lastName, email, department, role },
+//        data: { id, employeeCode, firstName, lastName, email, department, role },
 //        tempPassword: "amber-tiger-42"
 //      }
-//    i.e. createUser generates employeeID + tempPassword, sets
-//    mustChangePassword: true on the user, and returns the plaintext
-//    tempPassword in this one response (it's hashed in the DB and unrecoverable
-//    after this).
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Defined at module scope so typing doesn't lose focus (see earlier note).
 const Field = ({ label, ...inputProps }) => (
   <div>
     <label className="block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2 font-sans">
@@ -47,7 +42,7 @@ const Field = ({ label, ...inputProps }) => (
         bg-slate-800 border border-slate-700
         rounded-lg text-sm text-slate-200
         placeholder-slate-500 font-sans
-        focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
         disabled:opacity-50 disabled:cursor-not-allowed
         transition duration-150
       "
@@ -55,10 +50,8 @@ const Field = ({ label, ...inputProps }) => (
   </div>
 )
 
-// A labelled value with a Copy button — used on the reveal step.
 const CopyRow = ({ label, value }) => {
   const [copied, setCopied] = useState(false)
-  
 
   const copy = async () => {
     try {
@@ -66,8 +59,7 @@ const CopyRow = ({ label, value }) => {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch {
-      // Clipboard API can fail on non-HTTPS origins — fail quietly; the value
-      // is still visible on screen to copy by hand.
+      // Clipboard API can fail on non-HTTPS origins — fail quietly
     }
   }
 
@@ -89,27 +81,21 @@ const CopyRow = ({ label, value }) => {
   )
 }
 
-
-
-
 const AddEmployeeModal = ({ onClose, onCreated }) => {
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
     department: '',
-    role: 'staff',
+    role: 'STAFF',
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-   const [copiedAll, setCopiedAll] = useState(false)
 
   // When set, we switch from the form to the reveal screen.
-  // Shape: { name, employeeID, tempPassword }
   const [created, setCreated] = useState(null)
 
-  // Escape closes the popup — but ONLY on the form step. Once the credentials
-  // are showing, Escape is disabled so the admin can't lose them by accident.
+  // Escape closes the popup — but ONLY on the form step
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape' && !created) onClose()
@@ -144,13 +130,13 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
       const data = res.data?.data || {}
       setCreated({
         name: `${form.firstName} ${form.lastName}`.trim(),
-          email: form.email.trim(),
-           employeeID: data.employeeID || '—',
+        email: form.email.trim(),
+        employeeCode: data.employeeCode || '—',
         tempPassword: res.data?.tempPassword || null,
       })
     } catch (err) {
       const raw = err.response?.data?.error || err.response?.data?.message || ''
-      const friendly = /duplicate|E11000/i.test(raw)
+      const friendly = /duplicate|E11000|P2002/i.test(raw)
         ? 'That email is already taken.'
         : raw || 'Failed to create employee. Please try again.'
       setError(friendly)
@@ -192,11 +178,11 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
             </h2>
             <p className="text-slate-400 text-sm font-sans mb-6">
               Give {created.name.split(' ')[0]} their email and temporary password — that's
-what they log in with. They'll set their own password on first login.
+              what they log in with. They'll set their own password on first login.
             </p>
 
             <div className="space-y-4">
-                <CopyRow label="Email" value={created.email} />
+              <CopyRow label="Email" value={created.email} />
               {created.tempPassword ? (
                 <CopyRow label="Temporary Password" value={created.tempPassword} />
               ) : (
@@ -205,8 +191,8 @@ what they log in with. They'll set their own password on first login.
                   createUser returns a <span className="font-mono">tempPassword</span> field.
                 </p>
               )}
-              <CopyRow label="Employee ID (for reference)" value={created.employeeID} />
-              </div>
+              <CopyRow label="Employee Code (for reference)" value={created.employeeCode} />
+            </div>
 
             <p className="text-slate-500 text-xs font-sans mt-6">
               This is the only time the temporary password is shown — copy it now.
@@ -277,14 +263,14 @@ what they log in with. They'll set their own password on first login.
                     w-full px-4 py-3
                     bg-slate-800 border border-slate-700
                     rounded-lg text-sm text-slate-200 font-sans
-                    focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
                     disabled:opacity-50 disabled:cursor-not-allowed
                     transition duration-150
                   "
                 >
-                  <option value="staff">Staff</option>
-                  <option value="hr">HR</option>
-                  <option value="superadmin">Superadmin</option>
+                  <option value="STAFF">Staff</option>
+                  <option value="HR">HR</option>
+                  <option value="SUPERADMIN">Superadmin</option>
                 </select>
               </div>
 

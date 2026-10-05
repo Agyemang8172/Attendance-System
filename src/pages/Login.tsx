@@ -45,9 +45,9 @@ if (user.mustChangePassword) {
 }
 
 
-if (user.role === 'hr') {
+if (user.role === 'HR') {
   navigate('/hr-dashboard')
-} else if (user.role === 'superadmin') {
+} else if (user.role === 'SUPERADMIN') {
   navigate('/superadmin-dashboard')
 } else {
   navigate('/dashboard')
@@ -210,7 +210,7 @@ if (user.role === 'hr') {
                   rounded-lg text-sm text-slate-900
                   placeholder-slate-400
                   font-sans
-                  focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
                   disabled:opacity-50 disabled:cursor-not-allowed
                   transition duration-150
                 "
@@ -240,7 +240,7 @@ if (user.role === 'hr') {
                     rounded-lg text-sm text-slate-900
                     placeholder-slate-400
                     font-sans
-                    focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
                     disabled:opacity-50 disabled:cursor-not-allowed
                     transition duration-150
                   "
@@ -254,7 +254,7 @@ if (user.role === 'hr') {
                     absolute right-3 top-1/2 -translate-y-1/2
                     text-slate-400 hover:text-slate-900
                     transition duration-150
-                    focus:outline-none
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500
                   "
                   tabIndex={-1}
                 >

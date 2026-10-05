@@ -1,11 +1,11 @@
-// The three roles in AttendPro — must be exactly one of these three strings, nothing else
-export type Role = 'staff' | 'hr' | 'superadmin'
+// The three roles in AttendPro (uppercase to match Prisma enum)
+export type Role = 'STAFF' | 'HR' | 'SUPERADMIN'
 
-// A session can only be open or closed
-export type SessionStatus = 'open' | 'closed'
+// A session can only be open or closed (uppercase to match Prisma enum)
+export type SessionStatus = 'OPEN' | 'CLOSED'
 
-// Attendance status options
-export type AttendanceStatus = 'present' | 'late' | 'absent'
+// Attendance status options (uppercase to match Prisma enum)
+export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT' | 'HALF_DAY' | 'ON_LEAVE'
 
 // The user object stored in localStorage after login
 // This is what getCurrentUser() returns
@@ -16,19 +16,21 @@ export interface AuthUser {
   lastName: string
   role: Role
   mustChangePassword: boolean
-  employeeID?: string        // optional — not always present
-  department?: string        // optional — not always present
+  employeeCode?: string
+  department?: string
 }
 
-// A full user object from the /users endpoint (superadmin sees these)
+// A full user object from the /users endpoint
 export interface StaffUser {
-  _id: string
+  id: string
+  employeeCode: string
   firstName: string
   lastName: string
   email: string
   department: string
   role: Role
-  employeeID: string
+  phoneNumber?: string
+  jobTitle?: string
   isActive: boolean
   mustChangePassword: boolean
   createdAt: string
@@ -37,17 +39,29 @@ export interface StaffUser {
 
 // One attendance record from the API
 export interface AttendanceRecord {
-  _id: string
-  user: StaffUser | null     // null means the employee was deleted — show "Former Employee"
-  clockIn: string            // ISO date string
-  clockOut?: string          // optional — open sessions have no clockOut yet
-  date: string               // ISO date string
+  id: string
+  user?: {
+    id: string
+    firstName: string
+    lastName: string
+    employeeCode: string
+    department?: string
+    role?: string
+  } | null
+  clockIn: string
+  clockOut?: string | null
+  date: string
   status: AttendanceStatus
   sessionStatus: SessionStatus
   hoursWorked: number
-  notes?: string
-  autoClosedOut?: boolean    // backend flag for auto clock-out
-  alertDismissed?: boolean   // backend flag for dismissed alert
+  checkInIp?: string
+  checkInLat?: number
+  checkInLng?: number
+  remarks?: string | null
+  createdAt: string
+  updatedAt: string
+  autoClosedOut?: boolean
+  alertDismissed?: boolean
 }
 
 // What the login API sends back on success
@@ -92,3 +106,22 @@ export interface SessionChartPoint {
 
 // KpiCard color options
 export type ColorScheme = 'blue' | 'gold' | 'green' | 'red'
+
+// Generic paginated response
+export interface PaginatedResponse<T> {
+  success: boolean
+  count: number
+  total: number
+  page: number
+  data: T[]
+}
+
+// Generic API list response (for users)
+export interface ListResponse<T> {
+  success: boolean
+  data: T[]
+  pagination: Pagination
+}
+
+// Attendance list response
+export type AttendanceListResponse = PaginatedResponse<AttendanceRecord>

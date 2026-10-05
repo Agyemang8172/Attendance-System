@@ -18,23 +18,12 @@ const isEarlyBird = (clockInStr) => {
 }
 
 const roleLabel = {
-  staff: 'Staff',
-  hr: 'HR Manager',
-  superadmin: 'Super Admin',
+  STAFF: 'Staff',
+  HR: 'HR Manager',
+  SUPERADMIN: 'Super Admin',
 }
 
 // ─── Badge Definitions ────────────────────────────────────────────────────────
-//
-//  Each badge:
-//    emoji       → display icon
-//    name        → badge title
-//    description → what it means (shown when earned)
-//    hint        → how to earn it (shown when locked)
-//    check()     → function that receives records[], returns bool
-//    earned styles
-//    locked styles
-//
-// ─────────────────────────────────────────────────────────────────────────────
 
 const BADGES = [
   {
@@ -46,7 +35,7 @@ const BADGES = [
     check: (records) => {
       let count = 0
       for (const r of records) {
-        if (r.sessionStatus !== 'closed') break
+        if (r.sessionStatus !== 'CLOSED') break
         if (isLate(r.clockIn)) break
         count++
       }
@@ -65,7 +54,7 @@ const BADGES = [
     hint: 'Clock in before 06:00 at least once.',
     check: (records) =>
       records.some(
-        (r) => r.clockIn && r.sessionStatus === 'closed' && isEarlyBird(r.clockIn)
+        (r) => r.clockIn && r.sessionStatus === 'CLOSED' && isEarlyBird(r.clockIn)
       ),
     earnedCard: 'bg-yellow-500/10 border-yellow-500/20',
     earnedEmoji: '',
@@ -83,7 +72,7 @@ const BADGES = [
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
       const thisMonth = records.filter(
         (r) =>
-          r.sessionStatus === 'closed' && new Date(r.date) >= startOfMonth
+          r.sessionStatus === 'CLOSED' && new Date(r.date) >= startOfMonth
       )
       if (thisMonth.length === 0) return false
       return thisMonth.every((r) => !isLate(r.clockIn))
@@ -100,7 +89,7 @@ const BADGES = [
     description: '30+ sessions completed.',
     hint: 'Complete 30 or more closed sessions.',
     check: (records) =>
-      records.filter((r) => r.sessionStatus === 'closed').length >= 30,
+      records.filter((r) => r.sessionStatus === 'CLOSED').length >= 30,
     earnedCard: 'bg-amber-500/10 border-amber-500/20',
     earnedEmoji: '',
     earnedText: 'text-amber-400',
@@ -260,7 +249,7 @@ function Profile() {
         <div className="h-px bg-yellow-500/10 mb-6" />
 
         {/* Info rows */}
-        <InfoRow label="Employee ID" value={user?.employeeID || '--'} mono />
+        <InfoRow label="Employee ID" value={user?.employeeCode || '--'} mono />
         <InfoRow label="Email" value={user?.email} last />
       </div>
 
