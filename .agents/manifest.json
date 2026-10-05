@@ -1,0 +1,12 @@
+{
+  "version": "4.3.0",
+  "platform": "opencode",
+  "installedPacks": [
+    "core"
+  ],
+  "hooksEnabled": true,
+  "telemetry": "on",
+  "mode": "interactive",
+  "goal": null,
+  "updatedAt": "2026-10-01T16:56:37.199Z"
+}
