@@ -45,7 +45,6 @@ async function main() {
   const shifts = [
     { id: "shift-morning", name: "Morning", startTime: "06:00", endTime: "14:00" },
     { id: "shift-afternoon", name: "Afternoon", startTime: "14:00", endTime: "22:00" },
-    { id: "shift-night", name: "Night", startTime: "22:00", endTime: "06:00" },
   ];
 
   const createdShifts = [];
