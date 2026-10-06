@@ -131,7 +131,7 @@ Tokens are held in `localStorage` under `token` and `user`. `utils/auth.ts` expo
 
 **Performance.** Sign-in and attendance reads should return within 300 ms under local conditions. Pagination defaults keep response sizes bounded: 10 rows for users, 50 for attendance.
 
-**Security.** Each admin route declares its allowed roles. Passwords are hashed and never logged. Secrets come from environment variables and `.env` is excluded from version control. Gitleaks, environment parity, migration safety, UI taste, and humanizer checks run before every commit.
+**Security.** Each admin route declares its allowed roles. Passwords are hashed and never logged. Secrets come from environment variables and `.env` is excluded from version control. Gitleaks, environment parity, migration safety, UI taste, and humanizer checks run before every commit. A pre-push gate scans the commits actually being pushed, because the pre-commit gate only sees the staged diff and would miss a secret arriving through rebase, merge, amend, or a branch cut from an old commit. Legacy findings live in `.gitleaks-baseline` so they cannot block a push while new ones still can.
 
 **Compatibility.** The backend must run on Node 23 with the Prisma driver adapter. The native and binary engines do not start on that version, and the generated client is imported directly from `../generated/prisma` rather than through the `@prisma/client` wrapper. Both constraints apply in continuous integration.
 
@@ -156,6 +156,7 @@ Tokens are held in `localStorage` under `token` and `user`. `utils/auth.ts` expo
 | Client-side logout only | `utils/auth.ts` | No refresh-token rotation exists, so a server-side denylist adds nothing |
 | Alert state written into `remarks` | `attendanceController.dismissAlert` | No dedicated column exists; see section 10 |
 | Two shifts, Morning and Afternoon | `backend/prisma/seed.ts` | Product decision recorded in section 12 |
+| Pre-push commit scan with a legacy baseline | `.agents/scripts/pre-push-gate.sh`, `.gitleaks-baseline` | The pre-commit diff scan missed a live credential; see section 14 |
 | Hosted database and deploy target | Section 12 | Product decisions recorded below |
 
 ## 10. Known Issues
@@ -195,7 +196,7 @@ These are defects found during the scan. They are recorded here so the Orchestra
 | 9 | Auto-close job | No scheduler; sessions left open stay open and the dashboard reminder never fires | Scheduled close with `autoClosedOut` and `alertDismissed` returned by the API | feature slice F |
 | 10 | Test guide | Absent | `docs/TESTING_GUIDE.md` with walkthroughs and seed accounts | testing-guide |
 | 11 | QA | Waiting on `DESIGN.md` | Design gate and standards audit completed | qa |
-| 12 | Security | Gitleaks clean, role checks verified; older MongoDB credentials remain in git history and are not release-blocking | History purged and rotation recorded in the OWASP review | security |
+| 12 | Security | Pre-push gate installed and verified; leaked Atlas credentials and `JWT_SECRET` redacted at HEAD but still present in history | Atlas password rotated by the Owner; rotation recorded in the OWASP review; history rewrite decided | security |
 | 13 | Continuous integration | None | Pipeline runs build plus the five gates and applies migrations | release |
 | 14 | Deployment | Local only | Prisma Postgres as the hosted database, frontend and API on Vercel | release |
 
@@ -211,6 +212,8 @@ Recorded from the Owner on 2026-10-05.
 | Logout endpoint and password-reset flow | Out of scope for now. The Owner is not certain and wants it revisited. |
 | Does rotating the leaked MongoDB credentials block release? | No. It is tracked under security but does not gate a release. |
 | Who signs off at human checkpoints | The Owner |
+| History rewrite for the leaked credentials | Not authorised. It requires a force-push, which the project constraints ban. Revisit only if the Owner approves it explicitly. |
+| Who rotates the MongoDB Atlas password | The Owner, in the Atlas UI. Agents never touch database credentials. |
 
 ### Build sequencing
 
@@ -234,6 +237,29 @@ Resolved on 2026-10-05 and recorded in sections 10, 11, and 12: the `shift-night
 - [ ] Issue 6, the hardcoded 06:30 late threshold: should it read the assigned shift's start time from the database, or be removed entirely?
 - [ ] Confirm whether `/manage-staff` gains shift assignment inside its existing modals, or shifts get their own route.
 - [ ] Confirm that issue 6 blocks no slice and can be scheduled after slice F.
+
+## 14. Security Incident Record
+
+Two live credentials were committed in `7c9fc2a` and pushed to the remote on 2026-10-05. GitHub secret scanning raised an alert against `AUDIT_REPORT.md`.
+
+**What leaked.** A MongoDB Atlas connection string carrying a username and password, and the application `JWT_SECRET`, both written verbatim into the audit report as evidence of an earlier finding.
+
+**Why the gate missed it.** Every commit passed the pre-commit gitleaks scan. A control test shows gitleaks 8.30.1 returns a clean result when fed that exact connection-string line, while it correctly flags an AWS example key piped the same way. The default ruleset has no rule for this pattern; GitHub's scanner does.
+
+**The process failure.** A manual grep did find `mongodb+srv` in the file before staging. The host was checked against a pattern that expected a `cluster0.`-style prefix, and this cluster does not use one, so the line was recorded as a placeholder. A test too narrow to prove the claim was treated as if it had. A full-history scan, which takes about 28 seconds, was run for the first time only after the alert.
+
+**Remediation.**
+
+| Step | Status |
+|---|---|
+| Credentials redacted at HEAD | Done in `5de3f2b` |
+| Pre-push gate scanning the commits being pushed | Done, four scenarios verified |
+| `.gitleaks-baseline` for the three legacy findings | Done |
+| Working tree swept for other copies of the two secrets | Done, none remain |
+| Rotate the Atlas password in MongoDB Atlas | Open, Owner action, not release-blocking |
+| Rewrite git history | Not authorised; needs explicit approval and a force-push |
+
+**Residual risk.** The redacted values remain readable in history. The live `.env` no longer uses either of them: the database is local Prisma Postgres and `JWT_SECRET` was already changed. The Atlas-side password is the only value still worth something, and rotating it makes the whole incident inert.
 
 ---
 *Approved by [Human Name] on [Date]*
