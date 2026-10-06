@@ -185,8 +185,8 @@ These are defects found during the scan. They are recorded here so the Orchestra
 
 | # | Area | Current state | Future state | Dev-OS stage |
 |---|---|---|---|---|
-| 1 | Requirements | This document | Approved by the Owner | inception |
-| 2 | Design | No root `DESIGN.md`; frontend work is gated | Root `DESIGN.md` with archetype tokens | design |
+| 1 | Requirements | This document | **Complete 2026-10-06:** approved by the Owner | inception |
+| 2 | Design | **Complete 2026-10-06:** root `DESIGN.md` written, QA-approved over three rounds, Owner-signed | Archetype tokens and gate rules in force | design |
 | 3 | Task tracking | `TASK_BOARD.md` and `CURRENT_STATE.md` still report branch `main` and an unprovisioned database | Board reflects the applied migration, seeded data, and the current branch | tasks |
 | 4 | Seed data | Three shifts including Night | Two shifts, Morning and Afternoon. Complete. | implementation |
 | 5 | Backend | Working, verified at 13 of 13 checks | Covered by automated tests | implementation, tests |
@@ -282,4 +282,4 @@ Two live credentials were committed in `7c9fc2a` and pushed to the remote on 202
 **Residual risk.** The redacted values remain readable in history. The live `.env` no longer uses either of them: the database is local Prisma Postgres and `JWT_SECRET` was already changed. The Atlas-side password is the only value still worth something, and rotating it makes the whole incident inert.
 
 ---
-*Approved by [Human Name] on [Date]*
+*Approved by the Owner on 2026-10-06*
