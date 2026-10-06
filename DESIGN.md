@@ -23,7 +23,7 @@ The earlier draft of this table described surfaces the code does not use. Every 
 | Page | `slate-50` | `body` background in `src/index.css` |
 | Chrome | `slate-900` | Sidebar root, chart cards, both attendance tables |
 | Raised chrome | `slate-800` | Table header rows, form inputs on dark panels |
-| Light card | `white` | `KpiCard` root, the status pill at `Dashboard.tsx:184` |
+| Light card | `white` | `KpiCard` root, the status pill at `Dashboard.tsx:184`, the loading empty-state card at `Dashboard.tsx:272` |
 | Tinted light card | `blue-50`, `green-50`, `yellow-50`, `red-50` | `KpiCard` wells (`KpiCard.jsx:10-13`, default scheme is gold), the error bar `Login.tsx:164`, red notices `Dashboard.tsx:201` and `ManageStaff.jsx:227`, and gold hover states `ManageStaff.jsx:160,174` |
 | Auth page | `stone-50` | `Login.tsx:125`, `SetPassword.jsx:172`, `ErrorBoundary.jsx:33` |
 | Auth input | `stone-100` | `Login.tsx:208,238`, `SetPassword.jsx:38` |
@@ -42,7 +42,7 @@ Density is high on purpose. Rows are compact, metadata sits beside its value, an
 |---|---|---|
 | `--canvas` | `#f8fafc` | Light page background |
 | `--surface` | `#ffffff` | Light cards and pills |
-| `--chrome` | `#0f172a` | Sidebar, chart cards, data tables |
+| `--chrome` | `#0f172a` | Sidebar, chart cards, data tables, profile and settings panels |
 | `--chrome-raised` | `#1e293b` | Inputs and header rows on chrome |
 | `--ink` | `#0f172a` | Primary text on light |
 | `--ink-muted` | `#64748b` | Secondary text on light |
@@ -52,7 +52,7 @@ Density is high on purpose. Rows are compact, metadata sits beside its value, an
 | `--auth-canvas` | `#fafaf9` (`stone-50`) | Auth and error pages: `Login.tsx:125`, `SetPassword.jsx:172`, `ErrorBoundary.jsx:33` |
 | `--auth-input` | `#f5f5f4` (`stone-100`) | Auth inputs: `Login.tsx:208,238`, `SetPassword.jsx:38` |
 
-The auth pair is deliberately `stone`, not `slate`. `--auth-canvas` differs from `--canvas` by one step of green, which is invisible to the eye but not to a contrast ratio, so the two are separate tokens rather than an alias.
+The auth pair is deliberately `stone`, not `slate`. The two are near-identical in luminance but not in temperature: `stone-50` (250,249,249) is warm and `slate-50` (248,250,252) cool, differing mainly in the blue channel by 3 points. `ink` on `stone-50` measures 16.99:1 against 17.06:1 on `slate-50` — a 0.07 difference, so the contrast outcome barely moves. Separate tokens are justified by provenance, not by ratio: swapping one for the other silently changes the background every auth measurement was taken against.
 
 Tokens are declared here only. `src/index.css` has no `:root` variables and `tailwind.config.js` declares nothing but `fontFamily`, so today there is no mapping from a token to a utility. Section 8 makes choosing that mechanism a prerequisite for code.
 
@@ -66,7 +66,7 @@ Yellow reads differently against dark and light, so each surface gets its own to
 | `--accent-strong` | `#b45309` (`amber-700`) | on `canvas` | 4.80:1 | AA pass |
 | `--accent-strong` | `#b45309` (`amber-700`) | on `surface` | 5.02:1 | AA pass |
 
-`yellow-500` on `slate-50` measures 1.83:1 and `yellow-600` measures 2.81:1. Both fail. On light surfaces the accent is `amber-700`, always.
+`yellow-500` on `slate-50` measures 1.83:1 and `yellow-600` measures 2.81:1. Both fail. On light surfaces the accent colour is `amber-700`. The one exception is destructive text, which uses `red-700` rather than an amber tint — see the semantic states table below.
 
 The rule has a third case, found in round 2. `amber-700` on `slate-900` measures **3.56:1** and on `slate-800` **2.91:1** — both below 4.5:1. Because the profile and settings cards are `slate-900`, accent text there cannot simply become `amber-700`. The complete rule is: on `chrome` and on `slate-900`/`slate-800` cards use `yellow-500` (9.31:1 on `slate-900`); on `--canvas`, `--surface`, and the tinted wells use `amber-700`; on `--auth-canvas` and `--auth-input` use `amber-700` or `red-700`, measured against `stone`.
 
@@ -81,7 +81,7 @@ The first column is measured against its real background in shipping code. The s
 | | Pair | Ratio | Pair | Ratio |
 | Success | `green-500` on `green-50` (KPI well) | **2.18:1 FAIL** | `green-700` on `green-50` | 4.79:1 pass |
 | Success | `green-500` dot on `white` (Dashboard) | **2.28:1 FAIL** | `green-700` on `white` | pass |
-| Warning | `yellow-500` on `slate-900` | 9.31:1 pass | `amber-700` on `slate-900` | **3.56:1 FAIL** — see accent rule above |
+| Warning | `yellow-500` on `slate-900` | 9.31:1 pass | `amber-700` on `slate-900` | **prohibited — see accent rule below** (3.56:1) |
 | Warning | `yellow-500` on `yellow-50` (KPI gold well, the default scheme) | **1.85:1 FAIL** | `amber-700` on `yellow-50` | pass |
 | Warning | `yellow-600` on `yellow-50` hover (ManageStaff) | **2.84:1 FAIL** | `amber-700` on `yellow-50` | pass |
 | Destructive | `red-500` on `red-50` (KPI well) | 3.44:1 pass (graphic) | `red-700` on `red-50` | 5.91:1 |
@@ -127,7 +127,7 @@ Rule: ring colour is `amber-700` on light surfaces and `yellow-500` on chrome. T
 | `slate-300` border on `slate-50` | 1.42:1 | **Fail**, borders need 3:1 |
 | Focus ring `yellow-500` on `stone-100` | 1.76:1 | **Fail**, needs 3:1 |
 | `red-400` dot on `white` status pill | 2.77:1 | **Fail**, graphics need 3:1 |
-| `yellow-500` on `yellow-50` gold well | 1.85:1 | **Fail**, needs 4.5:1 as icon/text |
+| `yellow-500` on `yellow-50` gold well | 1.85:1 | **Fail**, graphics need 3:1 |
 
 Method: relative luminance per WCAG, channels linearised with `c <= 0.03928 ? c/12.92 : ((c+0.055)/1.055)^2.4`, then `0.2126R + 0.7152G + 0.0722B`, ratio `(L1+0.05)/(L2+0.05)`. Thresholds: 4.5:1 for body text, 3:1 for large text and for UI components including borders and focus rings.
 
@@ -205,7 +205,7 @@ Actual Tailwind values, read from `node_modules/tailwindcss/defaultTheme.js`:
 | `rounded-xl` | 0.75rem | Cards, modals, panels |
 | `rounded-2xl` | 1rem | `KpiCard` root, current default |
 
-The codebase uses five radii: `2xl` ×31, `lg` ×29, `xl` ×13, `full` ×6, `md` ×2. The target is `md` / `lg` / `xl`. `KpiCard` ships `rounded-2xl` today and moves to `rounded-xl` when its file is next touched.
+The codebase uses five distinct values: `2xl` ×31, `lg` ×29, `xl` ×13, `full` ×6, `md` ×2 — though they do not map onto the table above, which lists the four *target* radii plus the corner-only `sm` (unused as a standalone class; the 17 corner brackets use its `tr`/`br`/`bl` forms). `rounded-full` has no row because it is a terminal shape for badges and dots, inventoried at the end of this section rather than part of the radius scale. The target is `md` / `lg` / `xl`. `KpiCard` ships `rounded-2xl` today and moves to `rounded-xl` when its file is next touched.
 
 **Corner-only radii** are used 17 times across 9 files — `rounded-tr-sm` ×12, `rounded-bl-sm` ×4, `rounded-br-sm` ×1. They are decorative corner brackets (`KpiCard.jsx:22` labels one "MERIDIAN signature"), not a sidebar indicator. The sidebar's active state uses `border-l-2 border-yellow-500` with **no** radius at all. An earlier draft had both halves of this wrong. Corner brackets are a signature element and are kept; `rounded-br-sm` joins the scale.
 
@@ -303,7 +303,7 @@ Findings 2, 3, and 4 need instance-by-instance triage. Yellow and `slate-400` ar
 ## 8. Gate Rules
 
 1. No **new or modified** frontend component or page is authored before this document is approved. The 24 existing files predate the gate; they are remediated, not grandfathered.
-2. Every colour pair must be measured against section 2 before it ships, and the measurement must name its actual background — a ratio against `slate-50` says nothing about a card that is `slate-900`. Section 2 does not yet cover every pair in use; the gaps are the `stone` auth surfaces (finding 14) and any pair introduced after this document was approved. Section 2 is complete once findings 4, 4a, 4b, and 4c are cleared.
+2. Every colour pair must be measured against section 2 before it ships, and the measurement must name its actual background — a ratio against `slate-50` says nothing about a card that is `slate-900`. Section 2 does not yet cover every pair in use: the `stone` auth surfaces (finding 14) are named but not measured. Findings 4, 4a, 4b, and 4c are *measured but failing* — they are already in section 2. Section 2 is complete only once all five are cleared: the auth pairs measured, and the four failures remediated.
 3. `ui-taste-check.sh` passes before any commit containing frontend files. It currently **fails**, on finding 5.
 4. Focus rings use `amber-700` on light surfaces and `yellow-500` on chrome. No ring may ship below 3:1 against its background.
 5. Design tokens gain a code mechanism — CSS custom properties in `src/index.css`, Tailwind theme colours, or both — before section 2 is referenced from implementation. Until then, token names are documentation only.
