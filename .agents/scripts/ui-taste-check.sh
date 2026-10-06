@@ -41,13 +41,21 @@ audit_file() {
     SCANNED_FILES=$((SCANNED_FILES + 1))
 
     # 1. Check for Emojis in UI templates
-    local emoji_matches
-    emoji_matches=$(python3 -c "
+    # NOTE: this previously shelled out to python3 only. On hosts where python3
+    # is a non-functional stub (the Windows Store app-alias exits 49 and writes
+    # to stderr) the command substitution silently yields an empty string, so the
+    # scanner printed "clean" while never running a single comparison. grep -P is
+    # now the primary path; python3 is only a fallback where grep lacks PCRE.
+    local emoji_matches=""
+    if printf 'probe' | grep -qP 'probe' 2>/dev/null; then
+        emoji_matches=$(grep -nP "[\x{1F300}-\x{1FAFF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{26A0}\x{2757}]" "$file" 2>/dev/null | grep -vE "^[0-9]+:[[:space:]]*(//|/\*|\*|<!--)" | head -n 4)
+    else
+        if python3 -c "pass" >/dev/null 2>&1; then
+            emoji_matches=$(python3 -c "
 import sys, re
-emoji_pattern = re.compile(r'[\U0001F300-\U0001FAFF\u2600-\u26FF\u2700-\u27BF]')
+emoji_pattern = re.compile(r'[\U0001F300-\U0001FAFF☀-☀㊙-㊙]')
 with open(sys.argv[1], 'r', encoding='utf-8', errors='ignore') as f:
     for i, line in enumerate(f, 1):
-        # ignore comments
         clean = line.strip()
         if clean.startswith('//') or clean.startswith('/*') or clean.startswith('*'):
             continue
@@ -55,6 +63,10 @@ with open(sys.argv[1], 'r', encoding='utf-8', errors='ignore') as f:
         if matches:
             print(f'{i}: {\" \".join(matches)} -> {clean[:80]}')
 " "$file" 2>/dev/null)
+        else
+            echo "  ⚠️  [SLOP §1] Emoji scan could not run: grep -P unavailable and python3 is non-functional on this host."
+        fi
+    fi
 
     if [ -n "$emoji_matches" ]; then
         echo "  ❌ [SLOP §1] Raw emojis used as functional UI elements in $file:"
