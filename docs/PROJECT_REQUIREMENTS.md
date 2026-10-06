@@ -179,7 +179,7 @@ These are defects found during the scan. They are recorded here so the Orchestra
 | 1, 2 | Build shift management. A `/api/shifts` endpoint and a UI to create shifts and assign them to staff become a feature slice. The non-UUID seed ID in issue 2 must be resolved inside that slice, because a UUID-only validator cannot reference `shift-morning`. |
 | 3 | Accepted as designed. `dismissAlert` stays scoped to the caller's own records and is not widened to HR and SUPERADMIN. |
 | 4, 5 | Build the auto-close job. Sessions left open are closed by the system, which also gives `autoClosedOut` and `alertDismissed` real values to return. |
-| 6 | Open. No decision recorded yet. |
+| 6 | Accepted for slice F, scheduled after it. The threshold reads the assigned shift's start time from the `shifts` table rather than a literal, so a user on the Afternoon shift is not judged against 06:30. |
 
 ## 11. Delivery Roadmap: Current State → Future State
 
@@ -228,15 +228,35 @@ Slices are delivered one at a time, each with its own test pass, QA gate, checkp
 | E | Shift management: endpoint, assignment, and screen (issues 1 and 2) |
 | F | Auto-close job for open sessions (issues 4 and 5) |
 
-## 13. Open Questions for Human Review
+## 13. Resolved Questions
 
-Resolved on 2026-10-05 and recorded in sections 10, 11, and 12: the `shift-night` row was deleted from the local database; shifts get a management screen and API; `dismissAlert` is not widened beyond the caller's own records; an auto-close job will be built; and slice A is authentication and role enforcement.
+All open questions are closed. The record below is kept so the reasoning survives into later stages.
 
-> [!WARNING]
-> The Architect Agent could not deduce the following. Please fill these in:
-- [ ] Issue 6, the hardcoded 06:30 late threshold: should it read the assigned shift's start time from the database, or be removed entirely?
-- [ ] Confirm whether `/manage-staff` gains shift assignment inside its existing modals, or shifts get their own route.
-- [ ] Confirm that issue 6 blocks no slice and can be scheduled after slice F.
+### Decided on 2026-10-05
+
+| Question | Decision |
+|---|---|
+| Delete the `shift-night` row? | Yes. Removed from `seed.ts` and deleted from the local database; verified `NIGHT_COUNT=0`. |
+| Do shifts get a management screen and API, or leave the schema? | Build shift management. `/api/shifts` with create, list, and assignment, plus a screen. |
+| Widen `dismissAlert` to HR and SUPERADMIN for other people's records? | No. It stays scoped to the caller's own records. |
+| Auto-close job, or drop the dashboard reminder? | Build the auto-close job. |
+| First feature slice | A, authentication and role enforcement. |
+
+### Decided on 2026-10-06
+
+| Question | Decision |
+|---|---|
+| Issue 6, the hardcoded 06:30 late threshold | Read the assigned shift's start time from the `shifts` table. Do not keep the literal. |
+| Where shift assignment lives in the UI | Inside `/manage-staff`, in its existing modals. Shifts do not get a separate route. |
+| Does issue 6 block a slice? | Confirmed no. It follows slice F. |
+
+### Deferred
+
+| Question | Status |
+|---|---|
+| Logout endpoint and password-reset flow | Out of scope. The Owner is not certain and wants it revisited. |
+| Git history rewrite for the leaked credentials | Not authorised. Requires a force-push, which project constraints ban. |
+| Rotate the MongoDB Atlas password | Open, Owner action, not release-blocking. |
 
 ## 14. Security Incident Record
 
