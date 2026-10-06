@@ -53,7 +53,7 @@ audit_file() {
         if python3 -c "pass" >/dev/null 2>&1; then
             emoji_matches=$(python3 -c "
 import sys, re
-emoji_pattern = re.compile(r'[\U0001F300-\U0001FAFF☀-☀㊙-㊙]')
+emoji_pattern = re.compile('[' + chr(0x1F300) + '-' + chr(0x1FAFF) + chr(0x2600) + '-' + chr(0x26FF) + chr(0x2700) + '-' + chr(0x27BF) + chr(0x26A0) + chr(0x2757) + ']')
 with open(sys.argv[1], 'r', encoding='utf-8', errors='ignore') as f:
     for i, line in enumerate(f, 1):
         clean = line.strip()
