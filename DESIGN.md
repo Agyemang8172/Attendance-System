@@ -1,7 +1,7 @@
 # DESIGN.md — AttendPro Design System
 
-> Stage 2 deliverable of the Dev-OS design gate, produced by the UI Designer and revised after QA audit.
-> Frontend work stays blocked until the Owner approves this document.
+> Stage 2 deliverable of the Dev-OS design gate, produced by the UI Designer, revised after three QA rounds, and approved by the Owner on 2026-10-06.
+> Section 7 findings 1-14 are open defects to remediate, not an approved clean state. Frontend work may now proceed under the gate rules in section 8.
 > Companion to `docs/PROJECT_REQUIREMENTS.md`.
 
 **Audit status:** QA returned `CHANGES REQUESTED` twice. Round 1 raised 22 issues (1 CRITICAL, 7 HIGH, 9 MEDIUM, 5 LOW); round 2 left 15 (1 HIGH, 8 MEDIUM, 6 LOW). Every finding was verified by re-grepping the source and recomputing the arithmetic before being accepted, and all are corrected below. Open defects remain recorded in section 7.
@@ -302,7 +302,7 @@ Findings 2, 3, and 4 need instance-by-instance triage. Yellow and `slate-400` ar
 
 ## 8. Gate Rules
 
-1. No **new or modified** frontend component or page is authored before this document is approved. The 24 existing files predate the gate; they are remediated, not grandfathered.
+1. The approval precondition on this document was met on 2026-10-06. From that date, no **new or modified** frontend component or page may be authored except under these rules. The 24 existing files predate the gate; they are remediated, not grandfathered.
 2. Every colour pair must be measured against section 2 before it ships, and the measurement must name its actual background — a ratio against `slate-50` says nothing about a card that is `slate-900`. Section 2 does not yet cover every pair in use: the `stone` auth surfaces (finding 14) are named but not measured. Findings 4, 4a, 4b, and 4c are *measured but failing* — they are already in section 2. Section 2 is complete only once all five are cleared: the auth pairs measured, and the four failures remediated.
 3. `ui-taste-check.sh` passes before any commit containing frontend files. It currently **fails**, on finding 5.
 4. Focus rings use `amber-700` on light surfaces and `yellow-500` on chrome. No ring may ship below 3:1 against its background.
@@ -311,4 +311,4 @@ Findings 2, 3, and 4 need instance-by-instance triage. Yellow and `slate-400` ar
 7. Changes to tokens are updated here first, then in code.
 
 ---
-*Approved by [Human Name] on [Date]*
+*Approved by the Owner on 2026-10-06*
