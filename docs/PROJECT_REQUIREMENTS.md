@@ -212,7 +212,7 @@ Recorded from the Owner on 2026-10-05.
 | Logout endpoint and password-reset flow | Out of scope for now. The Owner is not certain and wants it revisited. |
 | Does rotating the leaked MongoDB credentials block release? | No. It is tracked under security but does not gate a release. |
 | Who signs off at human checkpoints | The Owner |
-| History rewrite for the leaked credentials | Not authorised. It requires a force-push, which the project constraints ban. Revisit only if the Owner approves it explicitly. |
+| History rewrite for the leaked credentials | Authorised by the Owner on 2026-10-06, in that order: **rotate first, then rewrite.** Sequence is fixed — the Atlas password is rotated before any history is touched, because purging history while the old password is still live fixes the repository but not the leak. A backup of the repository is taken before the force-push. The no-force-push constraint is lifted for this one operation by explicit Owner approval and does not become a general permission. |
 | Who rotates the MongoDB Atlas password | The Owner, in the Atlas UI. Agents never touch database credentials. |
 
 ### Build sequencing
@@ -255,7 +255,7 @@ All open questions are closed. The record below is kept so the reasoning survive
 | Question | Status |
 |---|---|
 | Logout endpoint and password-reset flow | Out of scope. The Owner is not certain and wants it revisited. |
-| Git history rewrite for the leaked credentials | Not authorised. Requires a force-push, which project constraints ban. |
+| Git history rewrite for the leaked credentials | Authorised by the Owner on 2026-10-06. Executes only **after** the Atlas password is rotated, and only **after** a repository backup is taken. Single force-push; the no-force-push constraint is lifted for this operation alone. |
 | Rotate the MongoDB Atlas password | Open, Owner action, not release-blocking. |
 
 ## 14. Security Incident Record
@@ -276,8 +276,8 @@ Two live credentials were committed in `7c9fc2a` and pushed to the remote on 202
 | Pre-push gate scanning the commits being pushed | Done, four scenarios verified |
 | `.gitleaks-baseline` for the three legacy findings | Done |
 | Working tree swept for other copies of the two secrets | Done, none remain |
-| Rotate the Atlas password in MongoDB Atlas | Open, Owner action, not release-blocking |
-| Rewrite git history | Not authorised; needs explicit approval and a force-push |
+| Rotate the Atlas password in MongoDB Atlas | **Ordered first.** Owner action in the Atlas UI; the rewrite does not start until this is done |
+| Rewrite git history | **Authorised by the Owner on 2026-10-06**, conditional on both preceding steps: rotate, then back up the repository, then one force-push |
 
 **Residual risk.** The redacted values remain readable in history. The live `.env` no longer uses either of them: the database is local Prisma Postgres and `JWT_SECRET` was already changed. The Atlas-side password is the only value still worth something, and rotating it makes the whole incident inert.
 
