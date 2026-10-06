@@ -54,7 +54,7 @@ Density is high on purpose. Rows are compact, metadata sits beside its value, an
 
 The auth pair is deliberately `stone`, not `slate`. The two are near-identical in luminance but not in temperature: `stone-50` (250,249,249) is warm and `slate-50` (248,250,252) cool, differing mainly in the blue channel by 3 points. `ink` on `stone-50` measures 16.99:1 against 17.06:1 on `slate-50` — a 0.07 difference, so the contrast outcome barely moves. Separate tokens are justified by provenance, not by ratio: swapping one for the other silently changes the background every auth measurement was taken against.
 
-Tokens are declared here only. `src/index.css` has no `:root` variables and `tailwind.config.js` declares nothing but `fontFamily`, so today there is no mapping from a token to a utility. Section 8 makes choosing that mechanism a prerequisite for code.
+Tokens are declared here first, then in code (rule 7). `src/index.css` declares each token as a `:root` custom property and `tailwind.config.js` maps every one of them to a Tailwind colour, so `bg-canvas`, `text-ink`, `text-accent-strong`, and `border-border` resolve as utilities against the values above. Mechanism added 2026-10-06 to satisfy section 8 rule 5.
 
 ### Accent — the two-surface rule
 
