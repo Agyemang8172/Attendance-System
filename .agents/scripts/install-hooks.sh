@@ -14,6 +14,7 @@ fi
 
 HOOKS_DIR="$REPO_ROOT/.git/hooks"
 PRE_COMMIT_HOOK="$HOOKS_DIR/pre-commit"
+PRE_PUSH_HOOK="$HOOKS_DIR/pre-push"
 
 echo "======================================"
 echo "   Dev-OS Git Hooks Installation"
@@ -201,3 +202,23 @@ EOF
 chmod +x "$PRE_COMMIT_HOOK"
 
 echo "[ OK ] Pre-commit hook successfully installed at: $PRE_COMMIT_HOOK"
+
+# ── Pre-Push Secret Gate ─────────────────────────────────────────────────────
+# The pre-commit gate only sees the staged diff. This hook scans the commits
+# actually being pushed, so secrets that arrive through rebase, merge, amend,
+# or an old branch cut are caught before anything leaves the machine.
+
+cat << 'EOF' > "$PRE_PUSH_HOOK"
+#!/bin/bash
+# Dev-OS Pre-Push Gate (installed by .agents/scripts/install-hooks.sh)
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+GATE="$REPO_ROOT/.agents/scripts/pre-push-gate.sh"
+if [ -x "$GATE" ]; then
+    exec bash "$GATE"
+fi
+echo "[ WARN ] Dev-OS pre-push gate missing at $GATE - push not scanned."
+exit 0
+EOF
+
+chmod +x "$PRE_PUSH_HOOK"
+echo "[ OK ] Pre-push secret gate installed at: $PRE_PUSH_HOOK"
