@@ -3,7 +3,7 @@ import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
-import { FaLock, FaCheck } from 'react-icons/fa'
+import { FaLock, FaCheck, FaFire, FaBolt, FaGem, FaTrophy } from 'react-icons/fa'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -28,7 +28,7 @@ const roleLabel = {
 const BADGES = [
   {
     id: 'on_fire',
-    emoji: '🔥',
+    icon: <FaFire aria-hidden="true" />,
     name: 'On Fire',
     description: 'Current streak of 5+ on-time days.',
     hint: 'Clock in on time for 5 days in a row.',
@@ -48,7 +48,7 @@ const BADGES = [
   },
   {
     id: 'early_bird',
-    emoji: '⚡',
+    icon: <FaBolt aria-hidden="true" />,
     name: 'Early Bird',
     description: 'You have clocked in before 06:00.',
     hint: 'Clock in before 06:00 at least once.',
@@ -63,7 +63,7 @@ const BADGES = [
   },
   {
     id: 'perfect_month',
-    emoji: '💎',
+    icon: <FaGem aria-hidden="true" />,
     name: 'Perfect Month',
     description: 'Zero late arrivals this calendar month.',
     hint: 'Have no late clock-ins this month.',
@@ -84,7 +84,7 @@ const BADGES = [
   },
   {
     id: 'veteran',
-    emoji: '🏆',
+    icon: <FaTrophy aria-hidden="true" />,
     name: 'Veteran',
     description: '30+ sessions completed.',
     hint: 'Complete 30 or more closed sessions.',
@@ -112,8 +112,8 @@ const BadgeCard = ({ badge, earned }) => {
         {/* Corner bracket */}
         <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-yellow-500 opacity-30 pointer-events-none" />
 
-        {/* Emoji */}
-        <span className="text-3xl">{badge.emoji}</span>
+        {/* Badge icon */}
+        <span className="text-3xl">{badge.icon}</span>
 
         {/* Name + check */}
         <div className="flex items-center justify-between gap-2">
@@ -134,8 +134,8 @@ const BadgeCard = ({ badge, earned }) => {
   // Locked
   return (
     <div className="relative rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 flex flex-col gap-3">
-      {/* Emoji — muted via opacity */}
-      <span className="text-3xl opacity-25">{badge.emoji}</span>
+      {/* Badge icon — muted via opacity */}
+      <span className="text-3xl opacity-25">{badge.icon}</span>
 
       {/* Name + lock */}
       <div className="flex items-center justify-between gap-2">

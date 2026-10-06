@@ -60,7 +60,7 @@ function Dashboard() {
         })
         toast(
           `You forgot to clock out on ${date}. The system clocked you out at 11:59 PM. Please review your record.`,
-          { icon: '⚠️', duration: 7000 }
+          { icon: <FaExclamationTriangle aria-hidden="true" />, duration: 7000 }
         )
         try { await api.patch(`/attendance/${r.id}/dismiss-alert`) } catch (_) {}
       })
