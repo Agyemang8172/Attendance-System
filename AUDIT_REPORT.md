@@ -38,8 +38,8 @@ export default router
 ### 3. Hardcoded Production Credentials in Repository
 **File:** `backend/.env`
 ```env
-MONGODB_URI=mongodb+srv://Godfred:TqyOjfIJZba0kP5g@attendace-clustor.npmoipq.mongodb.net/...
-JWT_SECRET=attendance_system_secret_key_godfred_2026_minimum_32_chars
+MONGODB_URI=<redacted: mongodb+srv connection string with credentials>
+JWT_SECRET=<redacted: 32+ character secret>
 ```
 **Impact:** Security breach - credentials exposed in git history.
 
