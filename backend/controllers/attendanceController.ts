@@ -85,7 +85,8 @@ export const clockOut = async (req: Request, res: Response) => {
     });
 
     if (!openSession) {
-      res.status(404).json({
+      // PRD §7: "Clock-out with no open session | 400"
+      res.status(400).json({
         success: false,
         message: "You need to have an active session open first",
       });
