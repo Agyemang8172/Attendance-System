@@ -122,7 +122,7 @@ if (user.role === 'HR') {
         className="
           flex-1
           min-h-screen
-          bg-stone-50
+          bg-auth-canvas
           flex
           flex-col
           justify-center
@@ -135,7 +135,7 @@ if (user.role === 'HR') {
           <span className="text-2xl font-bold text-slate-900 font-serif">
             AttendPro
           </span>
-          <span className="text-xs text-slate-400 uppercase tracking-widest mt-1 font-sans">
+          <span className="text-xs text-ink-muted uppercase tracking-widest mt-1 font-sans">
             / Attendance
           </span>
         </div>
@@ -149,7 +149,7 @@ if (user.role === 'HR') {
           </h2>
 
           {/* Subheading */}
-          <p className="text-sm text-slate-400 mb-8 font-sans">
+          <p className="text-sm text-ink-muted mb-8 font-sans">
             Sign in to continue to your workspace.
           </p>
 
@@ -205,12 +205,12 @@ if (user.role === 'HR') {
                 disabled={loading}
                 className="
                   w-full px-4 py-3
-                  bg-stone-100
+                  bg-auth-input
                   border border-stone-300
                   rounded-lg text-sm text-slate-900
-                  placeholder-slate-400
+                  placeholder-ink-muted
                   font-sans
-                  focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:border-transparent
                   disabled:opacity-50 disabled:cursor-not-allowed
                   transition duration-150
                 "
@@ -235,12 +235,12 @@ if (user.role === 'HR') {
                   disabled={loading}
                   className="
                     w-full px-4 py-3 pr-11
-                    bg-stone-100
+                    bg-auth-input
                     border border-stone-300
                     rounded-lg text-sm text-slate-900
-                    placeholder-slate-400
+                    placeholder-ink-muted
                     font-sans
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:border-transparent
                     disabled:opacity-50 disabled:cursor-not-allowed
                     transition duration-150
                   "
@@ -252,9 +252,9 @@ if (user.role === 'HR') {
                   onClick={() => setShowPassword(!showPassword)}
                   className="
                     absolute right-3 top-1/2 -translate-y-1/2
-                    text-slate-400 hover:text-slate-900
+                    text-ink-muted hover:text-slate-900
                     transition duration-150
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700
                   "
                   tabIndex={-1}
                 >
@@ -313,7 +313,7 @@ if (user.role === 'HR') {
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-8 left-8 sm:left-16 lg:left-24 text-xs text-slate-400 font-sans">
+        <div className="absolute bottom-8 left-8 sm:left-16 lg:left-24 text-xs text-ink-muted font-sans">
           © 2026 AttendPro. All rights reserved.
         </div>
       </div>
