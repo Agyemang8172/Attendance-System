@@ -151,7 +151,7 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
   }
 
   const goldButton =
-    'px-6 py-2.5 rounded-xl text-sm font-semibold font-sans bg-yellow-500 text-slate-900 hover:bg-yellow-400 transition-colors duration-150 shadow-sm shadow-yellow-500/20 disabled:opacity-50 disabled:cursor-not-allowed'
+    'px-6 py-2.5 rounded-xl text-sm font-semibold font-sans bg-yellow-500 text-slate-900 hover:bg-yellow-400 transition-colors duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
 
   return (
     <div

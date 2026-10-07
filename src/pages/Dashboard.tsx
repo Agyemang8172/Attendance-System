@@ -218,7 +218,7 @@ function Dashboard() {
                 hover:bg-yellow-400
                 transition-colors duration-150
                 disabled:opacity-50 disabled:cursor-not-allowed
-                shadow-sm shadow-yellow-500/20
+                shadow-sm
               "
             >
               {clockLoading ? 'Processing…' : 'Clock In'}

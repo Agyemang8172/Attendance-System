@@ -246,7 +246,7 @@ const SetPassword = () => {
                 hover:bg-yellow-400
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2 focus-visible:ring-offset-auth-canvas
                 transition-colors duration-150
-                shadow-sm shadow-yellow-500/20
+                shadow-sm
                 disabled:opacity-50 disabled:cursor-not-allowed
               "
             >
