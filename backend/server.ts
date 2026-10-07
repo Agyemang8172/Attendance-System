@@ -78,8 +78,13 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use("/api/", limiter);
-app.use("/api/auth/login", authLimiter);
+// Rate limiting is disabled under test: the login limiter allows 10 attempts
+// per 15 minutes per IP, so a second test run inside that window would return
+// 429 before reaching the code under test.
+if (process.env.NODE_ENV !== "test") {
+  app.use("/api/", limiter);
+  app.use("/api/auth/login", authLimiter);
+}
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
