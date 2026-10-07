@@ -443,7 +443,7 @@ function SuperAdminDashboard() {
                   <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
                     Total Sessions
                   </p>
-                  <p className="text-3xl font-bold text-slate-100 font-mono">
+                  <p className="text-3xl font-medium text-slate-100 font-mono">
                     {monthStats.totalSessions}
                   </p>
                 </div>
@@ -453,7 +453,7 @@ function SuperAdminDashboard() {
                   <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
                     Avg Hours / Day
                   </p>
-                  <p className="text-3xl font-bold text-slate-100 font-mono">
+                  <p className="text-3xl font-medium text-slate-100 font-mono">
                     {monthStats.avgHoursPerDay}
                     <span className="text-sm font-normal text-slate-500 ml-1 font-sans">
                       hrs
@@ -466,7 +466,7 @@ function SuperAdminDashboard() {
                   <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
                     Late Arrivals
                   </p>
-                  <p className="text-3xl font-bold text-slate-100 font-mono">
+                  <p className="text-3xl font-medium text-slate-100 font-mono">
                     {monthStats.latePercent}
                     <span className="text-sm font-normal text-slate-500 ml-1 font-sans">
                       %

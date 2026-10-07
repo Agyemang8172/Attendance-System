@@ -166,7 +166,7 @@ function Dashboard() {
 
         {/* Left — date eyebrow + big greeting */}
         <div>
-          <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-4">
+          <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-4">
             {formatTodayLong()}
           </p>
           <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 font-serif leading-none tracking-tight">
@@ -174,7 +174,7 @@ function Dashboard() {
             {user?.firstName}.
           </h1>
           {/* Gold divider — solid, visible */}
-          <div className="mt-5 h-0.5 w-20 bg-yellow-500" />
+          <div className="mt-5 h-0.5 w-20 bg-amber-700" />
         </div>
 
         {/* Right — clock status pill + action button */}
@@ -183,7 +183,7 @@ function Dashboard() {
           {/* Status indicator */}
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3 py-1.5 shadow-sm">
             <BsCircleFill
-              className={`text-[8px] ${isClockedIn ? 'text-green-500' : 'text-red-400'}`}
+              className={`text-[8px] ${isClockedIn ? 'text-green-700' : 'text-red-700'}`}
             />
             <span className="text-slate-600 text-xs font-mono">
               {isClockedIn ? 'Clocked In' : 'Clocked Out'}
@@ -262,15 +262,15 @@ function Dashboard() {
       {/* ── Attendance History ────────────────────────────────────────────── */}
       <section>
         <div className="mb-5">
-          <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
             Attendance History
           </p>
-          <div className="mt-2 h-0.5 w-10 bg-yellow-500/60" />
+          <div className="mt-2 h-0.5 w-10 bg-amber-700/60" />
         </div>
 
         {fetching ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-10 flex items-center justify-center shadow-sm">
-            <p className="text-slate-400 text-sm font-sans animate-pulse">
+            <p className="text-ink-muted text-sm font-sans animate-pulse">
               Loading records…
             </p>
           </div>

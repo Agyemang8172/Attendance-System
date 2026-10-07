@@ -140,19 +140,19 @@ function HrDashboard() {
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <header className="mb-8">
-        <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
+        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
           {formatTodayLong()}
         </p>
-        <p className="text-xs font-mono uppercase tracking-widest text-yellow-500/70 mb-1">
+        <p className="text-xs font-mono uppercase tracking-widest text-accent-strong mb-1">
           HR Dashboard
         </p>
         <h1 className="text-2xl font-bold text-slate-900 font-serif leading-tight">
           Welcome, {user?.firstName}.
         </h1>
-        <p className="text-slate-400 text-sm font-sans mt-1">
+        <p className="text-ink-muted text-sm font-sans mt-1">
           Full attendance overview — all staff.
         </p>
-        <div className="mt-3 h-px w-12 bg-yellow-500/40" />
+        <div className="mt-3 h-px w-12 bg-amber-700/40" />
       </header>
 
       {/* ── KPI Grid — 2 cards ───────────────────────────────────────────── */}
@@ -176,10 +176,10 @@ function HrDashboard() {
       {/* ── Weekly Overview — Charts ─────────────────────────────────────── */}
       <section className="mb-8">
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
             Weekly Overview
           </p>
-          <div className="mt-2 h-px w-10 bg-yellow-500/40" />
+          <div className="mt-2 h-px w-10 bg-amber-700/40" />
         </div>
 
         {fetching ? (
@@ -214,10 +214,10 @@ function HrDashboard() {
       {/* ── All Attendance ───────────────────────────────────────────────── */}
       <section>
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
             All Attendance
           </p>
-          <div className="mt-2 h-px w-10 bg-yellow-500/40" />
+          <div className="mt-2 h-px w-10 bg-amber-700/40" />
         </div>
 
         {/* Search input */}
