@@ -31,14 +31,15 @@ export default {
         error: 'var(--error)',
         warning: 'var(--warning)',
 
-        /* Aliases of the paper palette, kept until the last auth-* class is
-         * removed from SetPassword and ErrorBoundary. */
-        'auth-canvas': 'var(--auth-canvas)',
-        'auth-surface': 'var(--auth-surface)',
-        'auth-ink': 'var(--auth-ink)',
-        'auth-ink-muted': 'var(--auth-ink-muted)',
-        'auth-hairline': 'var(--auth-hairline)',
-        'auth-accent': 'var(--auth-accent)',
+        /* Chrome — the dark polarity. First surface is the Login brand
+         * panel; the sidebar and modal shells join from the layout-shell
+         * milestone onwards. */
+        chrome: 'var(--chrome)',
+        'chrome-elevated': 'var(--chrome-elevated)',
+        'chrome-line': 'var(--chrome-line)',
+        'chrome-ink': 'var(--chrome-ink)',
+        'chrome-ink-muted': 'var(--chrome-ink-muted)',
+        'chrome-ink-subtle': 'var(--chrome-ink-subtle)',
       },
       fontFamily: {
         /* §6 — three tiers. Display is the deviation from v1's single-family

@@ -10,6 +10,10 @@
  * `put` and `delete` return a promise that never settles, so a dashboard that
  * renders stays in its loading state instead of crashing on a response body
  * this suite would otherwise have to invent.
+ *
+ * The `PASSWORD_CHANGE_REQUIRED` interceptor itself lives in
+ * src/api/axios.ts, which this suite mocks away wholesale — that handler is
+ * covered by src/__tests__/interceptors.test.js against the real module.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
@@ -139,6 +143,74 @@ describe('sign-in routes each role to its own dashboard', () => {
     await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
     expect(localStorage.getItem('token')).toBe('test-session-token')
     expect(JSON.parse(localStorage.getItem('user')).role).toBe('STAFF')
+  })
+})
+
+// S15 — an account whose password is already set must never reach the
+// password screen, no matter how it got there.
+describe('the password screen refuses accounts that already set one', () => {
+  it('bounces STAFF whose flag is clear to the staff dashboard', async () => {
+    seedSession('STAFF')
+    visit('/set-password')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
+  })
+
+  it('bounces HR whose flag is clear to the HR dashboard', async () => {
+    seedSession('HR')
+    visit('/set-password')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/hr-dashboard'))
+  })
+
+  it('bounces SUPERADMIN whose flag is clear to the superadmin dashboard', async () => {
+    seedSession('SUPERADMIN')
+    visit('/set-password')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/superadmin-dashboard'))
+  })
+
+  it('keeps an account that still owes a password on the screen', async () => {
+    seedSession('SUPERADMIN', { mustChangePassword: true })
+    visit('/set-password')
+
+    expect(await screen.findByRole('button', { name: /set password & continue/i })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/set-password')
+  })
+})
+
+describe('setting the first password', () => {
+  it('rejects a password the shared policy forbids (S7)', async () => {
+    seedSession('STAFF', { mustChangePassword: true })
+    visit('/set-password')
+
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText('Temporary Password'), 'TempPass9!')
+    await user.type(screen.getByLabelText('New Password'), 'sixsix')
+    await user.type(screen.getByLabelText('Confirm New Password'), 'sixsix')
+    await user.click(screen.getByRole('button', { name: /set password & continue/i }))
+
+    expect(await screen.findByText(/must be at least 10 characters/i)).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/set-password')
+  })
+
+  it('clears the flag locally and lands on the role home after a valid change', async () => {
+    seedSession('STAFF', { mustChangePassword: true })
+    api.put.mockResolvedValue({ data: { success: true } })
+    visit('/set-password')
+
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText('Temporary Password'), 'TempPass9!')
+    await user.type(screen.getByLabelText('New Password'), 'Adifferent0ne!')
+    await user.type(screen.getByLabelText('Confirm New Password'), 'Adifferent0ne!')
+    await user.click(screen.getByRole('button', { name: /set password & continue/i }))
+
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
+    expect(JSON.parse(localStorage.getItem('user')).mustChangePassword).toBe(false)
+    expect(api.put).toHaveBeenCalledWith('/users/change-password', {
+      currentPassword: 'TempPass9!',
+      newPassword: 'Adifferent0ne!',
+    })
   })
 })
 

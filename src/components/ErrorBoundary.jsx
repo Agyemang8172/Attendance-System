@@ -30,29 +30,29 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-auth-canvas px-6">
-          <div className="relative bg-auth-surface rounded-2xl p-8 sm:p-10 max-w-md w-full text-center overflow-hidden border border-auth-hairline">
+        <div className="min-h-screen flex items-center justify-center bg-canvas px-6">
+          <div className="relative bg-surface-1 rounded-2xl p-8 sm:p-10 max-w-md w-full text-center overflow-hidden border border-hairline">
 
-            {/* Linear corner brackets — auth accent */}
-            <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-auth-accent opacity-30 rounded-tr-sm pointer-events-none" />
-            <div className="absolute bottom-4 left-4 w-5 h-5 border-b-2 border-l-2 border-auth-accent opacity-30 rounded-bl-sm pointer-events-none" />
+            {/* Linear corner brackets — §10.2 R3 grammar, in accent */}
+            <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
+            <div className="absolute bottom-4 left-4 w-5 h-5 border-b-2 border-l-2 border-accent opacity-30 rounded-bl-sm pointer-events-none" />
 
-            <p className="text-xs font-mono uppercase tracking-widest text-auth-accent/70 mb-3">
+            <p className="text-xs font-mono uppercase tracking-widest text-accent mb-3">
               Error
             </p>
 
-            <h1 className="text-2xl font-bold text-auth-ink font-serif mb-3">
+            <h1 className="text-2xl font-bold text-ink font-serif mb-3">
               Something went wrong.
             </h1>
 
-            <p className="text-auth-ink-muted text-sm font-sans mb-8">
+            <p className="text-ink-muted text-sm font-sans mb-8">
               An unexpected error stopped this page from loading. You can
               return to the login screen and try again.
             </p>
 
             <button
               onClick={this.handleReload}
-              className="btn-auth w-full"
+              className="btn-primary w-full"
             >
               Back to Login
             </button>

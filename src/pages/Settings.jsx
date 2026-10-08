@@ -4,6 +4,7 @@ import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
 import { FaEye, FaEyeSlash } from 'react-icons/fa'
+import { validatePassword } from '../utils/passwordPolicy'
 
 // ─── Password Field ───────────────────────────────────────────────────────────
 
@@ -70,8 +71,11 @@ function Settings() {
       setError('All fields are required.')
       return
     }
-    if (newPassword.length < 6) {
-      setError('New password must be at least 6 characters.')
+    // S7 — same policy the server enforces, so the client and the API quote
+    // one rule instead of the old (six vs eight vs nothing) disagreement.
+    const policyError = validatePassword(newPassword)
+    if (policyError) {
+      setError(policyError)
       return
     }
     if (newPassword !== confirmPassword) {

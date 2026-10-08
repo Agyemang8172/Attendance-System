@@ -222,6 +222,20 @@ Open a PR against `main`, squash-merge, delete the branch. Screenshots required 
 
 **Commit:** type `feat` → `redesign Login and SetPassword on the approved palette with corrected contrast`
 
+**Notes recorded during implementation**
+
+- Chrome becomes a real surface in M3, not M5: the Login brand panel is the first chrome consumer, so `--chrome*` tokens (§5.1) and their `tailwind.config` keys were added here. M5 adds the sidebar and modal shells **without new colours** — the panel comment in `index.css` now says exactly that.
+- `auth-*` is fully retired, not just aliased: SetPassword **and** ErrorBoundary (the only two live consumers, 27 refs) were rebuilt on the system, then `--auth-*`, `.input-auth`, `.btn-auth` and the auth utilities were deleted. Zero `auth-` references remain in `src` or the built CSS. Settings already used `.input`/`.btn-primary`, so it only needed the S7 validation swap below.
+- §8.3 input spec pulled forward: `.input` moved from `bg-surface-1`/`bg-hairline` to the approved sunken `bg-surface-2`/`border-hairline-strong`/`ring-accent`. Login and SetPassword use the `.input` primitive, and every in-app form inherits it — one object, not two.
+- `.btn-inverse` added as the §8.1 Inverse button (login submit: ink fill, paper label, brass hover) and used at its single correct call site. `active:scale-[0.98]` moved into the `.btn` base (anti-ai-ui §9 / R8 pulled forward one milestone).
+- The `ring: 2px` / `ring-offset: 2px` declarations in `index.css` were invalid CSS that the browser dropped — focus rings never rendered at 2px. `*:focus-visible` now `@apply ring-2 ring-accent ring-offset-2 ring-offset-canvas`, which is also what makes the "focus ring 1.84:1 → 4.81:1" fix real.
+- The radial blob is replaced by a fine 1px ledger grid (`.chrome-grid`, 64px cells at 10% on chrome) — sanctioned anti-ai-ui §14 replacement, and the grid leans on the ledger metaphor instead of a glow.
+- S7 lands in one shared module (`src/utils/passwordPolicy.ts`) that mirrors the backend validator byte-for-byte: min 10 / max 72 bcrypt ceiling / 28-entry blocklist, same message order as zod (length before blocklist). SetPassword and Settings both validate through it; login validation still only requires a non-empty password, exactly as the server allows.
+- The M1 interceptor seam is `handleApiError` in `src/api/axios.ts`, which returns the redirect path (`/login`, `/set-password`) so the decision is unit-testable — jsdom cannot follow a `location.href` navigation. The interceptor itself performs the assignment.
+- Contrast re-verified for every new pairing: Login subtext 4.59:1 ✓, focus ring 4.81:1 ✓, error text 5.93:1 ✓, brass-on-chrome 9.31:1 ✓, chrome ink tiers 16.36/6.96 ✓, `.btn-inverse` 17.09:1 resting and 9.31:1 hover ✓, accent ring against chrome 3.56:1 (≥3 bar) ✓. The only FAIL is the inherited placeholder 4.40:1 miss, already documented with M2.
+- `interceptors.test.js` is new; the auth-routing suite gains the S15 guard (three roles bounced to their own home), the SetPassword policy rejection, and the success path (flag cleared in the stored session, `PUT /users/change-password` payload asserted). `matchMedia` is stubbed in `test/setup.ts` because react-hot-toast consults it the moment the first toast renders.
+- Out of scope, unchanged (as agreed): the duplicate `/profile` route, the `text-ink-tertiary` five-site swaps, and Settings' visuals (M4).
+
 ---
 
 ### M4 — Dashboard redesign · `feat/dashboard-redesign`

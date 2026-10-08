@@ -1,4 +1,4 @@
-import {AuthUser}  from '../types'
+import {AuthUser, Role}  from '../types'
 
 
 // Save token and user to localStorage after login
@@ -27,4 +27,20 @@ export const getCurrentUser = () : AuthUser | null => {
 // Returns the raw JWT token string or null
 export const getToken = () : string | null => {
     return localStorage.getItem('token');
+}
+
+// The role's landing route — the single source of truth for where each role
+// belongs (S15 uses it for the bounce when a password is already set).
+export const roleHome = (role?: Role): string => {
+    if (role === 'HR') return '/hr-dashboard';
+    if (role === 'SUPERADMIN') return '/superadmin-dashboard';
+    return '/dashboard';
+}
+
+// Merge a partial update (e.g. mustChangePassword: false) back into the
+// stored session after the server has cleared the flag.
+export const updateCurrentUser = (patch: Partial<AuthUser>): void => {
+    const user = getCurrentUser();
+    if (!user) return;
+    localStorage.setItem('user', JSON.stringify({ ...user, ...patch }));
 }

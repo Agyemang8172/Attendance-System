@@ -1,7 +1,7 @@
 import React, { useState, FormEvent} from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
-import { login as saveAuth } from '../utils/auth'
+import { login as saveAuth, roleHome } from '../utils/auth'
 import { LoginResponse } from '../types'
 import MeridianArt from '../assets/meridian.svg'
 
@@ -45,13 +45,7 @@ if (user.mustChangePassword) {
 }
 
 
-if (user.role === 'HR') {
-  navigate('/hr-dashboard')
-} else if (user.role === 'SUPERADMIN') {
-  navigate('/superadmin-dashboard')
-} else {
-  navigate('/dashboard')
-}
+navigate(roleHome(user.role))
 
     } catch (err :unknown) {
       const errorMessage =
@@ -72,7 +66,7 @@ if (user.role === 'HR') {
       <div
         className="
           hidden md:flex w-[45%] min-h-screen
-          bg-slate-900
+          bg-chrome
           flex-col
           items-center
           justify-center
@@ -80,8 +74,9 @@ if (user.role === 'HR') {
           relative
           overflow-hidden
         ">
-        {/* Subtle radial glow behind SVG — pure Tailwind, no custom CSS */}
-        <div className="absolute w-72 h-72 rounded-full bg-yellow-500 opacity-5 blur-3xl top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+        {/* Fine 1px ledger grid — replaces the blurred radial glow
+            (anti-ai-ui §14 forbids decorative glow blobs) */}
+        <div className="absolute inset-0 chrome-grid opacity-10 pointer-events-none" />
 
         {/* SVG Art */}
         <div className="w-48 h-48 mb-10 opacity-90">
@@ -93,36 +88,36 @@ if (user.role === 'HR') {
         </div>
 
         {/* Brand Name */}
-        <h1 className="text-4xl font-bold tracking-tight text-yellow-500 mb-3 font-serif">
+        <h1 className="text-4xl font-bold tracking-tight text-brass-chrome mb-3 font-serif">
           AttendPro
         </h1>
 
         {/* Tagline */}
-        <p className="text-sm text-stone-50 opacity-50 tracking-widest uppercase font-sans">
+        <p className="text-sm text-chrome-ink-muted tracking-widest uppercase font-sans">
           Employee Attendance System
         </p>
 
         {/* Bottom decorative gold rule */}
-        <div className="absolute bottom-10 left-12 right-12 h-px bg-yellow-500 opacity-20" />
+        <div className="absolute bottom-10 left-12 right-12 h-px bg-brass-chrome opacity-20" />
 
         {/* Corner accent top-right */}
-        <div className="absolute top-8 right-8 w-8 h-8 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm" />
+        <div className="absolute top-8 right-8 w-8 h-8 border-t-2 border-r-2 border-brass-chrome opacity-30 rounded-tr-sm" />
 
         {/* Corner accent bottom-left */}
-        <div className="absolute bottom-8 left-8 w-8 h-8 border-b-2 border-l-2 border-yellow-500 opacity-30 rounded-bl-sm" />
+        <div className="absolute bottom-8 left-8 w-8 h-8 border-b-2 border-l-2 border-brass-chrome opacity-30 rounded-bl-sm" />
       </div>
 
       {/* ─────────────────────────────────────────
           RIGHT PANEL
           Full width on mobile, 55% on desktop
-          Warm off-white background
+          Warm paper background
           Form lives here
       ───────────────────────────────────────── */}
       <div
         className="
           flex-1
           min-h-screen
-          bg-stone-50
+          bg-canvas
           flex
           flex-col
           justify-center
@@ -132,10 +127,10 @@ if (user.role === 'HR') {
       >
         {/* Mobile-only brand header (left panel is hidden on mobile) */}
         <div className="flex md:hidden items-center gap-2 mb-10">
-          <span className="text-2xl font-bold text-slate-900 font-serif">
+          <span className="text-2xl font-bold text-ink font-serif">
             AttendPro
           </span>
-          <span className="text-xs text-slate-400 uppercase tracking-widest mt-1 font-sans">
+          <span className="text-xs text-ink-subtle uppercase tracking-widest mt-1 font-sans">
             / Attendance
           </span>
         </div>
@@ -144,32 +139,32 @@ if (user.role === 'HR') {
         <div className="w-full max-w-sm">
 
           {/* Heading */}
-          <h2 className="text-3xl font-bold text-slate-900 mb-2 leading-tight font-serif">
+          <h2 className="text-3xl font-bold text-ink mb-2 leading-tight font-serif">
             Welcome back.
           </h2>
 
           {/* Subheading */}
-          <p className="text-sm text-slate-400 mb-8 font-sans">
+          <p className="text-sm text-ink-subtle mb-8 font-sans">
             Sign in to continue to your workspace.
           </p>
 
           {/* Gold accent rule under heading */}
-          <div className="w-10 h-0.5 bg-yellow-500 mb-8" />
+          <div className="w-10 h-0.5 bg-accent mb-8" />
 
           {/* ── ERROR BAR ── */}
           {error && (
             <div
               className="
                 flex items-start gap-3
-                bg-red-50 border border-red-200
-                text-red-700 text-sm
-                px-4 py-3 rounded-lg mb-6
+                bg-surface-2 border-l-4 border-error
+                text-error text-sm
+                px-4 py-3 mb-6
                 font-sans
               "
             >
               {/* Warning icon */}
               <svg
-                className="w-4 h-4 mt-0.5 shrink-0 text-red-500"
+                className="w-4 h-4 mt-0.5 shrink-0 text-error"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -192,7 +187,7 @@ if (user.role === 'HR') {
             <div>
               <label
                 htmlFor="email"
-                className="block text-xs font-semibold text-slate-900 uppercase tracking-widest mb-2 font-sans"
+                className="block text-xs font-semibold text-ink uppercase tracking-widest mb-2 font-sans"
               >
                 Email
               </label>
@@ -203,17 +198,7 @@ if (user.role === 'HR') {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
                 disabled={loading}
-                className="
-                  w-full px-4 py-3
-                  bg-stone-100
-                  border border-stone-300
-                  rounded-lg text-sm text-slate-900
-                  placeholder-slate-400
-                  font-sans
-                  focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  transition duration-150
-                "
+                className="input disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -221,7 +206,7 @@ if (user.role === 'HR') {
             <div>
               <label
                 htmlFor="password"
-                className="block text-xs font-semibold text-slate-900 uppercase tracking-widest mb-2 font-sans"
+                className="block text-xs font-semibold text-ink uppercase tracking-widest mb-2 font-sans"
               >
                 Password
               </label>
@@ -233,17 +218,7 @@ if (user.role === 'HR') {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   disabled={loading}
-                  className="
-                    w-full px-4 py-3 pr-11
-                    bg-stone-100
-                    border border-stone-300
-                    rounded-lg text-sm text-slate-900
-                    placeholder-slate-400
-                    font-sans
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    transition duration-150
-                  "
+                  className="input pr-11 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
 
                 {/* Show / hide password toggle */}
@@ -252,9 +227,9 @@ if (user.role === 'HR') {
                   onClick={() => setShowPassword(!showPassword)}
                   className="
                     absolute right-3 top-1/2 -translate-y-1/2
-                    text-slate-400 hover:text-slate-900
+                    text-ink-subtle hover:text-ink
                     transition duration-150
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-accent
                   "
                   tabIndex={-1}
                 >
@@ -279,16 +254,10 @@ if (user.role === 'HR') {
               type="submit"
               disabled={loading}
               className="
+                btn-inverse
                 w-full
-                bg-slate-900 hover:bg-yellow-500
-                text-stone-50 hover:text-slate-900
-                font-semibold text-sm
-                py-3 rounded-lg
-                transition duration-200
-                disabled:opacity-50 disabled:cursor-not-allowed
-                flex items-center justify-center gap-2
+                gap-2
                 mt-2
-                font-sans
               "
             >
               {loading ? (
@@ -313,7 +282,7 @@ if (user.role === 'HR') {
         </div>
 
         {/* Footer */}
-        <div className="absolute bottom-8 left-8 sm:left-16 lg:left-24 text-xs text-slate-400 font-sans">
+        <div className="absolute bottom-8 left-8 sm:left-16 lg:left-24 text-xs text-ink-subtle font-sans">
           © 2026 AttendPro. All rights reserved.
         </div>
       </div>

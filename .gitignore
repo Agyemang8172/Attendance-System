@@ -38,5 +38,10 @@ backend\.env
 .windsurf/
 
 # Local test artifacts
+*.tsbuildinfo
+# Vite reads vite.config.(js|mjs|ts) in that order, so a type-check build
+# that emitted vite.config.js would shadow the .ts source on the next run.
+vite.config.js
+vite.config.d.ts
 backend/tables.txt
 backend/test-*.txt
