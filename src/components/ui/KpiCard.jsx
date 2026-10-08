@@ -1,47 +1,46 @@
-// KpiCard — white card with colored icon, MERIDIAN styled
+// KpiCard — Linear styled card for key metrics
 // Props:
 //   icon        → icon element, e.g. <FaClock />
 //   label       → uppercase label, e.g. "Weekly Hours"
 //   value       → the main number/string, e.g. "32.5"
-//   subtext     → small text below value, e.g. "/ 40 hrs"
-//   colorScheme → icon tint: "blue" | "gold" | "green" | "red"
+//   subtext     → small text below value, e.g. "/ 40 hrs target"
+//   colorScheme → accent color for icon: "blue" | "gold" | "green" | "red"
 
 const colorSchemes = {
-  // Use 700 weights on tinted wells for 4.5:1 contrast (DESIGN §2 measured pairs)
-  blue:  'bg-blue-50 border-blue-100 text-blue-700',
-  gold:  'bg-yellow-50 border-yellow-100 text-amber-700',
-  green: 'bg-green-50 border-green-100 text-green-700',
-  red:   'bg-red-50 border-red-100 text-red-700',
+  blue:  { bg: 'bg-accent/10', border: 'border-accent/20', icon: 'text-accent' },
+  gold:  { bg: 'bg-warning/10', border: 'border-warning/20', icon: 'text-warning' },
+  green: { bg: 'bg-success/10', border: 'border-success/20', icon: 'text-success' },
+  red:   { bg: 'bg-error/10', border: 'border-error/20', icon: 'text-error' },
 }
 
 const KpiCard = ({ icon, label, value, subtext, colorScheme = 'gold' }) => {
-  const iconClasses = colorSchemes[colorScheme] || colorSchemes.gold
+  const scheme = colorSchemes[colorScheme] || colorSchemes.gold
 
   return (
-    <div className="relative bg-white rounded-2xl p-6 flex flex-col gap-4 overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 group">
+    <div className={`card relative overflow-hidden ${scheme.bg} ${scheme.border}`}>
 
-      {/* Corner bracket accent — MERIDIAN signature */}
-      <div className="absolute top-3 right-3 w-4 h-4 border-t-2 border-r-2 border-yellow-500/40 rounded-tr-sm pointer-events-none" />
+      {/* Corner bracket — Linear signature */}
+      <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
 
       {/* Icon box */}
-      <div className={`p-3 rounded-xl border w-fit ${iconClasses}`}>
+      <div className={`p-3 rounded-lg border w-fit bg-surface-2 ${scheme.icon} ${scheme.border}`}>
         <span className="text-xl block">{icon}</span>
       </div>
 
       {/* Label */}
       <div>
-        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-2">
+        <p className="text-eyebrow text-ink-muted mb-2">
           {label}
         </p>
 
         {/* Value — the hero of the card */}
-        <p className="text-4xl font-medium text-slate-900 font-mono leading-none">
+        <p className="text-display-sm font-medium text-ink font-mono leading-none">
           {value}
         </p>
 
         {/* Subtext */}
         {subtext && (
-          <p className="text-ink-muted text-xs font-sans mt-2">
+          <p className="text-caption text-ink-muted font-sans mt-2">
             {subtext}
           </p>
         )}

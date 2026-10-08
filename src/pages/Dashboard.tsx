@@ -10,7 +10,7 @@ import { BsCircleFill } from 'react-icons/bs'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const isLate = (clockInStr) => {
+const isLate = (clockInStr: string) => {
   const d = new Date(clockInStr)
   return d.getHours() > 6 || (d.getHours() === 6 && d.getMinutes() >= 30)
 }
@@ -35,22 +35,22 @@ const formatTodayLong = () =>
 function Dashboard() {
   const user = getCurrentUser()
 
-  const [records, setRecords]         = useState([])
+  const [records, setRecords] = useState([])
   const [isClockedIn, setIsClockedIn] = useState(false)
   const [clockLoading, setClockLoading] = useState(false)
-  const [fetching, setFetching]       = useState(true)
+  const [fetching, setFetching] = useState(true)
 
   // ── Fetch attendance + derive clock state ──────────────────────────────────
   const fetchAttendance = useCallback(async () => {
     try {
-      const res  = await api.get('/attendance/my-attendance')
+      const res = await api.get('/attendance/my-attendance')
       const data = res.data.data || []
       setRecords(data)
 
       const openSession = data.find((r) => r.sessionStatus === 'OPEN')
       setIsClockedIn(!!openSession)
 
-      // Auto clock-out alert (fires when backend adds these fields — safe to run now)
+      // Auto clock-out alert
       const stale = data.filter(
         (r) => r.autoClosedOut === true && r.alertDismissed === false
       )
@@ -121,7 +121,7 @@ function Dashboard() {
     .sort((a, b) => new Date(b.date) - new Date(a.date))
 
   let streak = 0
-  let prevDate = null
+  let prevDate: Date | null = null
   for (const r of sortedClosed) {
     const d = new Date(r.date)
     d.setHours(0, 0, 0, 0)
@@ -129,7 +129,7 @@ function Dashboard() {
       streak = 1
       prevDate = d
     } else {
-      const diff = (prevDate - d) / (1000 * 60 * 60 * 24)
+      const diff = (prevDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)
       if (diff === 1) {
         streak++
         prevDate = d
@@ -140,7 +140,7 @@ function Dashboard() {
   }
 
   // 3. Attendance Rate — closed sessions this calendar month / 22 working days
-  const now          = new Date()
+  const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const closedThisMonth = records.filter(
     (r) => r.sessionStatus === 'CLOSED' && new Date(r.date) >= startOfMonth
@@ -157,7 +157,6 @@ function Dashboard() {
 
   // ──────────────────────────────────────────────────────────────────────────
 
-
   return (
     <Layout>
 
@@ -169,41 +168,33 @@ function Dashboard() {
           <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-4">
             {formatTodayLong()}
           </p>
-          <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 font-serif leading-none tracking-tight">
+          <h1 className="text-display-xl text-ink font-serif leading-none tracking-tight">
             {getGreeting()},<br />
             {user?.firstName}.
           </h1>
-          {/* Gold divider — solid, visible */}
-          <div className="mt-5 h-0.5 w-20 bg-amber-700" />
+          {/* Accent divider */}
+          <div className="mt-5 h-0.5 w-20 bg-accent" />
         </div>
 
         {/* Right — clock status pill + action button */}
         <div className="flex items-center gap-4 sm:mb-1">
 
           {/* Status indicator */}
-          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3 py-1.5 shadow-sm">
+          <div className="flex items-center gap-2 bg-surface-1 border border-hairline rounded-full px-3 py-1.5">
             <BsCircleFill
-              className={`text-[8px] ${isClockedIn ? 'text-green-700' : 'text-red-700'}`}
+              className={`text-[8px] ${isClockedIn ? 'text-success' : 'text-error'}`}
             />
-            <span className="text-slate-600 text-xs font-mono">
+            <span className="text-ink-muted text-xs font-mono">
               {isClockedIn ? 'Clocked In' : 'Clocked Out'}
             </span>
           </div>
 
-          {/* Primary CTA — solid gold when clocking in, soft red when out */}
+          {/* Primary CTA — accent when clocking in, soft red when out */}
           {isClockedIn ? (
             <button
               onClick={handleClockOut}
               disabled={clockLoading}
-              className="
-                px-6 py-2.5 rounded-xl
-                text-sm font-semibold font-sans
-                bg-red-50 text-red-500
-                border border-red-200
-                hover:bg-red-100
-                transition-colors duration-150
-                disabled:opacity-50 disabled:cursor-not-allowed
-              "
+              className="btn-secondary"
             >
               {clockLoading ? 'Processing…' : 'Clock Out'}
             </button>
@@ -211,15 +202,7 @@ function Dashboard() {
             <button
               onClick={handleClockIn}
               disabled={clockLoading}
-              className="
-                px-6 py-2.5 rounded-xl
-                text-sm font-semibold font-sans
-                bg-yellow-500 text-slate-900
-                hover:bg-yellow-400
-                transition-colors duration-150
-                disabled:opacity-50 disabled:cursor-not-allowed
-                shadow-sm
-              "
+              className="btn-primary"
             >
               {clockLoading ? 'Processing…' : 'Clock In'}
             </button>
@@ -265,11 +248,11 @@ function Dashboard() {
           <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
             Attendance History
           </p>
-          <div className="mt-2 h-0.5 w-10 bg-amber-700/60" />
+          <div className="mt-2 h-0.5 w-10 bg-accent/60" />
         </div>
 
         {fetching ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-10 flex items-center justify-center shadow-sm">
+          <div className="card flex items-center justify-center">
             <p className="text-ink-muted text-sm font-sans animate-pulse">
               Loading records…
             </p>

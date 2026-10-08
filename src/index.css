@@ -2,46 +2,223 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * Design tokens — DESIGN.md section 2 is the source of truth (rule 7: update
- * DESIGN.md first, then code). Section 8 rule 5 requires this mechanism to
- * exist before section 2 is referenced from implementation.
- *
- * Tailwind colour names in tailwind.config.js map 1:1 onto these variables,
- * so `bg-canvas`, `text-ink`, `border-border`, `text-accent-strong` resolve.
- */
-:root {
-  /* Core palette */
-  --canvas: #f8fafc;
-  --surface: #ffffff;
-  --chrome: #0f172a;
-  --chrome-raised: #1e293b;
-
-  /* Ink */
-  --ink: #0f172a;
-  --ink-muted: #64748b;
-  --ink-invert: #94a3b8;
-
-  /* Borders */
-  --border: #64748b;
-  --border-invert: #334155;
-
-  /* Auth surfaces — stone, not slate, by DESIGN.md section 2 */
-  --auth-canvas: #fafaf9;
-  --auth-input: #f5f5f4;
-
-  /* Accent — the two-surface rule */
-  --accent: #eab308;          /* yellow-500, on chrome */
-  --accent-strong: #b45309;   /* amber-700, on light surfaces */
-}
-
 @layer base {
-  body {
-    /* bg-canvas and text-ink are byte-identical to the slate-50 and slate-900
-       values they replace, so this is a no-op visually and a live proof that
-       the token chain resolves end to end. */
-    @apply font-sans bg-canvas text-ink antialiased;
+  :root {
+    /* Linear Dark Theme */
+    --canvas: #010102;
+    --surface-1: #0f1011;
+    --surface-2: #141516;
+    --surface-3: #18191a;
+    --surface-4: #191a1b;
+    --ink: #f7f8f8;
+    --ink-muted: #d0d6e0;
+    --ink-subtle: #8a8f98;
+    --ink-tertiary: #62666d;
+    --hairline: #23252a;
+    --hairline-strong: #34343a;
+    --hairline-tertiary: #3e3e44;
+    --accent: #5e6ad2;
+    --accent-hover: #828fff;
+    --accent-focus: #5e69d1;
+    --success: #27a644;
+    --error: #ef4444;
+    --warning: #f59e0b;
+
+    /* Auth Light Theme */
+    --auth-canvas: #ffffff;
+    --auth-surface: #f5f6f6;
+    --auth-ink: #000000;
+    --auth-ink-muted: #a0a0a0;
+    --auth-hairline: #e5e5e5;
+    --auth-accent: #5e6ad2;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0;
+  }
+
+  /* Focus ring system */
+  *:focus-visible {
+    outline: none;
+    ring: 2px;
+    ring-offset: 2px;
+  }
+
+  *:focus-visible:not(.auth-input):not(.auth-button) {
+    @apply ring-accent-focus ring-offset-canvas;
+  }
+
+  .auth-input:focus-visible,
+  .auth-button:focus-visible {
+    @apply ring-accent ring-offset-auth-canvas;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-canvas;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-hairline-strong rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-hairline-tertiary;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-accent text-white;
+  }
+}
+
+@layer components {
+  /* Button primitives */
+  .btn {
+    @apply inline-flex items-center justify-center font-medium text-button rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-accent text-white px-[14px] py-[8px];
+  }
+  .btn-primary:hover:not(:disabled) {
+    @apply bg-accent-hover;
+  }
+  .btn-primary:focus-visible {
+    @apply ring-2 ring-accent-focus ring-offset-2 ring-offset-canvas;
+  }
+
+  .btn-secondary {
+    @apply btn bg-surface-1 text-ink px-[14px] py-[8px] border border-hairline;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    @apply bg-surface-2;
+  }
+
+  .btn-tertiary {
+    @apply btn bg-canvas text-ink px-[14px] py-[8px];
+  }
+  .btn-tertiary:hover:not(:disabled) {
+    @apply bg-surface-1;
+  }
+
+  .btn-auth {
+    @apply btn bg-auth-accent text-white px-[14px] py-[8px];
+  }
+  .btn-auth:hover:not(:disabled) {
+    @apply bg-auth-accent opacity-90;
+  }
+
+  /* Card primitives */
+  .card {
+    @apply bg-surface-1 border border-hairline rounded-lg p-6;
+  }
+  .card-elevated {
+    @apply bg-surface-2 border border-hairline rounded-lg p-6;
+  }
+  .card-selected {
+    @apply bg-surface-3 border border-hairline-strong rounded-lg p-6;
+  }
+
+  /* Input primitives */
+  .input {
+    @apply w-full bg-surface-1 text-ink border border-hairline rounded-md px-3 py-[8px] text-body-sm placeholder-ink-subtle transition-colors duration-150;
+  }
+  .input:focus {
+    @apply border-hairline-strong outline-none ring-2 ring-accent-focus ring-offset-2 ring-offset-canvas;
+  }
+  .input-auth {
+    @apply w-full bg-auth-surface text-auth-ink border border-auth-hairline rounded-md px-3 py-[8px] text-body-sm placeholder-auth-ink-muted transition-colors duration-150;
+  }
+  .input-auth:focus {
+    @apply border-auth-accent outline-none ring-2 ring-auth-accent ring-offset-2 ring-offset-auth-canvas;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2 py-[2px] text-caption rounded-full bg-surface-2 text-ink-muted;
+  }
+  .badge-success {
+    @apply bg-success/15 text-success;
+  }
+  .badge-warning {
+    @apply bg-warning/15 text-warning;
+  }
+  .badge-error {
+    @apply bg-error/15 text-error;
+  }
+}
+
+@layer utilities {
+  /* Surface utilities */
+  .bg-canvas { background-color: var(--canvas); }
+  .bg-surface-1 { background-color: var(--surface-1); }
+  .bg-surface-2 { background-color: var(--surface-2); }
+  .bg-surface-3 { background-color: var(--surface-3); }
+  .bg-surface-4 { background-color: var(--surface-4); }
+
+  /* Text utilities */
+  .text-ink { color: var(--ink); }
+  .text-ink-muted { color: var(--ink-muted); }
+  .text-ink-subtle { color: var(--ink-subtle); }
+  .text-ink-tertiary { color: var(--ink-tertiary); }
+
+  /* Border utilities */
+  .border-hairline { border-color: var(--hairline); }
+  .border-hairline-strong { border-color: var(--hairline-strong); }
+  .border-hairline-tertiary { border-color: var(--hairline-tertiary); }
+
+  /* Accent utilities */
+  .bg-accent { background-color: var(--accent); }
+  .bg-accent-hover { background-color: var(--accent-hover); }
+  .bg-accent-focus { background-color: var(--accent-focus); }
+  .text-accent { color: var(--accent); }
+  .ring-accent { ring-color: var(--accent); }
+  .ring-accent-focus { ring-color: var(--accent-focus); }
+
+  /* Auth utilities */
+  .bg-auth-canvas { background-color: var(--auth-canvas); }
+  .bg-auth-surface { background-color: var(--auth-surface); }
+  .text-auth-ink { color: var(--auth-ink); }
+  .text-auth-ink-muted { color: var(--auth-ink-muted); }
+  .border-auth-hairline { border-color: var(--auth-hairline); }
+  .bg-auth-accent { background-color: var(--auth-accent); }
+  .text-auth-accent { color: var(--auth-accent); }
+  .ring-auth-accent { ring-color: var(--auth-accent); }
+
+  /* Semantic */
+  .bg-success { background-color: var(--success); }
+  .text-success { color: var(--success); }
+  .bg-error { background-color: var(--error); }
+  .text-error { color: var(--error); }
+  .bg-warning { background-color: var(--warning); }
+  .text-warning { color: var(--warning); }
+
+  /* Typography */
+  .text-display-xl { @apply text-[48px] font-semibold leading-[1.05] tracking-[-1.5px]; }
+  .text-display-lg { @apply text-[36px] font-semibold leading-[1.1] tracking-[-1px]; }
+  .text-display-md { @apply text-[28px] font-semibold leading-[1.15] tracking-[-0.5px]; }
+  .text-display-sm { @apply text-[22px] font-medium leading-[1.25] tracking-[-0.3px]; }
+  .text-body-lg { @apply text-[18px] font-normal leading-[1.5] tracking-[-0.05px]; }
+  .text-body { @apply text-[16px] font-normal leading-[1.5] tracking-[0]; }
+  .text-body-sm { @apply text-[14px] font-normal leading-[1.5] tracking-[0]; }
+  .text-caption { @apply text-[12px] font-normal leading-[1.4] tracking-[0]; }
+  .text-button { @apply text-[14px] font-medium leading-[1.2] tracking-[0]; }
+  .text-eyebrow { @apply text-[13px] font-medium leading-[1.3] tracking-[0.4px] uppercase; }
+  .text-mono { @apply text-[13px] font-mono leading-[1.5] tracking-[0]; }
 }
