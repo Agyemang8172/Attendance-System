@@ -8,7 +8,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        /* Linear Dark Theme */
+        /* AttendPro v2 — paper and chrome. Values live in src/index.css.
+         * Every key below is unchanged; only the value behind it moved, so no
+         * component had to be edited to change the application's appearance. */
         canvas: 'var(--canvas)',
         'surface-1': 'var(--surface-1)',
         'surface-2': 'var(--surface-2)',
@@ -24,11 +26,13 @@ export default {
         accent: 'var(--accent)',
         'accent-hover': 'var(--accent-hover)',
         'accent-focus': 'var(--accent-focus)',
+        'brass-chrome': 'var(--brass-chrome)',
         success: 'var(--success)',
         error: 'var(--error)',
         warning: 'var(--warning)',
 
-        /* Auth Light Theme */
+        /* Aliases of the paper palette, kept until the last auth-* class is
+         * removed from SetPassword and ErrorBoundary. */
         'auth-canvas': 'var(--auth-canvas)',
         'auth-surface': 'var(--auth-surface)',
         'auth-ink': 'var(--auth-ink)',
@@ -37,6 +41,10 @@ export default {
         'auth-accent': 'var(--auth-accent)',
       },
       fontFamily: {
+        /* §6 — three tiers. Display is the deviation from v1's single-family
+         * rule that makes the system recognisable; both other tiers were
+         * already in use before this was written down. */
+        serif: ['Georgia', 'Times New Roman', 'ui-serif', 'serif'],
         sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
       },
@@ -73,9 +81,12 @@ export default {
         'section': '96px',
       },
       boxShadow: {
-        'card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-        'card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-        'elevated': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        /* §7 — three tiers, no glassmorphism, no coloured shadows.
+         * Base paper carries no shadow at all: a hairline does the work.
+         * These are the two steps above it. */
+        'card': '0 1px 2px 0 rgba(15, 23, 42, 0.06)',
+        'card-hover': '0 2px 4px -1px rgba(15, 23, 42, 0.10)',
+        'elevated': '0 24px 48px -12px rgba(15, 23, 42, 0.28)',
       },
     },
   },

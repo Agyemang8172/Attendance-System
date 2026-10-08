@@ -197,6 +197,15 @@ Open a PR against `main`, squash-merge, delete the branch. Screenshots required 
 
 **Commit:** type `feat` → `define shared design tokens derived from the Login palette`
 
+**Notes recorded during implementation**
+
+- The raw-token exit rule is met progressively, not in M2. 91 `slate-*`/`stone-*`/`yellow-*` values remain inside components this milestone is not allowed to touch: `Login.tsx` (33) is M3's, and `AddEmployeeModal`/`EditEmployeeModal` (58) are M6's. The two modals already match the palette by accident — `bg-slate-900` is chrome, `bg-yellow-500` with `text-slate-900` is the brass fill with dark ink — so they are correct, just untokenised.
+- §14 of the design proposal settles the ordering question: its Phase 1 is this milestone (values only, no component), Phase 2 is the layout shell where the sidebar becomes chrome. The sidebar is therefore paper at the end of M2 and goes dark in M5. That is the approved sequence, not a regression.
+- Two measured misses are carried forward rather than papered over:
+  1. `placeholder-ink-subtle` on a paper-sunken input measures **4.40:1** against the 4.5 requirement. §9 specifies `#78716c` without stating a ratio for the `#f5f5f4` pairing, and §5.2 measures it only against `#fafaf9` (4.59:1). Affects `.input` and `.input-auth`.
+  2. `--ink-tertiary` measures **2.41:1** and §5.2 permits it for decorative and disabled marks only. Seven call sites use it, and five of those carry information (a sidebar timestamp, two table captions, a Profile paragraph, the Schedule weekend label). They belong on `--ink-subtle`. Fixing them is a component edit and lands with the primitives phase.
+
+
 ---
 
 ### M3 — Login redesign · `feat/login-redesign` ← *your priority 2*

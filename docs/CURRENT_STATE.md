@@ -2,11 +2,32 @@
 
 > This file is maintained by the Orchestrator agent. It is updated at each phase transition to preserve context across long sessions.
 
+> **Stale below this line.** The pipeline table, agent roster, blockers and
+> evidence sections date from 2026-10-06 and still describe the MongoDB Atlas
+> deployment that has since been replaced by local Prisma Postgres. A full
+> refresh is scheduled with the final UI/UX verification milestone; treat the
+> detail underneath as historical until then. The header below is current.
+
 ## Current Task
-- **Task:** Stage 4 — Task Board DAG (next: stage 5, feature slice A)
-- **Branch:** `feature/prisma-postgresql`
-- **Triage Level:** NORMAL
-- **Status:** Stages 1, 2, and 3 complete. Awaiting Owner "approve" to commit stage 4 output.
+- **Task:** M2 — Shared design system (token layer)
+- **Branch:** `feat/design-tokens` (cut from `chore/git-foundation`, per the base
+  column in `docs/IMPLEMENTATION_PLAN.md`)
+- **Triage Level:** STANDARD
+- **Status:** Values written. Build, lint, type-check, unit tests and the UI
+  taste gate are green. A contrast audit of the final values passes 20 of 23
+  pairs; the two misses are recorded in the plan with the reason they are
+  carried forward rather than patched here. Awaiting browser review and push
+  approval.
+
+## Approved Plan
+`docs/IMPLEMENTATION_PLAN.md` — eleven milestones M0–M10, each on its own
+branch, each committed through `.agents/scripts/commit.sh`.
+
+- M0 **DONE** — `chore/git-foundation`, commit `fea8a00`, pushed.
+- M1 **DONE** — `feat/auth-foundation`, commits `7927e1f` and `c5ee5ff`, pushed,
+  backend suite 71/71. Awaiting merge.
+- M2 **IN PROGRESS** — this branch.
+- M3–M10 **QUEUED**.
 
 ## Dev-OS Pipeline Status
 

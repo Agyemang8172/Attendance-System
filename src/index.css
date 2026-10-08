@@ -3,34 +3,91 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * AttendPro v2 token layer.
+   *
+   * Every value below is measured against §5 of docs/DESIGN_PROPOSAL.md. The
+   * palette is derived from the Login page, so the application after sign-in
+   * and the sign-in screen are the same object rather than two designs that
+   * happen to share a name.
+   *
+   * Phase 1 of the migration sequence (§14) is a value swap and touches no
+   * component. The chrome half of the polarity split — a dark sidebar and dark
+   * modal shells against this paper — arrives with the layout shell in Phase 2.
+   * Until then every surface here is paper, which is why no chrome value is set.
+   */
   :root {
-    /* Linear Dark Theme */
-    --canvas: #010102;
-    --surface-1: #0f1011;
-    --surface-2: #141516;
-    --surface-3: #18191a;
-    --surface-4: #191a1b;
-    --ink: #f7f8f8;
-    --ink-muted: #d0d6e0;
-    --ink-subtle: #8a8f98;
-    --ink-tertiary: #62666d;
-    --hairline: #23252a;
-    --hairline-strong: #34343a;
-    --hairline-tertiary: #3e3e44;
-    --accent: #5e6ad2;
-    --accent-hover: #828fff;
-    --accent-focus: #5e69d1;
-    --success: #27a644;
-    --error: #ef4444;
-    --warning: #f59e0b;
+    /* ── Paper ────────────────────────────────────────────────────────────
+     * §5.1. One surface runs from page to page; the steps above it are how a
+     * card says "laid on top" and a table header says "indented".
+     */
+    --canvas: #fafaf9;    /* page — the ledger sheet */
+    --surface-1: #ffffff; /* raised — cards */
+    --surface-2: #f5f5f4; /* sunken — table headers, inputs, chips */
+    --surface-3: #e7e5e4; /* selected */
+    --surface-4: #d6d3d1; /* strongest step */
 
-    /* Auth Light Theme */
-    --auth-canvas: #ffffff;
-    --auth-surface: #f5f6f6;
-    --auth-ink: #000000;
-    --auth-ink-muted: #a0a0a0;
-    --auth-hairline: #e5e5e5;
-    --auth-accent: #5e6ad2;
+    /* ── Ink ──────────────────────────────────────────────────────────────
+     * §5.2. Three tiers carry text; the fourth does not, and is not allowed
+     * to. Ratios are measured on --canvas.
+     */
+    --ink: #0f172a;         /* 17.09:1 — headings, primary body */
+    --ink-muted: #44403c;   /*  9.84:1 — secondary body, table cells */
+    --ink-subtle: #78716c;  /*  4.59:1 — labels, timestamps, placeholders */
+    --ink-tertiary: #a8a29e; /* 2.41:1 — decorative and disabled only.
+                              * WCAG exempts disabled controls from 1.4.3, and
+                            * nothing else may use this value. See the note
+                            * with the M2 deviation report. */
+
+    /* ── Hairlines ────────────────────────────────────────────────────────
+     * §5.1. Structure, never text.
+     */
+    --hairline: #e7e5e4;
+    --hairline-strong: #d6d3d1;
+    --hairline-tertiary: #a8a29e;
+
+    /* ── Brass ────────────────────────────────────────────────────────────
+     * §5.3. One accent that splits by polarity, because a single value cannot
+     * serve both surfaces: #eab308 measures 1.84:1 on this paper where a focus
+     * ring needs 3:1.
+     *
+     *   #b45309  paper — text, links, rules, fills, focus rings  (4.81:1)
+     *   #eab308  chrome — sidebar, modal shells, brand panel     (9.31:1)
+     *
+     * --brass-chrome is set but unused until the chrome surfaces exist. That
+     * is deliberate: the rule it encodes is easier to keep honest as a named
+     * value than as a comment.
+     */
+    --accent: #b45309;
+    --accent-hover: #92400e; /* darker fill on hover; 6.37:1 as text */
+    --accent-focus: #b45309; /* focus ring — needs 3:1, has 4.81:1 */
+    --brass-chrome: #eab308; /* chrome only. Never a light surface. */
+
+    /* ── Status ───────────────────────────────────────────────────────────
+     * §5.4. Flat status text on paper. Status never borrows brass: badges take
+     * a tinted ground with strong text so a state reads as a state and not as
+     * branding.
+     */
+    --success: #15803d; /* 4.80:1 */
+    --error: #b91c1c;   /* 6.19:1 */
+    --warning: #c2410c; /* 4.96:1 */
+
+    /* ── Auth ─────────────────────────────────────────────────────────────
+     * These no longer name a third design language. When the working surface
+     * went from near-black to paper, the separate light theme stopped being
+     * different from anything, so each one is now an alias of its paper
+     * counterpart above.
+     *
+     * The classes themselves go when SetPassword and ErrorBoundary are rebuilt
+     * on this system — they still carry 27 live references, and deleting the
+     * values first would unstyle a screen without fixing it.
+     */
+    --auth-canvas: #fafaf9;
+    --auth-surface: #f5f5f4;
+    --auth-ink: #0f172a;
+    --auth-ink-muted: #78716c;
+    --auth-hairline: #d6d3d1;
+    --auth-accent: #b45309;
   }
 
   * {
