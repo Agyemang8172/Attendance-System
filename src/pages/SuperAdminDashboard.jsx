@@ -3,13 +3,13 @@ import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
-import KpiCard from '../components/ui/KpiCard'
+import KpiCard, { KpiHero } from '../components/ui/KpiCard'
 import AttendanceTable from '../components/ui/AttendanceTable'
 import HoursChart from '../components/charts/HoursChart'
 import SessionsChart from '../components/charts/SessionsChart'
+import { BentoSkeleton, ChartSkeleton, TableSkeleton } from '../components/ui/Skeleton'
 import {
   FaUsers,
-  FaUserCheck,
   FaClock,
   FaSearch,
   FaFileCsv,
@@ -231,7 +231,7 @@ function SuperAdminDashboard() {
       totalSessions > 0
         ? Math.round((lateCount / totalSessions) * 100)
         : 0
-    return { totalSessions, avgHoursPerDay, latePercent }
+    return { totalSessions, uniqueDays, avgHoursPerDay, latePercent }
   }, [monthRecords])
 
   // ── Search filter ──────────────────────────────────────────────────────────
@@ -300,75 +300,74 @@ function SuperAdminDashboard() {
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <header className="mb-8">
-        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
+        <p className="text-ink-muted text-caption font-mono mb-1">
           {formatTodayLong()}
-        </p>
-        <p className="text-xs font-mono uppercase tracking-widest text-accent mb-1">
-          System Overview
         </p>
         <h1 className="text-display-sm text-ink font-serif leading-tight">
           Welcome, {user?.firstName}.
         </h1>
-        <p className="text-ink-muted text-sm font-sans mt-1">
+        <p className="text-ink-muted text-body-sm mt-1">
           Full system attendance — all staff, all time.
         </p>
-        <div className="mt-3 h-px w-12 bg-accent/40" />
+        <div className="mt-3 h-px w-12 bg-accent opacity-40" />
       </header>
 
-      {/* ── KPI Grid — 3 cards ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <KpiCard
-          icon={<FaUsers />}
-          label="Total Employees"
-          value={fetching ? '—' : totalEmployees}
-          subtext="active"
-          colorScheme="blue"
-        />
-        <KpiCard
-          icon={<FaUserCheck />}
-          label="Clocked In Today"
-          value={fetching ? '—' : clockedInToday}
-          subtext="active sessions"
-          colorScheme="green"
-        />
-        <KpiCard
-          icon={<FaClock />}
-          label="Late Today"
-          value={fetching ? '—' : lateToday}
-          subtext="late today"
-          colorScheme="gold"
-        />
-      </div>
+      {/* ── KPI Bento — hero + two dense metrics (R10, §11) ─────────────── */}
+      {fetching ? (
+        <BentoSkeleton />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <KpiHero
+            eyebrow="Total Employees"
+            value={totalEmployees}
+            unit="people"
+            subtext="active staff on the system"
+          />
+          <KpiCard
+            icon={<FaClock aria-hidden="true" />}
+            label="Clocked In Today"
+            value={clockedInToday}
+            subtext="active sessions"
+            scheme="success"
+          />
+          <KpiCard
+            icon={<FaUsers aria-hidden="true" />}
+            label="Late Today"
+            value={lateToday}
+            subtext="late arrivals"
+            scheme="warning"
+          />
+        </div>
+      )}
 
       {/* ── Weekly Overview — Charts ─────────────────────────────────────── */}
       <section className="mb-8">
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
-            Weekly Overview
-          </p>
-          <div className="mt-2 h-px w-10 bg-accent/40" />
+          <h2 className="text-body-sm font-medium text-ink">Weekly Overview</h2>
+          <div className="mt-2 h-0.5 w-10 bg-accent opacity-40" />
         </div>
 
         {fetching ? (
-          <div className="card flex items-center justify-center">
-            <p className="text-ink-muted text-sm font-sans animate-pulse">
-              Loading charts…
-            </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ChartSkeleton />
+            <ChartSkeleton />
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Bar chart — org hours per day, last 7 days */}
             <div className="card-elevated relative overflow-hidden">
               <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
-              <p className="text-xs font-mono uppercase tracking-widest text-ink-muted mb-4">
-                Org Hours / Day — Last 7 Days
+              <p className="text-caption text-ink-muted mb-4">
+                Org hours / day — last 7 days
               </p>
               <HoursChart data={hoursChartData} />
             </div>
 
+            {/* Donut chart — session breakdown this week */}
             <div className="card-elevated relative overflow-hidden">
               <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
-              <p className="text-xs font-mono uppercase tracking-widest text-ink-muted mb-4">
-                Session Breakdown — This Week
+              <p className="text-caption text-ink-muted mb-4">
+                Session breakdown — this week
               </p>
               <SessionsChart data={sessionsChartData} />
             </div>
@@ -379,20 +378,18 @@ function SuperAdminDashboard() {
       {/* ── Monthly Report ───────────────────────────────────────────────── */}
       <section className="mb-8">
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
-            Monthly Report
-          </p>
-          <div className="mt-2 h-px w-10 bg-accent/40" />
+          <h2 className="text-body-sm font-medium text-ink">Monthly Report</h2>
+          <div className="mt-2 h-0.5 w-10 bg-accent opacity-40" />
         </div>
 
-        <div className="card-elevated relative overflow-hidden border-accent/20">
-          {/* Corner brackets — Linear signature */}
+        <div className="card-elevated relative overflow-hidden">
+          {/* Corner brackets — ledger signature */}
           <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-40 rounded-tr-sm pointer-events-none" />
           <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-accent opacity-40 rounded-bl-sm pointer-events-none" />
 
           {/* Month picker */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <p className="text-ink text-sm font-sans font-medium">
+            <p className="text-body-sm font-medium text-ink">
               Showing data for{' '}
               <span className="text-accent font-mono">
                 {selectedMonthLabel}
@@ -422,7 +419,7 @@ function SuperAdminDashboard() {
             {/* Stats grid */}
             {monthRecords.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-ink-muted text-sm font-sans">
+                <p className="text-ink-muted text-body-sm">
                   No records found for {selectedMonthLabel}.
                 </p>
               </div>
@@ -430,8 +427,8 @@ function SuperAdminDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {/* Total Sessions */}
                 <div className="card">
-                  <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
-                    Total Sessions
+                  <p className="text-caption text-ink-muted mb-1">
+                    Total sessions · {monthStats.uniqueDays} active days
                   </p>
                   <p className="text-display-sm text-ink font-mono">
                     {monthStats.totalSessions}
@@ -440,12 +437,12 @@ function SuperAdminDashboard() {
 
                 {/* Avg Hours / Day */}
                 <div className="card">
-                  <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
-                    Avg Hours / Day
+                  <p className="text-caption text-ink-muted mb-1">
+                    Avg hours / day
                   </p>
                   <p className="text-display-sm text-ink font-mono">
                     {monthStats.avgHoursPerDay}
-                    <span className="text-sm font-normal text-ink-muted ml-1 font-sans">
+                    <span className="text-body-sm font-normal text-ink-muted ml-1 font-sans">
                       hrs
                     </span>
                   </p>
@@ -453,12 +450,12 @@ function SuperAdminDashboard() {
 
                 {/* Late % */}
                 <div className="card">
-                  <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
-                    Late Arrivals
+                  <p className="text-caption text-ink-muted mb-1">
+                    Late arrivals
                   </p>
                   <p className="text-display-sm text-ink font-mono">
                     {monthStats.latePercent}
-                    <span className="text-sm font-normal text-ink-muted ml-1 font-sans">
+                    <span className="text-body-sm font-normal text-ink-muted ml-1 font-sans">
                       %
                     </span>
                   </p>
@@ -474,7 +471,8 @@ function SuperAdminDashboard() {
               disabled={monthRecords.length === 0}
               className="btn-secondary"
             >
-              <FaFileCsv /> CSV
+              <FaFileCsv />
+              <span>CSV</span>
             </button>
 
             <button
@@ -482,7 +480,8 @@ function SuperAdminDashboard() {
               disabled={monthRecords.length === 0}
               className="btn-secondary"
             >
-              <FaFileExcel /> Excel
+              <FaFileExcel />
+              <span>Excel</span>
             </button>
 
             <button
@@ -490,7 +489,8 @@ function SuperAdminDashboard() {
               disabled={monthRecords.length === 0}
               className="btn-secondary"
             >
-              <FaFilePdf /> PDF
+              <FaFilePdf />
+              <span>PDF</span>
             </button>
           </div>
         </div>
@@ -499,10 +499,8 @@ function SuperAdminDashboard() {
       {/* ── All Attendance ───────────────────────────────────────────────── */}
       <section>
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
-            All Attendance
-          </p>
-          <div className="mt-2 h-px w-10 bg-accent/40" />
+          <h2 className="text-body-sm font-medium text-ink">All Attendance</h2>
+          <div className="mt-2 h-0.5 w-10 bg-accent opacity-40" />
         </div>
 
         {/* Search input */}
@@ -520,21 +518,17 @@ function SuperAdminDashboard() {
         {/* No results */}
         {!fetching && searchQuery && filteredRecords.length === 0 && (
           <div className="card-elevated px-6 py-10 text-center mb-4">
-            <p className="text-ink-muted text-sm font-sans">
+            <p className="text-ink-muted text-body-sm">
               No results for <span className="text-ink font-mono">"{searchQuery}"</span>
             </p>
-            <p className="text-ink-subtle text-xs font-sans mt-1">
+            <p className="text-ink-subtle text-caption mt-1">
               Try a different name, department, date or status.
             </p>
           </div>
         )}
 
         {fetching ? (
-          <div className="card flex items-center justify-center">
-            <p className="text-ink-muted text-sm font-sans animate-pulse">
-              Loading records…
-            </p>
-          </div>
+          <TableSkeleton showEmployee />
         ) : (
           (!searchQuery || filteredRecords.length > 0) && (
             <AttendanceTable records={filteredRecords} showEmployee={true} />

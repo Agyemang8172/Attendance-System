@@ -1,51 +1,56 @@
-// KpiCard — Linear styled card for key metrics
-// Props:
-//   icon        → icon element, e.g. <FaClock />
-//   label       → uppercase label, e.g. "Weekly Hours"
-//   value       → the main number/string, e.g. "32.5"
-//   subtext     → small text below value, e.g. "/ 40 hrs target"
-//   colorScheme → accent color for icon: "blue" | "gold" | "green" | "red"
+// KPI bento primitives — §10.2 R10 of docs/DESIGN_PROPOSAL.md.
+//
+// The four-identical-card row becomes an asymmetric bento: one hero card
+// spanning two columns carries the day's primary figure and its action
+// (the clock), and two dense cards hold the secondary metrics.
+//
+// Exports:
+//   KpiHero  → the 2-column hero. `children` slot for the action + live pill.
+//   KpiCard  → dense secondary metric card.
 
-const colorSchemes = {
-  blue:  { bg: 'bg-accent/10', border: 'border-accent/20', icon: 'text-accent' },
-  gold:  { bg: 'bg-warning/10', border: 'border-warning/20', icon: 'text-warning' },
-  green: { bg: 'bg-success/10', border: 'border-success/20', icon: 'text-success' },
-  red:   { bg: 'bg-error/10', border: 'border-error/20', icon: 'text-error' },
+const iconTints = {
+  accent: 'bg-accent-soft border-accent-soft text-accent',
+  success: 'bg-success-soft border-success-soft text-success',
+  warning: 'bg-warning-soft border-warning-soft text-warning',
+  error: 'bg-error-soft border-error-soft text-error',
 }
 
-const KpiCard = ({ icon, label, value, subtext, colorScheme = 'gold' }) => {
-  const scheme = colorSchemes[colorScheme] || colorSchemes.gold
+export const KpiHero = ({ eyebrow, value, unit, subtext, children }) => (
+  <div className="relative card-elevated overflow-hidden lg:col-span-2 flex flex-col sm:flex-row sm:items-center gap-6">
+    {/* Corner bracket — ledger signature */}
+    <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
+
+    <div>
+      <p className="text-caption text-ink-muted">{eyebrow}</p>
+      <p className="mt-1 font-mono text-display-lg text-ink leading-none tracking-[-0.5px]">
+        {value}
+        {unit && <span className="ml-1.5 text-body-sm font-sans text-ink-muted">{unit}</span>}
+      </p>
+      {subtext && <p className="mt-1.5 text-body-sm text-ink-subtle">{subtext}</p>}
+    </div>
+
+    {children && <div className="sm:ml-auto flex flex-wrap items-center gap-3">{children}</div>}
+  </div>
+)
+
+const KpiCard = ({ icon, label, value, subtext, scheme = 'accent' }) => {
+  const tint = iconTints[scheme] || iconTints.accent
+  const iconBox = (
+    <span className={`flex items-center justify-center w-9 h-9 rounded-lg border ${tint}`}>
+      {icon}
+    </span>
+  )
 
   return (
-    <div className={`card relative overflow-hidden ${scheme.bg} ${scheme.border}`}>
-
-      {/* Corner bracket — Linear signature */}
-      <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
-
-      {/* Icon box */}
-      <div className={`p-3 rounded-lg border w-fit bg-surface-2 ${scheme.icon} ${scheme.border}`}>
-        <span className="text-xl block">{icon}</span>
-      </div>
-
-      {/* Label */}
-      <div>
-        <p className="text-eyebrow text-ink-muted mb-2">
-          {label}
-        </p>
-
-        {/* Value — the hero of the card */}
-        <p className="text-display-sm font-medium text-ink font-mono leading-none">
+    <div className="card relative overflow-hidden flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-caption text-ink-muted truncate">{label}</p>
+        <p className="mt-1 font-mono text-display-md text-ink leading-none tracking-[-0.5px]">
           {value}
         </p>
-
-        {/* Subtext */}
-        {subtext && (
-          <p className="text-caption text-ink-muted font-sans mt-2">
-            {subtext}
-          </p>
-        )}
+        {subtext && <p className="mt-1 text-caption text-ink-subtle truncate">{subtext}</p>}
       </div>
-
+      {iconBox}
     </div>
   )
 }

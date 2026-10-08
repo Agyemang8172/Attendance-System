@@ -252,6 +252,24 @@
   .bg-warning { background-color: var(--warning); }
   .text-warning { color: var(--warning); }
 
+  /* Soft tints — §5.4 / §8.5 raised-tint grounds.
+   *
+   * Tailwind silently drops the opacity modifier on var()-based colours
+   * (e.g. `bg-success/15` emits no rule), so the tinted chips the design
+   * spec calls for are derived here from the tokens. The transparent base
+   * lets a tint sit on any surface — paper cards, sunken table headers,
+   * calendar cells. Status text pairs 12%/28%~40% margins: the strong
+   * text token carries the meaning (measured in §5), the tint only
+   * separates the chip from its ground. */
+  .bg-accent-soft  { background-color: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .bg-success-soft { background-color: color-mix(in srgb, var(--success) 12%, transparent); }
+  .bg-warning-soft { background-color: color-mix(in srgb, var(--warning) 12%, transparent); }
+  .bg-error-soft   { background-color: color-mix(in srgb, var(--error) 12%, transparent); }
+  .border-accent-soft  { border-color: color-mix(in srgb, var(--accent) 28%, transparent); }
+  .border-success-soft { border-color: color-mix(in srgb, var(--success) 28%, transparent); }
+  .border-warning-soft { border-color: color-mix(in srgb, var(--warning) 28%, transparent); }
+  .border-error-soft   { border-color: color-mix(in srgb, var(--error) 28%, transparent); }
+
   /* Typography */
   .text-display-xl { @apply text-[48px] font-semibold leading-[1.05] tracking-[-1.5px]; }
   .text-display-lg { @apply text-[36px] font-semibold leading-[1.1] tracking-[-1px]; }

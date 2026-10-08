@@ -3,6 +3,7 @@ import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
+import { BadgeGridSkeleton } from '../components/ui/Skeleton'
 import { FaLock, FaCheck, FaFire, FaBolt, FaGem, FaTrophy } from 'react-icons/fa'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -41,9 +42,9 @@ const BADGES = [
       }
       return count >= 5
     },
-    earnedCard: 'card border-success/20',
+    earnedCard: 'card border-success-soft',
     earnedText: 'text-success',
-    earnedSub: 'text-success/70',
+    earnedSub: 'text-ink-muted',
   },
   {
     id: 'early_bird',
@@ -55,9 +56,9 @@ const BADGES = [
       records.some(
         (r) => r.clockIn && r.sessionStatus === 'CLOSED' && isEarlyBird(r.clockIn)
       ),
-    earnedCard: 'card border-warning/20',
+    earnedCard: 'card border-warning-soft',
     earnedText: 'text-warning',
-    earnedSub: 'text-warning/70',
+    earnedSub: 'text-ink-muted',
   },
   {
     id: 'perfect_month',
@@ -75,9 +76,9 @@ const BADGES = [
       if (thisMonth.length === 0) return false
       return thisMonth.every((r) => !isLate(r.clockIn))
     },
-    earnedCard: 'card border-accent/20',
+    earnedCard: 'card border-accent-soft',
     earnedText: 'text-accent',
-    earnedSub: 'text-accent/70',
+    earnedSub: 'text-ink-muted',
   },
   {
     id: 'veteran',
@@ -87,9 +88,9 @@ const BADGES = [
     hint: 'Complete 30 or more closed sessions.',
     check: (records) =>
       records.filter((r) => r.sessionStatus === 'CLOSED').length >= 30,
-    earnedCard: 'card border-accent/20',
+    earnedCard: 'card border-accent-soft',
     earnedText: 'text-accent',
-    earnedSub: 'text-accent/70',
+    earnedSub: 'text-ink-muted',
   },
 ]
 
@@ -129,7 +130,7 @@ const BadgeCard = ({ badge, earned }) => {
 
   // Locked
   return (
-    <div className="relative rounded-2xl border border-hairline bg-surface-1/40 p-5 flex flex-col gap-3">
+    <div className="relative rounded-2xl border border-hairline bg-surface-2 p-5 flex flex-col gap-3">
       {/* Badge icon — muted via opacity */}
       <span className="text-3xl opacity-25">{badge.icon}</span>
 
@@ -153,7 +154,7 @@ const BadgeCard = ({ badge, earned }) => {
 
 const InfoRow = ({ label, value, mono = false, last = false }) => (
   <div className={last ? '' : 'border-b border-hairline pb-4 mb-4'}>
-    <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
+    <p className="text-ink-muted text-xs mb-1">
       {label}
     </p>
     <p className={`text-ink text-sm ${mono ? 'font-mono' : 'font-sans'}`}>
@@ -205,16 +206,16 @@ function Profile() {
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <header className="mb-8">
-        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
-          Profile
+        <p className="text-ink-muted text-caption font-mono mb-1">
+          Your profile
         </p>
         <h1 className="text-display-sm text-ink font-serif leading-tight">
           My Profile
         </h1>
-        <p className="text-ink-muted text-sm font-sans mt-1">
+        <p className="text-ink-muted text-body-sm mt-1">
           Your account details and achievements.
         </p>
-        <div className="mt-3 h-px w-12 bg-accent/40" />
+        <div className="mt-3 h-px w-12 bg-accent opacity-40" />
       </header>
 
       {/* ── Profile Card ─────────────────────────────────────────────────── */}
@@ -242,7 +243,7 @@ function Profile() {
         </div>
 
         {/* Accent divider */}
-        <div className="h-px bg-accent/10 mb-6" />
+        <div className="h-px bg-accent opacity-30 mb-6" />
 
         {/* Info rows */}
         <InfoRow label="Employee ID" value={user?.employeeCode || '--'} mono />
@@ -253,10 +254,10 @@ function Profile() {
       <section>
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
+            <h2 className="text-body-sm font-medium text-ink">
               Achievements
-            </p>
-            <div className="mt-2 h-px w-10 bg-accent/40" />
+            </h2>
+            <div className="mt-2 h-0.5 w-10 bg-accent opacity-40" />
           </div>
           {/* Badge count */}
           {!fetching && (
@@ -268,11 +269,7 @@ function Profile() {
         </div>
 
         {fetching ? (
-          <div className="card flex items-center justify-center">
-            <p className="text-ink-muted text-sm font-sans animate-pulse">
-              Loading achievements…
-            </p>
-          </div>
+          <BadgeGridSkeleton />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {BADGES.map((badge) => (

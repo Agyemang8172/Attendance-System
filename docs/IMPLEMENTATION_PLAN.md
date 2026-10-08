@@ -245,6 +245,20 @@ Asymmetric KPI bento (R10), sticky headers + sort + pagination (R5), skeletons (
 
 **Commit:** type `feat` → `redesign dashboards and data tables on the approved design system`
 
+**Notes recorded during implementation**
+
+- Cut from `feat/login-redesign` at `15be18c`, not from `feat/design-tokens` as the base table says, so M4 inherits the M3 `.input` spec, `.btn` `active:scale`, chrome tokens, and S7 Settings validation. Now that the sidebars are crossed, the M5 cut point only needs to reach back for account-popover chrome tokens, which M3 already supplies.
+- Soft tints are implemented as `color-mix` utilities in `index.css` (`.bg-*-soft`, `.border-*-soft`) rather than Tailwind opacity modifiers, which Tailwind silently drops on `var()` colours. The M2 Option 1 leaves were no-ops as a result; every M4 surface that uses a tint renders a real, blended colour. `border-l-warning` was verified present in the emitted CSS after `vite build`.
+- Bento composition (R10): new `KpiHero` (two-column, primary figure + action slot) and a dense `KpiCard` with a soft icon square and mono display value. Per-role bentos: STAFF = Weekly Hours + Streak + Attendance Rate (Late Arrivals dropped, §11 3-metrics cap); HR = Clocked In Today + Late Today + Not Yet Clocked Out; SA = Total Employees + Clocked In + Late.
+- Tables (R5): sticky header inside a `max-h-[560px]` scroll region, six sortable columns with `aria-sort` and fa6 indicators, pagination at 12/page with a "Showing X–Y of N records" footer, real zebra rows (`bg-surface-2` odd, `bg-surface-3` hover). The HR table sorts exceptions-first: a status-rank key puts LATE above OPEN above CLOSED, and late rows carry `border-l-warning`.
+- Page reset lives in the sort click handler, not an effect, to keep `react-hooks/set-state-in-effect` out of the tree. Out-of-range pages are clamped with `safePage = min(page, totalPages)`, so shrinking data (a search narrowing the set) never strands the user on an empty page.
+- Two pre-existing chart bugs fixed. HoursChart was reading `clockInTime` off already-aggregated `{ day, hours }` records and drew all-zero bars; it now plots the `data` prop directly. The HR SessionsChart was handed sentence-case labels (`Closed`) that never matched the uppercase `STATUS_COLORS` keys; labels are uppercased before lookup.
+- Schedule, Profile, and Settings use sentence-case eyebrows and section titles (role chips keep uppercase: they are codes), real day-cell tints with solid legend dots, and accent dividers written as `opacity-40` — the `/40` modifier is another Tailwind-on-`var()` no-op.
+- Skeleton primitives (§17) land in a new `src/components/ui/Skeleton.jsx` with a sibling `Skeleton.d.ts`. The declaration matters: without it, the three TypeScript pages importing `Skeleton` each add a TS7016. Types are exported for `Skeleton`, `BentoSkeleton`, `TableSkeleton(showEmployee)`, `ChartSkeleton`, `CalendarSkeleton`, and `BadgeGridSkeleton`, and their geometry matches the content they replace.
+- The fa6 sort indicator is `FaArrowsUpDown` — `FaArrowUpDown` does not exist.
+- `attendance-table.test.jsx` adds five cases: default `aria-sort`, date toggle asc → desc, pagination at 12/page plus footer text, `exceptionsFirst` ordering with the border class on late rows, and the empty state. Fixture note: an "on-time" record must use `at(6, 0)`; `at(7, 0)` is already past the 06:30 threshold and reads as late.
+- Gate results at commit time: vitest 28/28 (23 prior + 5 new); eslint at the known 5, all in files M4 does not touch; tsc 43 against a 45 baseline (the `Skeleton.d.ts` removed three fresh TS7016s); `vite build` green; ui-taste 25/25; env-check 9/9. The `gitleaks dir` scan flags `backend/.env` (the local `JWT_SECRET`), which is gitignored and untracked, so the git-based pre-push gate never sees it; no path exists for it into a commit.
+
 ---
 
 ### M5 — Sidebar / navigation · `feat/sidebar-navigation`

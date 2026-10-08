@@ -111,16 +111,16 @@ function Settings() {
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <header className="mb-8">
-        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
-          Settings
+        <p className="text-ink-muted text-caption font-mono mb-1">
+          Your account
         </p>
         <h1 className="text-display-sm text-ink font-serif leading-tight">
           Account & Security
         </h1>
-        <p className="text-ink-muted text-sm font-sans mt-1">
+        <p className="text-ink-muted text-body-sm mt-1">
           Manage your account details and password.
         </p>
-        <div className="mt-3 h-px w-12 bg-accent/40" />
+        <div className="mt-3 h-px w-12 bg-accent opacity-40" />
       </header>
 
       {/* ── Two-column grid ──────────────────────────────────────────────── */}
@@ -129,10 +129,8 @@ function Settings() {
         {/* ── Account Card ───────────────────────────────────────────────── */}
         <section>
           <div className="mb-4">
-            <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
-              Account
-            </p>
-            <div className="mt-2 h-px w-10 bg-accent/40" />
+            <h2 className="text-body-sm font-medium text-ink">Account</h2>
+            <div className="mt-2 h-0.5 w-10 bg-accent opacity-40" />
           </div>
 
           <div className="card-elevated relative overflow-hidden">
@@ -161,10 +159,8 @@ function Settings() {
         {/* ── Change Password Card ───────────────────────────────────────── */}
         <section>
           <div className="mb-4">
-            <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
-              Change Password
-            </p>
-            <div className="mt-2 h-px w-10 bg-accent/40" />
+            <h2 className="text-body-sm font-medium text-ink">Change Password</h2>
+            <div className="mt-2 h-0.5 w-10 bg-accent opacity-40" />
           </div>
 
           <div className="card-elevated relative overflow-hidden">

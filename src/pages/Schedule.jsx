@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
+import { CalendarSkeleton } from '../components/ui/Skeleton'
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -77,20 +78,22 @@ const getDayStatus = (date, recordsByDay, today) => {
 
 const DayCell = ({ date, recordsByDay, today }) => {
   if (!date) {
-    return <div className="aspect-square rounded-lg bg-surface-1/20" />
+    return <div className="aspect-square" />
   }
 
   const status = getDayStatus(date, recordsByDay, today)
   const record = recordsByDay[date.toDateString()]
   const isToday = sameDay(date, today)
 
+  // Soft tints derived from the §5.4 tokens — the record carries the strong
+  // text colour, the tint only separates the chip from the calendar ground.
   const styles = {
-    ontime: 'bg-success/10 border border-success/20',
-    late: 'bg-warning/10 border border-warning/20',
-    absent: 'bg-error/10 border border-error/20',
-    open: 'bg-accent/10 border border-accent/20',
-    future: 'bg-surface-1/20 border border-transparent',
-    weekend: 'bg-surface-1/10 border border-transparent',
+    ontime: 'bg-success-soft border border-success-soft',
+    late: 'bg-warning-soft border border-warning-soft',
+    absent: 'bg-error-soft border border-error-soft',
+    open: 'bg-accent-soft border border-accent-soft',
+    future: 'bg-surface-1 border border-hairline',
+    weekend: 'bg-surface-1 border border-hairline',
   }
 
   const dateColor = {
@@ -116,7 +119,7 @@ const DayCell = ({ date, recordsByDay, today }) => {
       className={[
         'aspect-square rounded-lg p-1.5 sm:p-2 flex flex-col',
         styles[status],
-        isToday ? 'ring-1 ring-accent/60' : '',
+        isToday ? 'ring-1 ring-accent ring-offset-1 ring-offset-surface-2' : '',
       ].join(' ')}
     >
       {/* Date number */}
@@ -140,7 +143,7 @@ const DayCell = ({ date, recordsByDay, today }) => {
       {label[status] && (
         <span
           className={`
-            mt-auto text-[9px] sm:text-[10px] font-mono uppercase tracking-wide
+            mt-auto text-[9px] sm:text-[10px] font-mono
             ${dateColor[status]}
           `}
         >
@@ -153,9 +156,9 @@ const DayCell = ({ date, recordsByDay, today }) => {
 
 // ─── Legend ───────────────────────────────────────────────────────────────────
 
-const LegendItem = ({ colorClass, label }) => (
+const LegendItem = ({ swatch, label }) => (
   <div className="flex items-center gap-2">
-    <span className={`w-3 h-3 rounded ${colorClass}`} />
+    <span className={`w-3 h-3 rounded ${swatch}`} />
     <span className="text-ink-muted text-xs font-sans">{label}</span>
   </div>
 )
@@ -233,37 +236,33 @@ function Schedule() {
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <header className="mb-8">
-        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
-          Schedule
+        <p className="text-ink-muted text-caption font-mono mb-1">
+          My attendance calendar
         </p>
         <h1 className="text-display-sm text-ink font-serif leading-tight">
-          My Attendance Calendar
+          Monthly Schedule
         </h1>
-        <p className="text-ink-muted text-sm font-sans mt-1">
+        <p className="text-ink-muted text-body-sm mt-1">
           A month-by-month view of your attendance history.
         </p>
-        <div className="mt-3 h-px w-12 bg-accent/40" />
+        <div className="mt-3 h-px w-12 bg-accent opacity-40" />
       </header>
 
       {fetching ? (
-        <div className="card flex items-center justify-center">
-          <p className="text-ink-muted text-sm font-sans animate-pulse">
-            Loading calendar…
-          </p>
-        </div>
+        <CalendarSkeleton />
       ) : (
         <>
           {/* ── Calendar Card ───────────────────────────────────────────── */}
-          <div className="relative card-elevated overflow-hidden border-accent/20">
+          <div className="relative card-elevated overflow-hidden">
 
             {/* Corner bracket */}
             <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 pointer-events-none z-10" />
 
             {/* Month navigation */}
-            <div className="card border-b border-hairline px-4 py-3 flex items-center justify-between">
+            <div className="px-4 py-3 flex items-center justify-between border-b border-hairline">
               <button
                 onClick={goPrev}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-subtle hover:text-accent hover:bg-surface-2 transition-colors text-xs"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-subtle hover:text-accent hover:bg-surface-1 transition-colors text-xs"
                 aria-label="Previous month"
               >
                 <FaChevronLeft />
@@ -276,7 +275,7 @@ function Schedule() {
               <button
                 onClick={goNext}
                 disabled={isCurrentMonth}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-subtle hover:text-accent hover:bg-surface-2 transition-colors text-xs disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-subtle"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-subtle hover:text-accent hover:bg-surface-1 transition-colors text-xs disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-subtle"
                 aria-label="Next month"
               >
                 <FaChevronRight />
@@ -290,7 +289,7 @@ function Schedule() {
                 {DAY_NAMES.map((d) => (
                   <div
                     key={d}
-                    className="text-center text-[10px] sm:text-xs font-mono uppercase tracking-wide text-ink-muted py-1"
+                    className="text-center text-[10px] sm:text-xs font-mono text-ink-muted py-1"
                   >
                     {d}
                   </div>
@@ -317,10 +316,10 @@ function Schedule() {
 
           {/* ── Legend ──────────────────────────────────────────────────── */}
           <div className="flex flex-wrap gap-4 mt-4 px-1">
-            <LegendItem colorClass="bg-success/40" label="On time" />
-            <LegendItem colorClass="bg-warning/40" label="Late" />
-            <LegendItem colorClass="bg-error/40" label="Absent" />
-            <LegendItem colorClass="bg-accent/40" label="Open" />
+            <LegendItem swatch="bg-success" label="On time" />
+            <LegendItem swatch="bg-warning" label="Late" />
+            <LegendItem swatch="bg-error" label="Absent" />
+            <LegendItem swatch="bg-accent" label="Open" />
           </div>
         </>
       )}

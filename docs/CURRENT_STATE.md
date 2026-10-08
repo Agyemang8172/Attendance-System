@@ -9,14 +9,15 @@
 > detail underneath as historical until then. The header below is current.
 
 ## Current Task
-- **Task:** M3 — Login redesign (`feat/login-redesign`, cut from `feat/design-tokens`)
+- **Task:** M4 — Dashboard redesign (`feat/dashboard-redesign`, cut from
+  `feat/login-redesign` at `15be18c`)
 - **Triage Level:** STANDARD
-- **Status:** Implemented. Login and SetPassword rebuilt on the approved
-  split-screen with correct contrast (subtext 4.59:1, focus ring 4.81:1),
-  `auth-*` retired for real (zero refs left in `src` or the bundle), S15
-  guard on `/set-password`, M1 `PASSWORD_CHANGE_REQUIRED` interceptor wired,
-  and S7 client/server policy in one shared module. Frontend suite 23/23,
-  build green, eslint at the known 5, tsc at the known 45, ui-taste 24/24.
+- **Status:** Implemented. STAFF/HR/SA bentos (KpiHero + dense KpiCard),
+  sortable sticky-header tables with pagination and exception-first HR
+  ordering, six geometry-matched skeleton primitives, and sentence-case
+  sweeps on Schedule/Profile/Settings. HoursChart and HR SessionsChart data
+  bugs fixed. Frontend suite 28/28, build green, tsc 43 (down from the 45
+  baseline), eslint at the known 5, ui-taste 25/25, env-check 9/9.
   Awaiting browser review and push approval.
 
 ## Approved Plan
@@ -27,8 +28,9 @@ branch, each committed through `.agents/scripts/commit.sh`.
 - M1 **DONE** — `feat/auth-foundation`, commits `7927e1f` and `c5ee5ff`, plus the
   GitGuardian config `9f08982`, pushed. Backend suite 71/71. Awaiting merge.
 - M2 **DONE** — `feat/design-tokens`, commit `6ad2bd6`, pushed. Awaiting merge.
-- M3 **IN PROGRESS** — this branch.
-- M4–M10 **QUEUED**.
+- M3 **DONE** — `feat/login-redesign`, commit `15be18c`, pushed. Awaiting merge.
+- M4 **IN PROGRESS** — this branch.
+- M5–M10 **QUEUED**.
 
 ## Dev-OS Pipeline Status
 
