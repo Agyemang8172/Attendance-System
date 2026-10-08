@@ -89,37 +89,38 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-20 lg:hidden"
+          className="fixed inset-0 bg-canvas/80 z-20 lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`
-          fixed top-0 left-0 h-screen w-64
-          bg-slate-900
-          flex flex-col
-          z-30
-          transition-transform duration-300
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0
-        `}
+        className={
+          'fixed top-0 left-0 h-screen w-64 ' +
+          'bg-canvas ' +
+          'border-r border-hairline ' +
+          'flex flex-col ' +
+          'z-30 ' +
+          'transition-transform duration-200 ' +
+          (isOpen ? 'translate-x-0' : '-translate-x-full') + ' ' +
+          'lg:translate-x-0'
+        }
       >
-        {/* Top-right corner bracket — MERIDIAN signature */}
-        <div className="absolute top-6 right-6 w-6 h-6 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm pointer-events-none" />
+        {/* Top-right corner bracket — Linear signature */}
+        <div className="absolute top-6 right-6 w-6 h-6 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
 
         {/* ── BRAND BLOCK ────────────────────────────────────────────────── */}
         <div className="px-6 pt-10 pb-6">
-          {/* Gold strip at very top of sidebar — mirrors Layout gold strip */}
-          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-yellow-500 via-yellow-400/60 to-transparent" />
+          {/* Accent strip at very top of sidebar — mirrors Layout accent strip */}
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-accent" />
 
-          <h2 className="text-2xl font-bold text-yellow-500 tracking-tight leading-none font-serif">
+          <h2 className="text-2xl font-semibold text-accent tracking-tight leading-none font-serif">
             AttendPro
           </h2>
-          <p className="text-xs text-slate-500 uppercase tracking-widest mt-2 font-sans">
+          <p className="text-xs text-ink-subtle uppercase tracking-widest mt-2 font-sans">
             Attendance Management
           </p>
-          <div className="mt-5 h-px bg-yellow-500/20" />
+          <div className="mt-5 h-px bg-hairline" />
         </div>
 
         {/* ── NAV ITEMS ──────────────────────────────────────────────────── */}
@@ -134,21 +135,19 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                   navigate(item.path)
                   onClose()
                 }}
-                className={`
-                  flex items-center gap-3
-                  px-4 py-3
-                  rounded-lg
-                  text-sm font-medium font-sans
-                  cursor-pointer
-                  transition-all duration-150
-                  ${
-                    isActive
-                      ? 'border-l-2 border-yellow-500 bg-yellow-500/10 text-yellow-500 pl-3'
-                      : 'border-l-2 border-transparent text-slate-400 hover:text-slate-100 hover:bg-white/5'
-                  }
-                `}
+                className={
+                  'flex items-center gap-3 ' +
+                  'px-4 py-3 ' +
+                  'rounded-lg ' +
+                  'text-sm font-medium font-sans ' +
+                  'cursor-pointer ' +
+                  'transition-all duration-150 ' +
+                  (isActive
+                    ? 'bg-surface-2 text-accent border-l-2 border-accent pl-3'
+                    : 'text-ink-subtle hover:text-ink hover:bg-surface-1')
+                }
               >
-                <span className={`text-base shrink-0 ${isActive ? 'text-yellow-500' : ''}`}>
+                <span className={'text-base shrink-0 ' + (isActive ? 'text-accent' : 'text-ink-subtle')}>
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
@@ -158,20 +157,20 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         </nav>
 
         {/* ── BOTTOM SECTION ─────────────────────────────────────────────── */}
-        <div className="px-4 pb-6 pt-4 border-t border-yellow-500/10">
+        <div className="px-4 pb-6 pt-4 border-t border-hairline">
 
           {/* User identity block */}
           <div className="flex items-center gap-3 px-2 py-3 mb-2">
-            <div className="w-9 h-9 rounded-lg bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0">
-              <span className="text-yellow-500 text-xs font-bold font-sans">
+            <div className="w-9 h-9 rounded-lg bg-surface-2 border border-hairline flex items-center justify-center shrink-0">
+              <span className="text-accent text-xs font-bold font-sans">
                 {initials || '??'}
               </span>
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-slate-100 text-sm font-medium truncate font-sans">
+              <span className="text-ink text-sm font-medium truncate font-sans">
                 {currentUser?.firstName} {currentUser?.lastName}
               </span>
-              <span className="text-xs text-slate-500 mt-0.5 font-sans">
+              <span className="text-xs text-ink-subtle mt-0.5 font-sans">
                 {roleLabel[currentUser?.role as Role] || currentUser?.role}
               </span>
             </div>
@@ -180,19 +179,17 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           {/* Logout */}
           <div
             onClick={handleLogOut}
-            className="
-              flex items-center gap-3
-              px-4 py-3
-              rounded-lg
-              text-sm font-medium font-sans
-              cursor-pointer
-              transition-all duration-150
-              border-l-2 border-transparent
-              text-slate-400
-              hover:text-red-400
-              hover:bg-red-500/10
-              hover:border-red-500
-            "
+            className={
+              'flex items-center gap-3 ' +
+              'px-4 py-3 ' +
+              'rounded-lg ' +
+              'text-sm font-medium font-sans ' +
+              'cursor-pointer ' +
+              'transition-all duration-150 ' +
+              'text-ink-subtle ' +
+              'hover:text-error ' +
+              'hover:bg-error/10'
+            }
           >
             <CiLogout className="text-base shrink-0" />
             <span>Logout</span>
@@ -200,15 +197,15 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
           {/* Status line */}
           <div className="flex items-center gap-2 mt-4 px-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
-            <span className="text-slate-500 text-[10px] font-mono">
+            <div className="w-2 h-2 rounded-full bg-success animate-pulse shrink-0" />
+            <span className="text-caption text-ink-tertiary font-mono">
               System Online v1.0
             </span>
           </div>
         </div>
 
         {/* Bottom-right corner bracket */}
-        <div className="absolute bottom-6 right-6 w-6 h-6 border-b-2 border-r-2 border-yellow-500 opacity-30 rounded-br-sm pointer-events-none" />
+        <div className="absolute bottom-6 right-6 w-6 h-6 border-b-2 border-r-2 border-accent opacity-30 rounded-br-sm pointer-events-none" />
 
       </aside>
     </>

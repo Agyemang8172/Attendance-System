@@ -41,10 +41,9 @@ const BADGES = [
       }
       return count >= 5
     },
-    earnedCard: 'bg-orange-500/10 border-orange-500/20',
-    earnedEmoji: '',
-    earnedText: 'text-orange-400',
-    earnedSub: 'text-orange-400/70',
+    earnedCard: 'card border-success/20',
+    earnedText: 'text-success',
+    earnedSub: 'text-success/70',
   },
   {
     id: 'early_bird',
@@ -56,10 +55,9 @@ const BADGES = [
       records.some(
         (r) => r.clockIn && r.sessionStatus === 'CLOSED' && isEarlyBird(r.clockIn)
       ),
-    earnedCard: 'bg-yellow-500/10 border-yellow-500/20',
-    earnedEmoji: '',
-    earnedText: 'text-yellow-500',
-    earnedSub: 'text-yellow-500/70',
+    earnedCard: 'card border-warning/20',
+    earnedText: 'text-warning',
+    earnedSub: 'text-warning/70',
   },
   {
     id: 'perfect_month',
@@ -77,10 +75,9 @@ const BADGES = [
       if (thisMonth.length === 0) return false
       return thisMonth.every((r) => !isLate(r.clockIn))
     },
-    earnedCard: 'bg-blue-500/10 border-blue-500/20',
-    earnedEmoji: '',
-    earnedText: 'text-blue-400',
-    earnedSub: 'text-blue-400/70',
+    earnedCard: 'card border-accent/20',
+    earnedText: 'text-accent',
+    earnedSub: 'text-accent/70',
   },
   {
     id: 'veteran',
@@ -90,10 +87,9 @@ const BADGES = [
     hint: 'Complete 30 or more closed sessions.',
     check: (records) =>
       records.filter((r) => r.sessionStatus === 'CLOSED').length >= 30,
-    earnedCard: 'bg-amber-500/10 border-amber-500/20',
-    earnedEmoji: '',
-    earnedText: 'text-amber-400',
-    earnedSub: 'text-amber-400/70',
+    earnedCard: 'card border-accent/20',
+    earnedText: 'text-accent',
+    earnedSub: 'text-accent/70',
   },
 ]
 
@@ -110,7 +106,7 @@ const BadgeCard = ({ badge, earned }) => {
         `}
       >
         {/* Corner bracket */}
-        <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-yellow-500 opacity-30 pointer-events-none" />
+        <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-accent opacity-30 pointer-events-none" />
 
         {/* Badge icon */}
         <span className="text-3xl">{badge.icon}</span>
@@ -120,7 +116,7 @@ const BadgeCard = ({ badge, earned }) => {
           <p className={`text-sm font-sans font-medium ${badge.earnedText}`}>
             {badge.name}
           </p>
-          <FaCheck className="text-green-500 text-xs shrink-0" />
+          <FaCheck className="text-success text-xs shrink-0" />
         </div>
 
         {/* Description */}
@@ -133,20 +129,20 @@ const BadgeCard = ({ badge, earned }) => {
 
   // Locked
   return (
-    <div className="relative rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 flex flex-col gap-3">
+    <div className="relative rounded-2xl border border-hairline bg-surface-1/40 p-5 flex flex-col gap-3">
       {/* Badge icon — muted via opacity */}
       <span className="text-3xl opacity-25">{badge.icon}</span>
 
       {/* Name + lock */}
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-sans font-medium text-slate-600">
+        <p className="text-sm font-sans font-medium text-ink-subtle">
           {badge.name}
         </p>
-        <FaLock className="text-slate-600 text-xs shrink-0" />
+        <FaLock className="text-ink-tertiary text-xs shrink-0" />
       </div>
 
       {/* Hint */}
-      <p className="text-xs font-sans leading-relaxed text-slate-600">
+      <p className="text-xs font-sans leading-relaxed text-ink-tertiary">
         {badge.hint}
       </p>
     </div>
@@ -156,11 +152,11 @@ const BadgeCard = ({ badge, earned }) => {
 // ─── Info Row ─────────────────────────────────────────────────────────────────
 
 const InfoRow = ({ label, value, mono = false, last = false }) => (
-  <div className={last ? '' : 'border-b border-slate-800 pb-4 mb-4'}>
-    <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
+  <div className={last ? '' : 'border-b border-hairline pb-4 mb-4'}>
+    <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
       {label}
     </p>
-    <p className={`text-slate-100 text-sm ${mono ? 'font-mono' : 'font-sans'}`}>
+    <p className={`text-ink text-sm ${mono ? 'font-mono' : 'font-sans'}`}>
       {value}
     </p>
   </div>
@@ -209,44 +205,44 @@ function Profile() {
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <header className="mb-8">
-        <p className="text-xs font-mono uppercase tracking-widest text-yellow-500/70 mb-1">
+        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
           Profile
         </p>
-        <h1 className="text-2xl font-bold text-slate-900 font-serif leading-tight">
+        <h1 className="text-display-sm text-ink font-serif leading-tight">
           My Profile
         </h1>
-        <p className="text-slate-400 text-sm font-sans mt-1">
+        <p className="text-ink-muted text-sm font-sans mt-1">
           Your account details and achievements.
         </p>
-        <div className="mt-3 h-px w-12 bg-yellow-500/40" />
+        <div className="mt-3 h-px w-12 bg-accent/40" />
       </header>
 
       {/* ── Profile Card ─────────────────────────────────────────────────── */}
-      <div className="relative bg-slate-900 rounded-2xl p-6 sm:p-8 border border-slate-800 max-w-lg mb-8 overflow-hidden">
+      <div className="relative card-elevated max-w-lg mb-8 overflow-hidden">
 
         {/* Corner brackets */}
-        <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-yellow-500 opacity-30 pointer-events-none" />
-        <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-yellow-500 opacity-30 pointer-events-none" />
+        <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 pointer-events-none" />
+        <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-accent opacity-30 pointer-events-none" />
 
         {/* Avatar + identity */}
         <div className="flex items-center gap-5 mb-6">
-          <div className="w-16 h-16 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center shrink-0">
-            <span className="text-yellow-500 text-xl font-bold font-sans">
+          <div className="w-16 h-16 rounded-xl card border-hairline flex items-center justify-center shrink-0">
+            <span className="text-accent text-xl font-bold font-sans">
               {initials || '??'}
             </span>
           </div>
           <div>
-            <h2 className="text-slate-100 text-lg font-semibold font-sans">
+            <h2 className="text-ink text-lg font-semibold font-sans">
               {user?.firstName} {user?.lastName}
             </h2>
-            <span className="inline-block mt-1 px-3 py-0.5 rounded-md bg-yellow-500/10 text-yellow-500 text-xs font-mono uppercase tracking-wider">
+            <span className="inline-block mt-1 px-3 py-0.5 rounded-md card border-hairline text-accent text-xs font-mono uppercase tracking-wider">
               {roleLabel[user?.role] || user?.role}
             </span>
           </div>
         </div>
 
-        {/* Gold divider */}
-        <div className="h-px bg-yellow-500/10 mb-6" />
+        {/* Accent divider */}
+        <div className="h-px bg-accent/10 mb-6" />
 
         {/* Info rows */}
         <InfoRow label="Employee ID" value={user?.employeeCode || '--'} mono />
@@ -257,23 +253,23 @@ function Profile() {
       <section>
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+            <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
               Achievements
             </p>
-            <div className="mt-2 h-px w-10 bg-yellow-500/40" />
+            <div className="mt-2 h-px w-10 bg-accent/40" />
           </div>
           {/* Badge count */}
           {!fetching && (
-            <span className="text-xs font-mono text-slate-500">
-              <span className="text-yellow-500">{earnedCount}</span>
+            <span className="text-caption font-mono text-ink-muted">
+              <span className="text-accent">{earnedCount}</span>
               /{BADGES.length} earned
             </span>
           )}
         </div>
 
         {fetching ? (
-          <div className="bg-slate-900 rounded-2xl p-8 flex items-center justify-center border border-slate-800">
-            <p className="text-slate-500 text-sm font-sans animate-pulse">
+          <div className="card flex items-center justify-center">
+            <p className="text-ink-muted text-sm font-sans animate-pulse">
               Loading achievements…
             </p>
           </div>

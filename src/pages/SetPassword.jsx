@@ -20,11 +20,11 @@ import MeridianArt from '../assets/meridian.svg'
 
 const PasswordField = ({ label, hint, value, onChange, show, onToggle, disabled }) => (
   <div>
-    <label className="block text-xs font-semibold uppercase tracking-widest text-ink-muted mb-2 font-sans">
+    <label className="block text-eyebrow text-auth-ink mb-2 font-sans">
       {label}
     </label>
     {hint && (
-      <p className="text-slate-500 text-xs font-sans mb-2">{hint}</p>
+      <p className="text-auth-ink-muted text-xs font-sans mb-2">{hint}</p>
     )}
     <div className="relative">
       <input
@@ -33,17 +33,7 @@ const PasswordField = ({ label, hint, value, onChange, show, onToggle, disabled 
         onChange={onChange}
         placeholder="••••••••"
         disabled={disabled}
-        className="
-          w-full px-4 py-3 pr-11
-          bg-auth-input
-          border border-stone-300
-          rounded-lg text-sm text-slate-900
-          placeholder-ink-muted
-          font-sans
-          focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:border-transparent
-          disabled:opacity-50 disabled:cursor-not-allowed
-          transition duration-150
-        "
+        className="input-auth pr-11"
       />
       <button
         type="button"
@@ -51,12 +41,12 @@ const PasswordField = ({ label, hint, value, onChange, show, onToggle, disabled 
         tabIndex={-1}
         className="
           absolute right-3 top-1/2 -translate-y-1/2
-          text-ink-muted hover:text-slate-900
+          text-auth-ink-muted hover:text-auth-ink
           transition duration-150
-          focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-auth-accent
         "
       >
-        {show ? <FaEyeSlash /> : <FaEye />}
+        {show ? <FaEyeSlash className="w-4 h-4" /> : <FaEye className="w-4 h-4" />}
       </button>
     </div>
   </div>
@@ -110,7 +100,6 @@ const SetPassword = () => {
 
       toast.success('Password set! Welcome to AttendPro.')
 
-      // Navigate to the right dashboard based on role.
       if (user?.role === 'HR') {
         navigate('/hr-dashboard')
       } else if (user?.role === 'SUPERADMIN') {
@@ -120,7 +109,6 @@ const SetPassword = () => {
       }
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to set password.'
-      // Translate the most common error into plain language.
       if (/invalid current/i.test(msg)) {
         setError('The temporary password is wrong. Check what the admin gave you.')
       } else {
@@ -132,18 +120,19 @@ const SetPassword = () => {
   }
 
   return (
-    <div className="min-h-screen flex font-sans">
+    <div className="min-h-screen flex font-sans bg-auth-canvas">
 
       {/* ── LEFT PANEL — brand side (matches Login exactly) ──────────────── */}
       <div
         className="
           hidden md:flex w-[45%] min-h-screen
-          bg-slate-900
+          bg-auth-canvas
           flex-col items-center justify-center
           px-12 relative overflow-hidden
+          border-r border-auth-hairline
         "
       >
-        <div className="absolute w-72 h-72 rounded-full bg-yellow-500 opacity-5 blur-3xl top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+        <div className="absolute w-72 h-72 rounded-full bg-auth-accent opacity-5 blur-3xl top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
 
         <div className="w-48 h-48 mb-10 opacity-90">
           <img
@@ -153,17 +142,17 @@ const SetPassword = () => {
           />
         </div>
 
-        <h1 className="text-4xl font-bold tracking-tight text-yellow-500 mb-3 font-serif">
+        <h1 className="text-4xl font-bold tracking-tight text-auth-accent mb-3 font-serif">
           AttendPro
         </h1>
 
-        <p className="text-sm text-stone-50 opacity-50 tracking-widest uppercase font-sans">
+        <p className="text-sm text-auth-ink-muted tracking-widest uppercase font-sans">
           Employee Attendance System
         </p>
 
-        <div className="absolute bottom-10 left-12 right-12 h-px bg-yellow-500 opacity-20" />
-        <div className="absolute top-8 right-8 w-8 h-8 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm" />
-        <div className="absolute bottom-8 left-8 w-8 h-8 border-b-2 border-l-2 border-yellow-500 opacity-30 rounded-bl-sm" />
+        <div className="absolute bottom-10 left-12 right-12 h-px bg-auth-accent opacity-20" />
+        <div className="absolute top-8 right-8 w-8 h-8 border-t-2 border-r-2 border-auth-accent opacity-30 rounded-tr-sm" />
+        <div className="absolute bottom-8 left-8 w-8 h-8 border-b-2 border-l-2 border-auth-accent opacity-30 rounded-bl-sm" />
       </div>
 
       {/* ── RIGHT PANEL — set password form ──────────────────────────────── */}
@@ -177,10 +166,10 @@ const SetPassword = () => {
       >
         {/* Mobile-only brand header */}
         <div className="flex md:hidden items-center gap-2 mb-10">
-          <span className="text-2xl font-bold text-slate-900 font-serif">
+          <span className="text-2xl font-bold text-auth-ink font-serif">
             AttendPro
           </span>
-          <span className="text-xs text-ink-muted uppercase tracking-widest mt-1 font-sans">
+          <span className="text-xs text-auth-ink-muted uppercase tracking-widest mt-1 font-sans">
             / Attendance
           </span>
         </div>
@@ -188,16 +177,16 @@ const SetPassword = () => {
         <div className="w-full max-w-sm">
 
           {/* Heading */}
-          <h2 className="text-3xl font-bold text-slate-900 mb-2 leading-tight font-serif">
+          <h2 className="text-3xl font-bold text-auth-ink mb-2 leading-tight font-serif">
             Set your password.
           </h2>
-          <p className="text-ink-muted text-sm font-sans mb-8">
+          <p className="text-auth-ink-muted text-sm font-sans mb-8">
             Your account was just created with a temporary password.
             Choose a personal password to continue.
           </p>
 
-          {/* Gold accent rule */}
-          <div className="h-0.5 w-10 bg-yellow-500/60 mb-8" />
+          {/* Accent rule */}
+          <div className="h-0.5 w-10 bg-auth-accent mb-8" />
 
           <div className="space-y-5">
 
@@ -232,30 +221,21 @@ const SetPassword = () => {
 
             {/* Error */}
             {error && (
-              <p className="text-red-500 text-sm font-sans">{error}</p>
+              <p className="text-error text-sm font-sans">{error}</p>
             )}
 
             {/* Submit */}
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="
-                w-full py-3 rounded-lg
-                text-sm font-semibold font-sans
-                bg-yellow-500 text-slate-900
-                hover:bg-yellow-400
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2 focus-visible:ring-offset-auth-canvas
-                transition-colors duration-150
-                shadow-sm
-                disabled:opacity-50 disabled:cursor-not-allowed
-              "
+              className="btn-auth w-full"
             >
               {loading ? 'Setting password…' : 'Set Password & Continue'}
             </button>
           </div>
 
           {/* Bottom note */}
-          <p className="text-ink-muted text-xs font-sans mt-8 text-center">
+          <p className="text-auth-ink-muted text-caption font-sans mt-8 text-center">
             After this, you'll log in with your email and new password.
           </p>
 

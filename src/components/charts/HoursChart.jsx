@@ -8,13 +8,13 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-// Custom tooltip — MERIDIAN styled
+// Custom tooltip — Linear styled
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-800 border border-yellow-500/20 rounded-lg px-3 py-2">
-        <p className="text-slate-400 text-xs font-sans mb-1">{label}</p>
-        <p className="text-yellow-500 text-sm font-mono font-medium">
+      <div className="card-elevated border-accent/20 rounded-lg px-3 py-2">
+        <p className="text-ink-muted text-xs font-sans mb-1">{label}</p>
+        <p className="text-accent text-sm font-mono font-medium">
           {payload[0].value} hrs
         </p>
       </div>
@@ -52,13 +52,13 @@ const HoursChart = ({ records = [] }) => {
   })
 
   return (
-    <div className="relative bg-slate-900 rounded-2xl p-6 overflow-hidden">
+    <div className="relative card-elevated overflow-hidden border-accent/20">
 
       {/* Corner bracket */}
-      <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm pointer-events-none" />
+      <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
 
       {/* Header */}
-      <p className="text-slate-400 text-xs font-medium uppercase tracking-wider font-sans mb-4">
+      <p className="text-ink-muted text-xs font-medium uppercase tracking-wider font-sans mb-4">
         Hours Worked — Last 7 Days
       </p>
 
@@ -67,25 +67,25 @@ const HoursChart = ({ records = [] }) => {
         <BarChart data={data} barSize={28}>
           <CartesianGrid
             strokeDasharray="33"
-            stroke="#1e293b"
+            stroke="var(--hairline)"
             vertical={false}
           />
           <XAxis
             dataKey="day"
-            tick={{ fill: '#64748b', fontSize: 11, fontFamily: 'monospace' }}
+            tick={{ fill: 'var(--ink-subtle)', fontSize: 11, fontFamily: 'monospace' }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fill: '#64748b', fontSize: 11, fontFamily: 'monospace' }}
+            tick={{ fill: 'var(--ink-subtle)', fontSize: 11, fontFamily: 'monospace' }}
             axisLine={false}
             tickLine={false}
             unit="h"
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: '#1e293b' }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--surface-2)' }} />
           <Bar
             dataKey="hours"
-            fill="#eab308"
+            fill="var(--accent)"
             radius={[4, 4, 0, 0]}
           />
         </BarChart>

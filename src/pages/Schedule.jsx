@@ -77,7 +77,7 @@ const getDayStatus = (date, recordsByDay, today) => {
 
 const DayCell = ({ date, recordsByDay, today }) => {
   if (!date) {
-    return <div className="aspect-square rounded-lg bg-slate-800/10" />
+    return <div className="aspect-square rounded-lg bg-surface-1/20" />
   }
 
   const status = getDayStatus(date, recordsByDay, today)
@@ -85,21 +85,21 @@ const DayCell = ({ date, recordsByDay, today }) => {
   const isToday = sameDay(date, today)
 
   const styles = {
-    ontime: 'bg-green-500/10 border border-green-500/20',
-    late: 'bg-yellow-500/10 border border-yellow-500/20',
-    absent: 'bg-red-500/10 border border-red-500/20',
-    open: 'bg-blue-500/10 border border-blue-500/20',
-    future: 'bg-slate-800/20 border border-transparent',
-    weekend: 'bg-slate-800/10 border border-transparent',
+    ontime: 'bg-success/10 border border-success/20',
+    late: 'bg-warning/10 border border-warning/20',
+    absent: 'bg-error/10 border border-error/20',
+    open: 'bg-accent/10 border border-accent/20',
+    future: 'bg-surface-1/20 border border-transparent',
+    weekend: 'bg-surface-1/10 border border-transparent',
   }
 
   const dateColor = {
-    ontime: 'text-green-400',
-    late: 'text-yellow-500',
-    absent: 'text-red-400',
-    open: 'text-blue-400',
-    future: 'text-slate-600',
-    weekend: 'text-slate-700',
+    ontime: 'text-success',
+    late: 'text-warning',
+    absent: 'text-error',
+    open: 'text-accent',
+    future: 'text-ink-subtle',
+    weekend: 'text-ink-tertiary',
   }
 
   const label = {
@@ -116,22 +116,22 @@ const DayCell = ({ date, recordsByDay, today }) => {
       className={[
         'aspect-square rounded-lg p-1.5 sm:p-2 flex flex-col',
         styles[status],
-        isToday ? 'ring-1 ring-yellow-500/60' : '',
+        isToday ? 'ring-1 ring-accent/60' : '',
       ].join(' ')}
     >
       {/* Date number */}
       <span
-        className={[
-          'text-xs sm:text-sm font-mono font-medium',
-          dateColor[status],
-        ].join(' ')}
+        className={`
+          text-xs sm:text-sm font-mono font-medium
+          ${dateColor[status]}
+        `}
       >
         {date.getDate()}
       </span>
 
       {/* Clock in time — only when there's a record */}
       {record && record.clockIn && (
-        <span className="hidden sm:block text-[10px] text-slate-400 font-mono mt-0.5">
+        <span className="hidden sm:block text-[10px] text-ink-subtle font-mono mt-0.5">
           {formatTime(record.clockIn)}
         </span>
       )}
@@ -139,10 +139,10 @@ const DayCell = ({ date, recordsByDay, today }) => {
       {/* Status label — pushed to bottom */}
       {label[status] && (
         <span
-          className={[
-            'mt-auto text-[9px] sm:text-[10px] font-mono uppercase tracking-wide',
-            dateColor[status],
-          ].join(' ')}
+          className={`
+            mt-auto text-[9px] sm:text-[10px] font-mono uppercase tracking-wide
+            ${dateColor[status]}
+          `}
         >
           {label[status]}
         </span>
@@ -156,11 +156,11 @@ const DayCell = ({ date, recordsByDay, today }) => {
 const LegendItem = ({ colorClass, label }) => (
   <div className="flex items-center gap-2">
     <span className={`w-3 h-3 rounded ${colorClass}`} />
-    <span className="text-slate-400 text-xs font-sans">{label}</span>
+    <span className="text-ink-muted text-xs font-sans">{label}</span>
   </div>
 )
 
-// ─── Schedule ─────────────────────────────────────────────────────────────────
+// ─── Schedule ──────────────────────────────────────────────────────────────────
 
 function Schedule() {
   const [records, setRecords] = useState([])
@@ -233,50 +233,50 @@ function Schedule() {
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <header className="mb-8">
-        <p className="text-xs font-mono uppercase tracking-widest text-yellow-500/70 mb-1">
+        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
           Schedule
         </p>
-        <h1 className="text-2xl font-bold text-slate-900 font-serif leading-tight">
+        <h1 className="text-display-sm text-ink font-serif leading-tight">
           My Attendance Calendar
         </h1>
-        <p className="text-slate-400 text-sm font-sans mt-1">
+        <p className="text-ink-muted text-sm font-sans mt-1">
           A month-by-month view of your attendance history.
         </p>
-        <div className="mt-3 h-px w-12 bg-yellow-500/40" />
+        <div className="mt-3 h-px w-12 bg-accent/40" />
       </header>
 
       {fetching ? (
-        <div className="bg-slate-900 rounded-2xl p-8 flex items-center justify-center">
-          <p className="text-slate-500 text-sm font-sans animate-pulse">
+        <div className="card flex items-center justify-center">
+          <p className="text-ink-muted text-sm font-sans animate-pulse">
             Loading calendar…
           </p>
         </div>
       ) : (
         <>
           {/* ── Calendar Card ───────────────────────────────────────────── */}
-          <div className="relative bg-slate-900 rounded-2xl overflow-hidden border border-slate-800">
+          <div className="relative card-elevated overflow-hidden border-accent/20">
 
             {/* Corner bracket */}
-            <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-yellow-500 opacity-30 pointer-events-none z-10" />
+            <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 pointer-events-none z-10" />
 
             {/* Month navigation */}
-            <div className="bg-slate-800 px-4 py-3 flex items-center justify-between border-b border-slate-700">
+            <div className="card border-b border-hairline px-4 py-3 flex items-center justify-between">
               <button
                 onClick={goPrev}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-yellow-500 hover:bg-slate-700/50 transition-colors text-xs"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-subtle hover:text-accent hover:bg-surface-2 transition-colors text-xs"
                 aria-label="Previous month"
               >
                 <FaChevronLeft />
               </button>
 
-              <h2 className="text-slate-100 font-serif font-medium text-base sm:text-lg">
+              <h2 className="text-ink font-serif font-medium text-base sm:text-lg">
                 {monthLabel}
               </h2>
 
               <button
                 onClick={goNext}
                 disabled={isCurrentMonth}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-yellow-500 hover:bg-slate-700/50 transition-colors text-xs disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-slate-400"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-subtle hover:text-accent hover:bg-surface-2 transition-colors text-xs disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-ink-subtle"
                 aria-label="Next month"
               >
                 <FaChevronRight />
@@ -290,7 +290,7 @@ function Schedule() {
                 {DAY_NAMES.map((d) => (
                   <div
                     key={d}
-                    className="text-center text-[10px] sm:text-xs font-mono uppercase tracking-wide text-slate-400 py-1"
+                    className="text-center text-[10px] sm:text-xs font-mono uppercase tracking-wide text-ink-muted py-1"
                   >
                     {d}
                   </div>
@@ -317,10 +317,10 @@ function Schedule() {
 
           {/* ── Legend ──────────────────────────────────────────────────── */}
           <div className="flex flex-wrap gap-4 mt-4 px-1">
-            <LegendItem colorClass="bg-green-500/40" label="On time" />
-            <LegendItem colorClass="bg-yellow-500/40" label="Late" />
-            <LegendItem colorClass="bg-red-500/40" label="Absent" />
-            <LegendItem colorClass="bg-blue-500/40" label="Open" />
+            <LegendItem colorClass="bg-success/40" label="On time" />
+            <LegendItem colorClass="bg-warning/40" label="Late" />
+            <LegendItem colorClass="bg-error/40" label="Absent" />
+            <LegendItem colorClass="bg-accent/40" label="Open" />
           </div>
         </>
       )}

@@ -42,10 +42,8 @@ const formatTodayLong = () =>
     year: 'numeric',
   })
 
-// Normalize session status to uppercase (Prisma enum)
 const normStatus = (s) => (s || '').toUpperCase()
 
-// Generate last 12 months as { value: 'YYYY-MM', label: 'Month YYYY' }
 const getLast12Months = () => {
   const months = []
   const now = new Date()
@@ -302,19 +300,19 @@ function SuperAdminDashboard() {
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <header className="mb-8">
-        <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
+        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
           {formatTodayLong()}
         </p>
-        <p className="text-xs font-mono uppercase tracking-widest text-yellow-500/70 mb-1">
+        <p className="text-xs font-mono uppercase tracking-widest text-accent mb-1">
           System Overview
         </p>
-        <h1 className="text-2xl font-bold text-slate-900 font-serif leading-tight">
+        <h1 className="text-display-sm text-ink font-serif leading-tight">
           Welcome, {user?.firstName}.
         </h1>
-        <p className="text-slate-400 text-sm font-sans mt-1">
+        <p className="text-ink-muted text-sm font-sans mt-1">
           Full system attendance — all staff, all time.
         </p>
-        <div className="mt-3 h-px w-12 bg-yellow-500/40" />
+        <div className="mt-3 h-px w-12 bg-accent/40" />
       </header>
 
       {/* ── KPI Grid — 3 cards ───────────────────────────────────────────── */}
@@ -345,31 +343,31 @@ function SuperAdminDashboard() {
       {/* ── Weekly Overview — Charts ─────────────────────────────────────── */}
       <section className="mb-8">
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
             Weekly Overview
           </p>
-          <div className="mt-2 h-px w-10 bg-yellow-500/40" />
+          <div className="mt-2 h-px w-10 bg-accent/40" />
         </div>
 
         {fetching ? (
-          <div className="bg-slate-900 rounded-2xl p-8 flex items-center justify-center">
-            <p className="text-slate-500 text-sm font-sans animate-pulse">
+          <div className="card flex items-center justify-center">
+            <p className="text-ink-muted text-sm font-sans animate-pulse">
               Loading charts…
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="relative bg-slate-900 rounded-2xl p-6 overflow-hidden">
-              <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm pointer-events-none" />
-              <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-4">
+            <div className="card-elevated relative overflow-hidden">
+              <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
+              <p className="text-xs font-mono uppercase tracking-widest text-ink-muted mb-4">
                 Org Hours / Day — Last 7 Days
               </p>
               <HoursChart data={hoursChartData} />
             </div>
 
-            <div className="relative bg-slate-900 rounded-2xl p-6 overflow-hidden">
-              <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm pointer-events-none" />
-              <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-4">
+            <div className="card-elevated relative overflow-hidden">
+              <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
+              <p className="text-xs font-mono uppercase tracking-widest text-ink-muted mb-4">
                 Session Breakdown — This Week
               </p>
               <SessionsChart data={sessionsChartData} />
@@ -381,37 +379,29 @@ function SuperAdminDashboard() {
       {/* ── Monthly Report ───────────────────────────────────────────────── */}
       <section className="mb-8">
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
             Monthly Report
           </p>
-          <div className="mt-2 h-px w-10 bg-yellow-500/40" />
+          <div className="mt-2 h-px w-10 bg-accent/40" />
         </div>
 
-        <div className="relative bg-slate-900 rounded-2xl p-6 border border-yellow-500/20 overflow-hidden">
-          {/* Corner brackets — MERIDIAN signature */}
-          <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-yellow-500 opacity-40 rounded-tr-sm pointer-events-none" />
-          <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-yellow-500 opacity-40 rounded-bl-sm pointer-events-none" />
+        <div className="card-elevated relative overflow-hidden border-accent/20">
+          {/* Corner brackets — Linear signature */}
+          <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-40 rounded-tr-sm pointer-events-none" />
+          <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-accent opacity-40 rounded-bl-sm pointer-events-none" />
 
           {/* Month picker */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <p className="text-slate-200 text-sm font-sans font-medium">
+            <p className="text-ink text-sm font-sans font-medium">
               Showing data for{' '}
-              <span className="text-yellow-500 font-mono">
+              <span className="text-accent font-mono">
                 {selectedMonthLabel}
               </span>
             </p>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="
-                bg-slate-800 border border-slate-700
-                text-slate-200 text-sm font-mono
-                rounded-lg px-3 py-2
-                focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500/30
-                focus-visible:border-yellow-500/50
-                transition-colors duration-150
-                cursor-pointer
-              "
+              className="input"
             >
               {monthOptions.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -432,43 +422,43 @@ function SuperAdminDashboard() {
             {/* Stats grid */}
             {monthRecords.length === 0 ? (
               <div className="py-8 text-center">
-                <p className="text-slate-500 text-sm font-sans">
+                <p className="text-ink-muted text-sm font-sans">
                   No records found for {selectedMonthLabel}.
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {/* Total Sessions */}
-                <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700">
-                  <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
+                <div className="card">
+                  <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
                     Total Sessions
                   </p>
-                  <p className="text-3xl font-medium text-slate-100 font-mono">
+                  <p className="text-display-sm text-ink font-mono">
                     {monthStats.totalSessions}
                   </p>
                 </div>
 
                 {/* Avg Hours / Day */}
-                <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700">
-                  <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
+                <div className="card">
+                  <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
                     Avg Hours / Day
                   </p>
-                  <p className="text-3xl font-medium text-slate-100 font-mono">
+                  <p className="text-display-sm text-ink font-mono">
                     {monthStats.avgHoursPerDay}
-                    <span className="text-sm font-normal text-slate-500 ml-1 font-sans">
+                    <span className="text-sm font-normal text-ink-muted ml-1 font-sans">
                       hrs
                     </span>
                   </p>
                 </div>
 
                 {/* Late % */}
-                <div className="bg-slate-800/60 rounded-xl p-4 border border-slate-700">
-                  <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
+                <div className="card">
+                  <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
                     Late Arrivals
                   </p>
-                  <p className="text-3xl font-medium text-slate-100 font-mono">
+                  <p className="text-display-sm text-ink font-mono">
                     {monthStats.latePercent}
-                    <span className="text-sm font-normal text-slate-500 ml-1 font-sans">
+                    <span className="text-sm font-normal text-ink-muted ml-1 font-sans">
                       %
                     </span>
                   </p>
@@ -478,62 +468,29 @@ function SuperAdminDashboard() {
           </div>
 
           {/* Export buttons */}
-          <div className="flex flex-wrap gap-3 pt-4 border-t border-slate-800">
+          <div className="flex flex-wrap gap-3 pt-4 border-t border-hairline">
             <button
               onClick={() => exportCSV(monthRecords, selectedMonth)}
               disabled={monthRecords.length === 0}
-              className="
-                flex items-center gap-2
-                px-4 py-2 rounded-lg
-                text-xs font-mono uppercase tracking-wider
-                border border-green-500/30
-                text-green-400
-                bg-green-500/10
-                hover:bg-green-500/20
-                transition-colors duration-150
-                disabled:opacity-30 disabled:cursor-not-allowed
-              "
+              className="btn-secondary"
             >
-              <FaFileCsv />
-              CSV
+              <FaFileCsv /> CSV
             </button>
 
             <button
               onClick={() => exportExcel(monthRecords, selectedMonth)}
               disabled={monthRecords.length === 0}
-              className="
-                flex items-center gap-2
-                px-4 py-2 rounded-lg
-                text-xs font-mono uppercase tracking-wider
-                border border-blue-500/30
-                text-blue-400
-                bg-blue-500/10
-                hover:bg-blue-500/20
-                transition-colors duration-150
-                disabled:opacity-30 disabled:cursor-not-allowed
-              "
+              className="btn-secondary"
             >
-              <FaFileExcel />
-              Excel
+              <FaFileExcel /> Excel
             </button>
 
             <button
               onClick={handlePdfExport}
               disabled={monthRecords.length === 0}
-              className="
-                flex items-center gap-2
-                px-4 py-2 rounded-lg
-                text-xs font-mono uppercase tracking-wider
-                border border-red-500/30
-                text-red-400
-                bg-red-500/10
-                hover:bg-red-500/20
-                transition-colors duration-150
-                disabled:opacity-30 disabled:cursor-not-allowed
-              "
+              className="btn-secondary"
             >
-              <FaFilePdf />
-              PDF
+              <FaFilePdf /> PDF
             </button>
           </div>
         </div>
@@ -542,53 +499,39 @@ function SuperAdminDashboard() {
       {/* ── All Attendance ───────────────────────────────────────────────── */}
       <section>
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
             All Attendance
           </p>
-          <div className="mt-2 h-px w-10 bg-yellow-500/40" />
+          <div className="mt-2 h-px w-10 bg-accent/40" />
         </div>
 
         {/* Search input */}
         <div className="relative mb-4">
-          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-xs pointer-events-none" />
+          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-subtle text-xs pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by name, department, date or status…"
-            className="
-              w-full pl-10 pr-4 py-3
-              bg-slate-900
-              border border-slate-700
-              rounded-xl
-              text-sm text-slate-200
-              placeholder-slate-500
-              font-sans
-              focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500/30
-              focus-visible:border-yellow-500/50
-              transition-colors duration-150
-            "
+            className="input"
           />
         </div>
 
         {/* No results */}
         {!fetching && searchQuery && filteredRecords.length === 0 && (
-          <div className="bg-slate-900 rounded-2xl px-6 py-10 text-center mb-4">
-            <p className="text-slate-400 text-sm font-sans">
-              No results for{' '}
-              <span className="text-slate-200 font-mono">
-                "{searchQuery}"
-              </span>
+          <div className="card-elevated px-6 py-10 text-center mb-4">
+            <p className="text-ink-muted text-sm font-sans">
+              No results for <span className="text-ink font-mono">"{searchQuery}"</span>
             </p>
-            <p className="text-slate-600 text-xs font-sans mt-1">
+            <p className="text-ink-subtle text-xs font-sans mt-1">
               Try a different name, department, date or status.
             </p>
           </div>
         )}
 
         {fetching ? (
-          <div className="bg-slate-900 rounded-2xl p-8 flex items-center justify-center">
-            <p className="text-slate-500 text-sm font-sans animate-pulse">
+          <div className="card flex items-center justify-center">
+            <p className="text-ink-muted text-sm font-sans animate-pulse">
               Loading records…
             </p>
           </div>

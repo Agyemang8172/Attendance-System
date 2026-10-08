@@ -30,35 +30,29 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-stone-50 px-6">
-          <div className="relative bg-slate-900 rounded-2xl p-8 sm:p-10 max-w-md w-full text-center overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-auth-canvas px-6">
+          <div className="relative bg-auth-surface rounded-2xl p-8 sm:p-10 max-w-md w-full text-center overflow-hidden border border-auth-hairline">
 
-            {/* MERIDIAN corner brackets */}
-            <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm pointer-events-none" />
-            <div className="absolute bottom-4 left-4 w-5 h-5 border-b-2 border-l-2 border-yellow-500 opacity-30 rounded-bl-sm pointer-events-none" />
+            {/* Linear corner brackets — auth accent */}
+            <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-auth-accent opacity-30 rounded-tr-sm pointer-events-none" />
+            <div className="absolute bottom-4 left-4 w-5 h-5 border-b-2 border-l-2 border-auth-accent opacity-30 rounded-bl-sm pointer-events-none" />
 
-            <p className="text-xs font-mono uppercase tracking-widest text-yellow-500/70 mb-3">
+            <p className="text-xs font-mono uppercase tracking-widest text-auth-accent/70 mb-3">
               Error
             </p>
 
-            <h1 className="text-2xl font-bold text-stone-50 font-serif mb-3">
+            <h1 className="text-2xl font-bold text-auth-ink font-serif mb-3">
               Something went wrong.
             </h1>
 
-            <p className="text-slate-400 text-sm font-sans mb-8">
+            <p className="text-auth-ink-muted text-sm font-sans mb-8">
               An unexpected error stopped this page from loading. You can
               return to the login screen and try again.
             </p>
 
             <button
               onClick={this.handleReload}
-              className="
-                w-full px-5 py-3 rounded-lg
-                text-sm font-medium font-sans
-                bg-yellow-500 text-slate-900
-                hover:bg-yellow-400
-                transition-colors duration-150
-              "
+              className="btn-auth w-full"
             >
               Back to Login
             </button>

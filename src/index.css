@@ -2,46 +2,280 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * Design tokens — DESIGN.md section 2 is the source of truth (rule 7: update
- * DESIGN.md first, then code). Section 8 rule 5 requires this mechanism to
- * exist before section 2 is referenced from implementation.
- *
- * Tailwind colour names in tailwind.config.js map 1:1 onto these variables,
- * so `bg-canvas`, `text-ink`, `border-border`, `text-accent-strong` resolve.
- */
-:root {
-  /* Core palette */
-  --canvas: #f8fafc;
-  --surface: #ffffff;
-  --chrome: #0f172a;
-  --chrome-raised: #1e293b;
-
-  /* Ink */
-  --ink: #0f172a;
-  --ink-muted: #64748b;
-  --ink-invert: #94a3b8;
-
-  /* Borders */
-  --border: #64748b;
-  --border-invert: #334155;
-
-  /* Auth surfaces — stone, not slate, by DESIGN.md section 2 */
-  --auth-canvas: #fafaf9;
-  --auth-input: #f5f5f4;
-
-  /* Accent — the two-surface rule */
-  --accent: #eab308;          /* yellow-500, on chrome */
-  --accent-strong: #b45309;   /* amber-700, on light surfaces */
-}
-
 @layer base {
-  body {
-    /* bg-canvas and text-ink are byte-identical to the slate-50 and slate-900
-       values they replace, so this is a no-op visually and a live proof that
-       the token chain resolves end to end. */
-    @apply font-sans bg-canvas text-ink antialiased;
+  /*
+   * AttendPro v2 token layer.
+   *
+   * Every value below is measured against §5 of docs/DESIGN_PROPOSAL.md. The
+   * palette is derived from the Login page, so the application after sign-in
+   * and the sign-in screen are the same object rather than two designs that
+   * happen to share a name.
+   *
+   * Phase 1 of the migration sequence (§14) is a value swap and touches no
+   * component. The chrome half of the polarity split — a dark sidebar and dark
+   * modal shells against this paper — arrives with the layout shell in Phase 2.
+   * Until then every surface here is paper, which is why no chrome value is set.
+   */
+  :root {
+    /* ── Paper ────────────────────────────────────────────────────────────
+     * §5.1. One surface runs from page to page; the steps above it are how a
+     * card says "laid on top" and a table header says "indented".
+     */
+    --canvas: #fafaf9;    /* page — the ledger sheet */
+    --surface-1: #ffffff; /* raised — cards */
+    --surface-2: #f5f5f4; /* sunken — table headers, inputs, chips */
+    --surface-3: #e7e5e4; /* selected */
+    --surface-4: #d6d3d1; /* strongest step */
+
+    /* ── Ink ──────────────────────────────────────────────────────────────
+     * §5.2. Three tiers carry text; the fourth does not, and is not allowed
+     * to. Ratios are measured on --canvas.
+     */
+    --ink: #0f172a;         /* 17.09:1 — headings, primary body */
+    --ink-muted: #44403c;   /*  9.84:1 — secondary body, table cells */
+    --ink-subtle: #78716c;  /*  4.59:1 — labels, timestamps, placeholders */
+    --ink-tertiary: #a8a29e; /* 2.41:1 — decorative and disabled only.
+                              * WCAG exempts disabled controls from 1.4.3, and
+                            * nothing else may use this value. See the note
+                            * with the M2 deviation report. */
+
+    /* ── Hairlines ────────────────────────────────────────────────────────
+     * §5.1. Structure, never text.
+     */
+    --hairline: #e7e5e4;
+    --hairline-strong: #d6d3d1;
+    --hairline-tertiary: #a8a29e;
+
+    /* ── Brass ────────────────────────────────────────────────────────────
+     * §5.3. One accent that splits by polarity, because a single value cannot
+     * serve both surfaces: #eab308 measures 1.84:1 on this paper where a focus
+     * ring needs 3:1.
+     *
+     *   #b45309  paper — text, links, rules, fills, focus rings  (4.81:1)
+     *   #eab308  chrome — sidebar, modal shells, brand panel     (9.31:1)
+     *
+     * --brass-chrome is set but unused until the chrome surfaces exist. That
+     * is deliberate: the rule it encodes is easier to keep honest as a named
+     * value than as a comment.
+     */
+    --accent: #b45309;
+    --accent-hover: #92400e; /* darker fill on hover; 6.37:1 as text */
+    --accent-focus: #b45309; /* focus ring — needs 3:1, has 4.81:1 */
+    --brass-chrome: #eab308; /* chrome only. Never a light surface. */
+
+    /* ── Status ───────────────────────────────────────────────────────────
+     * §5.4. Flat status text on paper. Status never borrows brass: badges take
+     * a tinted ground with strong text so a state reads as a state and not as
+     * branding.
+     */
+    --success: #15803d; /* 4.80:1 */
+    --error: #b91c1c;   /* 6.19:1 */
+    --warning: #c2410c; /* 4.96:1 */
+
+    /* ── Auth ─────────────────────────────────────────────────────────────
+     * These no longer name a third design language. When the working surface
+     * went from near-black to paper, the separate light theme stopped being
+     * different from anything, so each one is now an alias of its paper
+     * counterpart above.
+     *
+     * The classes themselves go when SetPassword and ErrorBoundary are rebuilt
+     * on this system — they still carry 27 live references, and deleting the
+     * values first would unstyle a screen without fixing it.
+     */
+    --auth-canvas: #fafaf9;
+    --auth-surface: #f5f5f4;
+    --auth-ink: #0f172a;
+    --auth-ink-muted: #78716c;
+    --auth-hairline: #d6d3d1;
+    --auth-accent: #b45309;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-size: 16px;
+    line-height: 1.5;
+    letter-spacing: 0;
+  }
+
+  /* Focus ring system */
+  *:focus-visible {
+    outline: none;
+    ring: 2px;
+    ring-offset: 2px;
+  }
+
+  *:focus-visible:not(.auth-input):not(.auth-button) {
+    @apply ring-accent-focus ring-offset-canvas;
+  }
+
+  .auth-input:focus-visible,
+  .auth-button:focus-visible {
+    @apply ring-accent ring-offset-auth-canvas;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-canvas;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-hairline-strong rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-hairline-tertiary;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-accent text-white;
+  }
+}
+
+@layer components {
+  /* Button primitives */
+  .btn {
+    @apply inline-flex items-center justify-center font-medium text-button rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-accent text-white px-[14px] py-[8px];
+  }
+  .btn-primary:hover:not(:disabled) {
+    @apply bg-accent-hover;
+  }
+  .btn-primary:focus-visible {
+    @apply ring-2 ring-accent-focus ring-offset-2 ring-offset-canvas;
+  }
+
+  .btn-secondary {
+    @apply btn bg-surface-1 text-ink px-[14px] py-[8px] border border-hairline;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    @apply bg-surface-2;
+  }
+
+  .btn-tertiary {
+    @apply btn bg-canvas text-ink px-[14px] py-[8px];
+  }
+  .btn-tertiary:hover:not(:disabled) {
+    @apply bg-surface-1;
+  }
+
+  .btn-auth {
+    @apply btn bg-auth-accent text-white px-[14px] py-[8px];
+  }
+  .btn-auth:hover:not(:disabled) {
+    @apply bg-auth-accent opacity-90;
+  }
+
+  /* Card primitives */
+  .card {
+    @apply bg-surface-1 border border-hairline rounded-lg p-6;
+  }
+  .card-elevated {
+    @apply bg-surface-2 border border-hairline rounded-lg p-6;
+  }
+  .card-selected {
+    @apply bg-surface-3 border border-hairline-strong rounded-lg p-6;
+  }
+
+  /* Input primitives */
+  .input {
+    @apply w-full bg-surface-1 text-ink border border-hairline rounded-md px-3 py-[8px] text-body-sm placeholder-ink-subtle transition-colors duration-150;
+  }
+  .input:focus {
+    @apply border-hairline-strong outline-none ring-2 ring-accent-focus ring-offset-2 ring-offset-canvas;
+  }
+  .input-auth {
+    @apply w-full bg-auth-surface text-auth-ink border border-auth-hairline rounded-md px-3 py-[8px] text-body-sm placeholder-auth-ink-muted transition-colors duration-150;
+  }
+  .input-auth:focus {
+    @apply border-auth-accent outline-none ring-2 ring-auth-accent ring-offset-2 ring-offset-auth-canvas;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2 py-[2px] text-caption rounded-full bg-surface-2 text-ink-muted;
+  }
+  .badge-success {
+    @apply bg-success/15 text-success;
+  }
+  .badge-warning {
+    @apply bg-warning/15 text-warning;
+  }
+  .badge-error {
+    @apply bg-error/15 text-error;
+  }
+}
+
+@layer utilities {
+  /* Surface utilities */
+  .bg-canvas { background-color: var(--canvas); }
+  .bg-surface-1 { background-color: var(--surface-1); }
+  .bg-surface-2 { background-color: var(--surface-2); }
+  .bg-surface-3 { background-color: var(--surface-3); }
+  .bg-surface-4 { background-color: var(--surface-4); }
+
+  /* Text utilities */
+  .text-ink { color: var(--ink); }
+  .text-ink-muted { color: var(--ink-muted); }
+  .text-ink-subtle { color: var(--ink-subtle); }
+  .text-ink-tertiary { color: var(--ink-tertiary); }
+
+  /* Border utilities */
+  .border-hairline { border-color: var(--hairline); }
+  .border-hairline-strong { border-color: var(--hairline-strong); }
+  .border-hairline-tertiary { border-color: var(--hairline-tertiary); }
+
+  /* Accent utilities */
+  .bg-accent { background-color: var(--accent); }
+  .bg-accent-hover { background-color: var(--accent-hover); }
+  .bg-accent-focus { background-color: var(--accent-focus); }
+  .text-accent { color: var(--accent); }
+  .ring-accent { ring-color: var(--accent); }
+  .ring-accent-focus { ring-color: var(--accent-focus); }
+
+  /* Auth utilities */
+  .bg-auth-canvas { background-color: var(--auth-canvas); }
+  .bg-auth-surface { background-color: var(--auth-surface); }
+  .text-auth-ink { color: var(--auth-ink); }
+  .text-auth-ink-muted { color: var(--auth-ink-muted); }
+  .border-auth-hairline { border-color: var(--auth-hairline); }
+  .bg-auth-accent { background-color: var(--auth-accent); }
+  .text-auth-accent { color: var(--auth-accent); }
+  .ring-auth-accent { ring-color: var(--auth-accent); }
+
+  /* Semantic */
+  .bg-success { background-color: var(--success); }
+  .text-success { color: var(--success); }
+  .bg-error { background-color: var(--error); }
+  .text-error { color: var(--error); }
+  .bg-warning { background-color: var(--warning); }
+  .text-warning { color: var(--warning); }
+
+  /* Typography */
+  .text-display-xl { @apply text-[48px] font-semibold leading-[1.05] tracking-[-1.5px]; }
+  .text-display-lg { @apply text-[36px] font-semibold leading-[1.1] tracking-[-1px]; }
+  .text-display-md { @apply text-[28px] font-semibold leading-[1.15] tracking-[-0.5px]; }
+  .text-display-sm { @apply text-[22px] font-medium leading-[1.25] tracking-[-0.3px]; }
+  .text-body-lg { @apply text-[18px] font-normal leading-[1.5] tracking-[-0.05px]; }
+  .text-body { @apply text-[16px] font-normal leading-[1.5] tracking-[0]; }
+  .text-body-sm { @apply text-[14px] font-normal leading-[1.5] tracking-[0]; }
+  .text-caption { @apply text-[12px] font-normal leading-[1.4] tracking-[0]; }
+  .text-button { @apply text-[14px] font-medium leading-[1.2] tracking-[0]; }
+  .text-eyebrow { @apply text-[13px] font-medium leading-[1.3] tracking-[0.4px] uppercase; }
+  .text-mono { @apply text-[13px] font-mono leading-[1.5] tracking-[0]; }
 }
