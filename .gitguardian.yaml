@@ -1,0 +1,15 @@
+# GitGuardian configuration, for ggshield and any CI scan that reads it.
+#
+# backend/validators/index.ts holds PASSWORD_BLOCKLIST: the passwords the
+# product refuses to accept. Every string in it is public reference data, and
+# appears in every breach corpus by definition. GitGuardian's Generic Password
+# detector matches those literal strings and raises an incident that cannot be a
+# real exposure.
+#
+# The exclusion is scoped to that single file. Detection is unchanged everywhere
+# else, so a real credential reaching any other path is still reported.
+version: 2
+
+secret:
+  ignored_paths:
+    - backend/validators/index.ts
