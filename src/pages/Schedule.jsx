@@ -58,8 +58,11 @@ const getDayStatus = (date, recordsByDay, today) => {
   const key = date.toDateString()
   const record = recordsByDay[key]
 
+  // Normalize session status (Prisma returns uppercase enums)
+  const sessionStatus = (record?.sessionStatus || '').toUpperCase()
+
   if (record) {
-    if (record.sessionStatus === 'open') return 'open'
+    if (sessionStatus === 'OPEN') return 'open'
     if (isLate(record.clockIn)) return 'late'
     return 'ontime'
   }

@@ -78,7 +78,7 @@ const ManageStaff = () => {
     if (!pendingUser) return
     setDeactivating(true)
     try {
-      await api.delete(`/users/${pendingUser._id}`)
+      await api.delete(`/users/${pendingUser.id}`)
       toast.success(`${pendingUser.firstName || 'Employee'} deactivated.`)
       setPendingUser(null)
       // Refetch the current page so the list reflects the change.
@@ -124,7 +124,7 @@ const ManageStaff = () => {
             bg-yellow-500 text-slate-900
             hover:bg-yellow-400
             transition-colors duration-150
-            shadow-sm shadow-yellow-500/20
+            shadow-sm
             w-full sm:w-auto
           "
         >

@@ -2,9 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens — DESIGN.md section 2 is the source of truth (rule 7: update
+ * DESIGN.md first, then code). Section 8 rule 5 requires this mechanism to
+ * exist before section 2 is referenced from implementation.
+ *
+ * Tailwind colour names in tailwind.config.js map 1:1 onto these variables,
+ * so `bg-canvas`, `text-ink`, `border-border`, `text-accent-strong` resolve.
+ */
+:root {
+  /* Core palette */
+  --canvas: #f8fafc;
+  --surface: #ffffff;
+  --chrome: #0f172a;
+  --chrome-raised: #1e293b;
+
+  /* Ink */
+  --ink: #0f172a;
+  --ink-muted: #64748b;
+  --ink-invert: #94a3b8;
+
+  /* Borders */
+  --border: #64748b;
+  --border-invert: #334155;
+
+  /* Auth surfaces — stone, not slate, by DESIGN.md section 2 */
+  --auth-canvas: #fafaf9;
+  --auth-input: #f5f5f4;
+
+  /* Accent — the two-surface rule */
+  --accent: #eab308;          /* yellow-500, on chrome */
+  --accent-strong: #b45309;   /* amber-700, on light surfaces */
+}
+
 @layer base {
   body {
-    @apply font-sans bg-slate-50 text-slate-900 antialiased;
+    /* bg-canvas and text-ink are byte-identical to the slate-50 and slate-900
+       values they replace, so this is a no-op visually and a live proof that
+       the token chain resolves end to end. */
+    @apply font-sans bg-canvas text-ink antialiased;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

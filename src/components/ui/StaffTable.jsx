@@ -1,13 +1,9 @@
 // StaffTable — employee list for superadmin user management.
 //
-// Mirrors AttendanceTable's MERIDIAN surface (navy card, zebra rows, single
-// top-right corner bracket) but renders USERS, not attendance records.
-//
 // Props:
 //   users        → array of active user objects from getAllUsers
-//   onDeactivate → (user) => void · fired when a row's "Deactivate" is clicked.
-//                  The parent page owns the confirm modal; this table only
-//                  signals intent. It does not call the API itself.
+//   onEdit       → (user) => void · opens edit modal
+//   onDeactivate → (user) => void · fires confirm action
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -16,16 +12,13 @@ const getFullName = (user) => {
   return name || 'Unnamed user'
 }
 
-// ─── Role pill — same tint + border recipe as StatBadge ─────────────────────────
-
 const roleConfig = {
-  staff:      { label: 'Staff',      classes: 'bg-slate-500/10 text-slate-400 border-slate-500/20' },
-  hr:         { label: 'HR',         classes: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
-  superadmin: { label: 'Superadmin', classes: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
+  STAFF:      { label: 'Staff',      classes: 'bg-slate-500/10 text-slate-400 border-slate-500/20' },
+  HR:         { label: 'HR',         classes: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+  SUPERADMIN: { label: 'Superadmin', classes: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
 }
 
 const RolePill = ({ role }) => {
-  // Fallback keeps an unknown/missing role from breaking the row.
   const config = roleConfig[role] || {
     label: role || 'Unknown',
     classes: 'bg-slate-500/10 text-slate-500 border-slate-500/20',
@@ -39,8 +32,6 @@ const RolePill = ({ role }) => {
     </span>
   )
 }
-
-// ─── Table sub-components (matched to AttendanceTable) ──────────────────────────
 
 const TH = ({ children }) => (
   <th className="px-4 py-3 text-left text-xs font-sans font-medium uppercase tracking-widest text-slate-400 whitespace-nowrap">
@@ -63,8 +54,6 @@ const EmptyState = () => (
   </tr>
 )
 
-// ─── StaffTable ─────────────────────────────────────────────────────────────────
-
 const StaffTable = ({ users = [], onEdit, onDeactivate }) => {
   return (
     <div className="relative bg-slate-900 rounded-2xl overflow-hidden border border-slate-800">
@@ -72,7 +61,6 @@ const StaffTable = ({ users = [], onEdit, onDeactivate }) => {
       {/* MERIDIAN corner bracket */}
       <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-yellow-500 opacity-30 pointer-events-none z-10" />
 
-      {/* Scroll wrapper — table stays intact on mobile, same as AttendanceTable */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-max border-collapse">
 
@@ -91,7 +79,7 @@ const StaffTable = ({ users = [], onEdit, onDeactivate }) => {
             ) : (
               users.map((user, index) => (
                 <tr
-                  key={user._id || index}
+                  key={user.id || user._id || index}
                   className={[
                     'border-b border-slate-800 last:border-b-0',
                     'transition-colors duration-150 hover:bg-slate-800/60',

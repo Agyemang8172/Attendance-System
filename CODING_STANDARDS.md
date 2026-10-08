@@ -1,0 +1,64 @@
+> Customize this file for your project. This template provides universal standards; add stack-specific rules from .agents/skills/stacks/
+
+# Coding Standards
+
+## General Principles
+- Self-documenting code: Strive to write code that explains itself through clear naming.
+- Single Responsibility Principle (SRP): Each module, class, or function should have one responsibility.
+- Max 50-line functions: Break down large functions to improve readability.
+- Max 3 nesting levels: Avoid deep nesting to reduce cognitive load.
+- No commented-out code: Delete unused code; version control tracks history.
+- No orphan TODOs: Every TODO must reference an issue or ticket.
+
+## Type Safety
+- TypeScript strict mode: Enable strict mode in TypeScript configurations.
+- No ts-ignore without reason: Always provide a justification comment if ts-ignore must be used.
+- Prefer inference: Rely on type inference where it is clear instead of explicitly typing everything.
+
+## Error Handling
+- Never swallow exceptions: Always log or handle exceptions.
+- Handle at boundary: Catch errors at application boundaries (e.g. controllers, UI components).
+- Typed errors: Use custom error classes or typed errors.
+- Contextual logging: Include relevant context in error logs.
+
+## Security
+- No hardcoded secrets: Use environment variables or secret managers.
+- Environment variables: Use .env files for local development and proper CI/CD injection for production.
+- Input validation: Validate all incoming data from users or external APIs.
+- Sanitization: Sanitize inputs to prevent XSS and other injection attacks.
+- Parameterized queries: Always use parameterized queries or ORMs to prevent SQL injection.
+
+## File Organization
+- Group by feature: Organize files by feature or domain rather than technical role.
+- Co-locate tests: Place test files next to the implementation files (e.g. feature.ts and feature.test.ts).
+- Organized imports: Group imports logically (external libraries, internal modules, types).
+
+## Frontend & Design Gate
+- Mandatory Design Gate: All frontend UI components (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.html`, `*.css`) must strictly adhere to the design system and tokens established in `DESIGN.md` at the project root.
+- Design token fidelity: Colors, typography scale, spacing units, and radius values must come from `DESIGN.md`. Frontend code created without `DESIGN.md` is blocked by pre-tool hooks.
+- Distinctive Craft & Anti-AI UI Gate: All frontend components must adhere to `.agents/skills/anti-ai-ui/SKILL.md` and pass `.agents/scripts/ui-taste-check.sh`. Emojis as icons, sparkle embellishments, cookie-cutter profile pills, lazy indigo-purple gradients, generic "Holy Trinity" card grids, and placeholder slop ("John Doe") are strictly forbidden.
+- Tactile affordances: Interactive elements must have visible active press depression (`active:scale-[0.98]`), high-contrast `focus-visible` rings, and explicit hover transitions.
+
+## Environment & Configuration (Layer 2 Gate)
+- Parity with .env.example: Every environment variable referenced in code must be documented in `.env.example` with a dummy placeholder value. Must pass `.agents/scripts/env-check.sh`.
+- Zero live secrets: Never commit production API keys, service tokens, or private keys into `.env.example` or version control.
+
+## Database & Migrations (Layer 3 Gate)
+- Row Level Security (RLS) mandatory: Every table created in SQL migrations must execute `ALTER TABLE <table> ENABLE ROW LEVEL SECURITY;` and have defined policies. Must pass `.agents/scripts/db-check.sh`.
+- Foreign key indexing: Columns referencing other tables must have supporting indexes to prevent table-scan performance degradation.
+- Non-destructive changes: Destructive actions (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`) require an explicit dry-run plan and human approval.
+
+## Naming Conventions
+- camelCase variables: variables, functions, and methods.
+- PascalCase components: Classes and UI Components.
+- SCREAMING_SNAKE constants: Global constants and configuration values.
+- kebab-case files: File and directory names.
+- snake_case database: Database tables and columns.
+
+## Testing Requirements
+- 80% coverage on new logic: Aim for high test coverage on all new features.
+- Test behavior not implementation: Write tests that verify the outcome, not internal workings.
+- Descriptive names: Test names should clearly state what is being tested and the expected outcome.
+
+## Git Standards
+- Follow standard Git practices: Reference `.agents/skills/git-ops/SKILL.md` and `.agents/skills/git-workflow/SKILL.md`.

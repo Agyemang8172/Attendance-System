@@ -29,3 +29,14 @@ dist-ssr
 
 /generated/prisma
 backend\.env
+# Dev-OS temporary backups
+.agents/_backup/
+
+# Editor / agent tooling (local only)
+.opencode/
+.claude/
+.windsurf/
+
+# Local test artifacts
+backend/tables.txt
+backend/test-*.txt

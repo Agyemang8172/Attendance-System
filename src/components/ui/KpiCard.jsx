@@ -7,10 +7,11 @@
 //   colorScheme → icon tint: "blue" | "gold" | "green" | "red"
 
 const colorSchemes = {
-  blue:  'bg-blue-50 border-blue-100 text-blue-500',
-  gold:  'bg-yellow-50 border-yellow-100 text-yellow-500',
-  green: 'bg-green-50 border-green-100 text-green-500',
-  red:   'bg-red-50 border-red-100 text-red-500',
+  // Use 700 weights on tinted wells for 4.5:1 contrast (DESIGN §2 measured pairs)
+  blue:  'bg-blue-50 border-blue-100 text-blue-700',
+  gold:  'bg-yellow-50 border-yellow-100 text-amber-700',
+  green: 'bg-green-50 border-green-100 text-green-700',
+  red:   'bg-red-50 border-red-100 text-red-700',
 }
 
 const KpiCard = ({ icon, label, value, subtext, colorScheme = 'gold' }) => {
@@ -29,18 +30,18 @@ const KpiCard = ({ icon, label, value, subtext, colorScheme = 'gold' }) => {
 
       {/* Label */}
       <div>
-        <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-2">
+        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-2">
           {label}
         </p>
 
         {/* Value — the hero of the card */}
-        <p className="text-4xl font-bold text-slate-900 font-mono leading-none">
+        <p className="text-4xl font-medium text-slate-900 font-mono leading-none">
           {value}
         </p>
 
         {/* Subtext */}
         {subtext && (
-          <p className="text-slate-400 text-xs font-sans mt-2">
+          <p className="text-ink-muted text-xs font-sans mt-2">
             {subtext}
           </p>
         )}

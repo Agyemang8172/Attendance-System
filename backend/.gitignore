@@ -1,4 +1,5 @@
 .env
+.env.example
 .env local
 node_modules
 *.log
@@ -6,3 +7,8 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .test-users.md 
+/generated/prisma
+
+# Editor / agent tooling (local only)
+.claude/
+.windsurf/

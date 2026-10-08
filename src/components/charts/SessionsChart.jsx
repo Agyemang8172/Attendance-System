@@ -1,11 +1,10 @@
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from 'recharts'
 
 // Custom tooltip — MERIDIAN styled
@@ -15,7 +14,7 @@ const CustomTooltip = ({ active, payload, label }) => {
       <div className="bg-slate-800 border border-yellow-500/20 rounded-lg px-3 py-2">
         <p className="text-slate-400 text-xs font-sans mb-1">{label}</p>
         <p className="text-yellow-500 text-sm font-mono font-medium">
-          {payload[0].value} hrs
+          {payload[0].value} sessions
         </p>
       </div>
     )
@@ -23,33 +22,24 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null
 }
 
-// Expects records: array of attendance objects from getMyAttendance
-// Each record has: clockInTime, clockOutTime, hoursWorked, sessionStatus
-const HoursChart = ({ records = [] }) => {
+// Color mapping for session statuses
+const STATUS_COLORS = {
+  OPEN: '#3b82f6',      // blue-500
+  CLOSED: '#22c55e',    // green-500
+  LATE: '#eab308',      // yellow-500
+}
 
-  // Build last 7 days labels
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date()
-    date.setDate(date.getDate() - (6 - i))
-    return {
-      label: date.toLocaleDateString('en-US', { weekday: 'short' }),
-      dateStr: date.toISOString().split('T')[0],
-    }
-  })
+const SessionsChart = ({ data = [] }) => {
+  // Ensure we have valid data
+  const chartData = data.filter(d => d.value > 0)
 
-  // Map records to days — match by date string
-  const data = last7Days.map(({ label, dateStr }) => {
-    const match = records.find((r) => {
-      const recordDate = new Date(r.clockInTime).toISOString().split('T')[0]
-      return recordDate === dateStr
-    })
-    return {
-      day: label,
-      hours: match?.hoursWorked
-        ? parseFloat(match.hoursWorked.toFixed(1))
-        : 0,
-    }
-  })
+  if (chartData.length === 0) {
+    return (
+      <div className="relative bg-slate-900 rounded-2xl p-6 overflow-hidden flex items-center justify-center h-64">
+        <p className="text-slate-500 text-sm font-sans">No session data for this period</p>
+      </div>
+    )
+  }
 
   return (
     <div className="relative bg-slate-900 rounded-2xl p-6 overflow-hidden">
@@ -59,39 +49,42 @@ const HoursChart = ({ records = [] }) => {
 
       {/* Header */}
       <p className="text-slate-400 text-xs font-medium uppercase tracking-wider font-sans mb-4">
-        Hours Worked — Last 7 Days
+        Session Breakdown — This Week
       </p>
 
       {/* Chart */}
-      <ResponsiveContainer width="100%" height={180}>
-        <BarChart data={data} barSize={28}>
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="#1e293b"
-            vertical={false}
+      <ResponsiveContainer width="100%" height={240}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius={60}
+            outerRadius={100}
+            paddingAngle={2}
+            dataKey="value"
+            nameKey="name"
+            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+            labelLine={false}
+          >
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#64748b'} />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+          <Legend
+            layout="vertical"
+            align="right"
+            verticalAlign="middle"
+            iconType="circle"
+            iconSize={8}
+            formatter={(name) => name}
+            wrapperStyle={{ paddingTop: 20 }}
           />
-          <XAxis
-            dataKey="day"
-            tick={{ fill: '#64748b', fontSize: 11, fontFamily: 'monospace' }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            tick={{ fill: '#64748b', fontSize: 11, fontFamily: 'monospace' }}
-            axisLine={false}
-            tickLine={false}
-            unit="h"
-          />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: '#1e293b' }} />
-          <Bar
-            dataKey="hours"
-            fill="#eab308"
-            radius={[4, 4, 0, 0]}
-          />
-        </BarChart>
+        </PieChart>
       </ResponsiveContainer>
     </div>
   )
 }
 
-export default HoursChart
+export default SessionsChart

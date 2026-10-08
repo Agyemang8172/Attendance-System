@@ -21,7 +21,7 @@ const formatTime = (dateStr) => {
 
 const formatHours = (hours) => {
   if (hours == null || hours === 0) return '--'
-  return `${hours.toFixed(2)} hrs`
+  return `${Number(hours).toFixed(2)} hrs`
 }
 
 const getEmployeeName = (record) => {
@@ -112,7 +112,7 @@ const AttendanceTable = ({ records = [], showEmployee = false }) => {
             ) : (
               records.map((record, index) => (
                 <tr
-                  key={record._id || index}
+                  key={record.id || record._id || index}
                   className={[
                     'border-b border-slate-800 last:border-b-0',
                     'transition-colors duration-150 hover:bg-slate-800/60',

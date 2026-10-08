@@ -58,12 +58,12 @@ const buildSessionsChartData = (records) => {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const week = records.filter((r) => new Date(r.date) >= sevenDaysAgo)
   const closed = week.filter(
-    (r) => r.sessionStatus === 'closed' && !isLate(r.clockIn)
+    (r) => r.sessionStatus === 'CLOSED' && !isLate(r.clockIn)
   ).length
   const late = week.filter(
-    (r) => r.sessionStatus === 'closed' && isLate(r.clockIn)
+    (r) => r.sessionStatus === 'CLOSED' && isLate(r.clockIn)
   ).length
-  const open = week.filter((r) => r.sessionStatus === 'open').length
+  const open = week.filter((r) => r.sessionStatus === 'OPEN').length
   return [
     { name: 'Closed', value: closed },
     { name: 'Late', value: late },
@@ -81,26 +81,22 @@ function HrDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-
-
     const fetchAllAttendance = async () => {
-    try {
-      const res = await api.get('/attendance/all-attendance')
-      setRecords(res.data.data || [])
-    } catch (_error) {
-      toast.error('Failed to load attendance records.')
-    } finally {
-      setFetching(false)
+      try {
+        const res = await api.get('/attendance/all-attendance')
+        setRecords(res.data.data || [])
+      } catch (_error) {
+        toast.error('Failed to load attendance records.')
+      } finally {
+        setFetching(false)
+      }
     }
-  }
     fetchAllAttendance()
   }, [])
 
-  
-
   // ── KPIs — today only ──────────────────────────────────────────────────────
   const clockedInToday = records.filter(
-    (r) => isToday(r.date) && r.sessionStatus === 'open'
+    (r) => isToday(r.date) && r.sessionStatus === 'OPEN'
   ).length
 
   const lateToday = records.filter(
@@ -144,19 +140,19 @@ function HrDashboard() {
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <header className="mb-8">
-        <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
+        <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-1">
           {formatTodayLong()}
         </p>
-        <p className="text-xs font-mono uppercase tracking-widest text-yellow-500/70 mb-1">
+        <p className="text-xs font-mono uppercase tracking-widest text-accent-strong mb-1">
           HR Dashboard
         </p>
         <h1 className="text-2xl font-bold text-slate-900 font-serif leading-tight">
           Welcome, {user?.firstName}.
         </h1>
-        <p className="text-slate-400 text-sm font-sans mt-1">
+        <p className="text-ink-muted text-sm font-sans mt-1">
           Full attendance overview — all staff.
         </p>
-        <div className="mt-3 h-px w-12 bg-yellow-500/40" />
+        <div className="mt-3 h-px w-12 bg-amber-700/40" />
       </header>
 
       {/* ── KPI Grid — 2 cards ───────────────────────────────────────────── */}
@@ -180,10 +176,10 @@ function HrDashboard() {
       {/* ── Weekly Overview — Charts ─────────────────────────────────────── */}
       <section className="mb-8">
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
             Weekly Overview
           </p>
-          <div className="mt-2 h-px w-10 bg-yellow-500/40" />
+          <div className="mt-2 h-px w-10 bg-amber-700/40" />
         </div>
 
         {fetching ? (
@@ -218,10 +214,10 @@ function HrDashboard() {
       {/* ── All Attendance ───────────────────────────────────────────────── */}
       <section>
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
             All Attendance
           </p>
-          <div className="mt-2 h-px w-10 bg-yellow-500/40" />
+          <div className="mt-2 h-px w-10 bg-amber-700/40" />
         </div>
 
         {/* Search input */}
@@ -240,9 +236,8 @@ function HrDashboard() {
               text-sm text-slate-200
               placeholder-slate-500
               font-sans
-              focus:outline-none
-              focus:border-yellow-500/50
-              focus:ring-1 focus:ring-yellow-500/30
+              focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500/30
+              focus-visible:border-yellow-500/50
               transition-colors duration-150
             "
           />

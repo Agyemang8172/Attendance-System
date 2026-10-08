@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
@@ -40,18 +40,14 @@ function Dashboard() {
   const [clockLoading, setClockLoading] = useState(false)
   const [fetching, setFetching]       = useState(true)
 
-  useEffect(() => {
-    fetchAttendance()
-  }, [])
-
   // ── Fetch attendance + derive clock state ──────────────────────────────────
-  const fetchAttendance = async () => {
+  const fetchAttendance = useCallback(async () => {
     try {
       const res  = await api.get('/attendance/my-attendance')
       const data = res.data.data || []
       setRecords(data)
 
-      const openSession = data.find((r) => r.sessionStatus === 'open')
+      const openSession = data.find((r) => r.sessionStatus === 'OPEN')
       setIsClockedIn(!!openSession)
 
       // Auto clock-out alert (fires when backend adds these fields — safe to run now)
@@ -64,16 +60,20 @@ function Dashboard() {
         })
         toast(
           `You forgot to clock out on ${date}. The system clocked you out at 11:59 PM. Please review your record.`,
-          { icon: '⚠️', duration: 7000 }
+          { icon: <FaExclamationTriangle aria-hidden="true" />, duration: 7000 }
         )
-        try { await api.patch(`/attendance/${r._id}/dismiss-alert`) } catch (_) {}
+        try { await api.patch(`/attendance/${r.id}/dismiss-alert`) } catch (_) {}
       })
     } catch {
       toast.error('Failed to load attendance records.')
     } finally {
       setFetching(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    fetchAttendance()
+  }, [fetchAttendance])
 
   // ── Clock In ───────────────────────────────────────────────────────────────
   const handleClockIn = async () => {
@@ -117,7 +117,7 @@ function Dashboard() {
 
   // 2. Streak — consecutive closed sessions going backwards from today
   const sortedClosed = [...records]
-    .filter((r) => r.sessionStatus === 'closed')
+    .filter((r) => r.sessionStatus === 'CLOSED')
     .sort((a, b) => new Date(b.date) - new Date(a.date))
 
   let streak = 0
@@ -143,7 +143,7 @@ function Dashboard() {
   const now          = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const closedThisMonth = records.filter(
-    (r) => r.sessionStatus === 'closed' && new Date(r.date) >= startOfMonth
+    (r) => r.sessionStatus === 'CLOSED' && new Date(r.date) >= startOfMonth
   ).length
   const attendanceRate =
     closedThisMonth > 0
@@ -166,7 +166,7 @@ function Dashboard() {
 
         {/* Left — date eyebrow + big greeting */}
         <div>
-          <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-4">
+          <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-4">
             {formatTodayLong()}
           </p>
           <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 font-serif leading-none tracking-tight">
@@ -174,7 +174,7 @@ function Dashboard() {
             {user?.firstName}.
           </h1>
           {/* Gold divider — solid, visible */}
-          <div className="mt-5 h-0.5 w-20 bg-yellow-500" />
+          <div className="mt-5 h-0.5 w-20 bg-amber-700" />
         </div>
 
         {/* Right — clock status pill + action button */}
@@ -183,7 +183,7 @@ function Dashboard() {
           {/* Status indicator */}
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3 py-1.5 shadow-sm">
             <BsCircleFill
-              className={`text-[8px] ${isClockedIn ? 'text-green-500' : 'text-red-400'}`}
+              className={`text-[8px] ${isClockedIn ? 'text-green-700' : 'text-red-700'}`}
             />
             <span className="text-slate-600 text-xs font-mono">
               {isClockedIn ? 'Clocked In' : 'Clocked Out'}
@@ -218,7 +218,7 @@ function Dashboard() {
                 hover:bg-yellow-400
                 transition-colors duration-150
                 disabled:opacity-50 disabled:cursor-not-allowed
-                shadow-sm shadow-yellow-500/20
+                shadow-sm
               "
             >
               {clockLoading ? 'Processing…' : 'Clock In'}
@@ -262,15 +262,15 @@ function Dashboard() {
       {/* ── Attendance History ────────────────────────────────────────────── */}
       <section>
         <div className="mb-5">
-          <p className="text-xs font-mono uppercase tracking-widest text-slate-400">
+          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
             Attendance History
           </p>
-          <div className="mt-2 h-0.5 w-10 bg-yellow-500/60" />
+          <div className="mt-2 h-0.5 w-10 bg-amber-700/60" />
         </div>
 
         {fetching ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-10 flex items-center justify-center shadow-sm">
-            <p className="text-slate-400 text-sm font-sans animate-pulse">
+            <p className="text-ink-muted text-sm font-sans animate-pulse">
               Loading records…
             </p>
           </div>

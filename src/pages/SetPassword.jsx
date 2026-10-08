@@ -20,7 +20,7 @@ import MeridianArt from '../assets/meridian.svg'
 
 const PasswordField = ({ label, hint, value, onChange, show, onToggle, disabled }) => (
   <div>
-    <label className="block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2 font-sans">
+    <label className="block text-xs font-semibold uppercase tracking-widest text-ink-muted mb-2 font-sans">
       {label}
     </label>
     {hint && (
@@ -35,12 +35,12 @@ const PasswordField = ({ label, hint, value, onChange, show, onToggle, disabled 
         disabled={disabled}
         className="
           w-full px-4 py-3 pr-11
-          bg-stone-100
+          bg-auth-input
           border border-stone-300
           rounded-lg text-sm text-slate-900
-          placeholder-slate-400
+          placeholder-ink-muted
           font-sans
-          focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:border-transparent
           disabled:opacity-50 disabled:cursor-not-allowed
           transition duration-150
         "
@@ -51,9 +51,9 @@ const PasswordField = ({ label, hint, value, onChange, show, onToggle, disabled 
         tabIndex={-1}
         className="
           absolute right-3 top-1/2 -translate-y-1/2
-          text-slate-400 hover:text-slate-900
+          text-ink-muted hover:text-slate-900
           transition duration-150
-          focus:outline-none
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700
         "
       >
         {show ? <FaEyeSlash /> : <FaEye />}
@@ -111,9 +111,9 @@ const SetPassword = () => {
       toast.success('Password set! Welcome to AttendPro.')
 
       // Navigate to the right dashboard based on role.
-      if (user?.role === 'hr') {
+      if (user?.role === 'HR') {
         navigate('/hr-dashboard')
-      } else if (user?.role === 'superadmin') {
+      } else if (user?.role === 'SUPERADMIN') {
         navigate('/superadmin-dashboard')
       } else {
         navigate('/dashboard')
@@ -169,7 +169,7 @@ const SetPassword = () => {
       {/* ── RIGHT PANEL — set password form ──────────────────────────────── */}
       <div
         className="
-          flex-1 min-h-screen bg-stone-50
+          flex-1 min-h-screen bg-auth-canvas
           flex flex-col justify-center
           px-8 sm:px-16 lg:px-24
           relative
@@ -180,7 +180,7 @@ const SetPassword = () => {
           <span className="text-2xl font-bold text-slate-900 font-serif">
             AttendPro
           </span>
-          <span className="text-xs text-slate-400 uppercase tracking-widest mt-1 font-sans">
+          <span className="text-xs text-ink-muted uppercase tracking-widest mt-1 font-sans">
             / Attendance
           </span>
         </div>
@@ -191,7 +191,7 @@ const SetPassword = () => {
           <h2 className="text-3xl font-bold text-slate-900 mb-2 leading-tight font-serif">
             Set your password.
           </h2>
-          <p className="text-slate-400 text-sm font-sans mb-8">
+          <p className="text-ink-muted text-sm font-sans mb-8">
             Your account was just created with a temporary password.
             Choose a personal password to continue.
           </p>
@@ -244,9 +244,9 @@ const SetPassword = () => {
                 text-sm font-semibold font-sans
                 bg-yellow-500 text-slate-900
                 hover:bg-yellow-400
-                focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-stone-50
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2 focus-visible:ring-offset-auth-canvas
                 transition-colors duration-150
-                shadow-sm shadow-yellow-500/20
+                shadow-sm
                 disabled:opacity-50 disabled:cursor-not-allowed
               "
             >
@@ -255,7 +255,7 @@ const SetPassword = () => {
           </div>
 
           {/* Bottom note */}
-          <p className="text-slate-400 text-xs font-sans mt-8 text-center">
+          <p className="text-ink-muted text-xs font-sans mt-8 text-center">
             After this, you'll log in with your email and new password.
           </p>
 

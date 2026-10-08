@@ -3,7 +3,7 @@ import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
-import { FaLock, FaCheck } from 'react-icons/fa'
+import { FaLock, FaCheck, FaFire, FaBolt, FaGem, FaTrophy } from 'react-icons/fa'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -18,35 +18,24 @@ const isEarlyBird = (clockInStr) => {
 }
 
 const roleLabel = {
-  staff: 'Staff',
-  hr: 'HR Manager',
-  superadmin: 'Super Admin',
+  STAFF: 'Staff',
+  HR: 'HR Manager',
+  SUPERADMIN: 'Super Admin',
 }
 
 // ─── Badge Definitions ────────────────────────────────────────────────────────
-//
-//  Each badge:
-//    emoji       → display icon
-//    name        → badge title
-//    description → what it means (shown when earned)
-//    hint        → how to earn it (shown when locked)
-//    check()     → function that receives records[], returns bool
-//    earned styles
-//    locked styles
-//
-// ─────────────────────────────────────────────────────────────────────────────
 
 const BADGES = [
   {
     id: 'on_fire',
-    emoji: '🔥',
+    icon: <FaFire aria-hidden="true" />,
     name: 'On Fire',
     description: 'Current streak of 5+ on-time days.',
     hint: 'Clock in on time for 5 days in a row.',
     check: (records) => {
       let count = 0
       for (const r of records) {
-        if (r.sessionStatus !== 'closed') break
+        if (r.sessionStatus !== 'CLOSED') break
         if (isLate(r.clockIn)) break
         count++
       }
@@ -59,13 +48,13 @@ const BADGES = [
   },
   {
     id: 'early_bird',
-    emoji: '⚡',
+    icon: <FaBolt aria-hidden="true" />,
     name: 'Early Bird',
     description: 'You have clocked in before 06:00.',
     hint: 'Clock in before 06:00 at least once.',
     check: (records) =>
       records.some(
-        (r) => r.clockIn && r.sessionStatus === 'closed' && isEarlyBird(r.clockIn)
+        (r) => r.clockIn && r.sessionStatus === 'CLOSED' && isEarlyBird(r.clockIn)
       ),
     earnedCard: 'bg-yellow-500/10 border-yellow-500/20',
     earnedEmoji: '',
@@ -74,7 +63,7 @@ const BADGES = [
   },
   {
     id: 'perfect_month',
-    emoji: '💎',
+    icon: <FaGem aria-hidden="true" />,
     name: 'Perfect Month',
     description: 'Zero late arrivals this calendar month.',
     hint: 'Have no late clock-ins this month.',
@@ -83,7 +72,7 @@ const BADGES = [
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
       const thisMonth = records.filter(
         (r) =>
-          r.sessionStatus === 'closed' && new Date(r.date) >= startOfMonth
+          r.sessionStatus === 'CLOSED' && new Date(r.date) >= startOfMonth
       )
       if (thisMonth.length === 0) return false
       return thisMonth.every((r) => !isLate(r.clockIn))
@@ -95,12 +84,12 @@ const BADGES = [
   },
   {
     id: 'veteran',
-    emoji: '🏆',
+    icon: <FaTrophy aria-hidden="true" />,
     name: 'Veteran',
     description: '30+ sessions completed.',
     hint: 'Complete 30 or more closed sessions.',
     check: (records) =>
-      records.filter((r) => r.sessionStatus === 'closed').length >= 30,
+      records.filter((r) => r.sessionStatus === 'CLOSED').length >= 30,
     earnedCard: 'bg-amber-500/10 border-amber-500/20',
     earnedEmoji: '',
     earnedText: 'text-amber-400',
@@ -123,8 +112,8 @@ const BadgeCard = ({ badge, earned }) => {
         {/* Corner bracket */}
         <div className="absolute top-3 right-3 w-3 h-3 border-t-2 border-r-2 border-yellow-500 opacity-30 pointer-events-none" />
 
-        {/* Emoji */}
-        <span className="text-3xl">{badge.emoji}</span>
+        {/* Badge icon */}
+        <span className="text-3xl">{badge.icon}</span>
 
         {/* Name + check */}
         <div className="flex items-center justify-between gap-2">
@@ -145,8 +134,8 @@ const BadgeCard = ({ badge, earned }) => {
   // Locked
   return (
     <div className="relative rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5 flex flex-col gap-3">
-      {/* Emoji — muted via opacity */}
-      <span className="text-3xl opacity-25">{badge.emoji}</span>
+      {/* Badge icon — muted via opacity */}
+      <span className="text-3xl opacity-25">{badge.icon}</span>
 
       {/* Name + lock */}
       <div className="flex items-center justify-between gap-2">
@@ -260,7 +249,7 @@ function Profile() {
         <div className="h-px bg-yellow-500/10 mb-6" />
 
         {/* Info rows */}
-        <InfoRow label="Employee ID" value={user?.employeeID || '--'} mono />
+        <InfoRow label="Employee ID" value={user?.employeeCode || '--'} mono />
         <InfoRow label="Email" value={user?.email} last />
       </div>
 

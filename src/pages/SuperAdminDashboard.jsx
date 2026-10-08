@@ -42,6 +42,9 @@ const formatTodayLong = () =>
     year: 'numeric',
   })
 
+// Normalize session status to uppercase (Prisma enum)
+const normStatus = (s) => (s || '').toUpperCase()
+
 // Generate last 12 months as { value: 'YYYY-MM', label: 'Month YYYY' }
 const getLast12Months = () => {
   const months = []
@@ -85,16 +88,16 @@ const buildSessionsChartData = (records) => {
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const week = records.filter((r) => new Date(r.date) >= sevenDaysAgo)
   const closed = week.filter(
-    (r) => r.sessionStatus === 'closed' && !isLate(r.clockIn)
+    (r) => normStatus(r.sessionStatus) === 'CLOSED' && !isLate(r.clockIn)
   ).length
   const late = week.filter(
-    (r) => r.sessionStatus === 'closed' && isLate(r.clockIn)
+    (r) => normStatus(r.sessionStatus) === 'CLOSED' && isLate(r.clockIn)
   ).length
-  const open = week.filter((r) => r.sessionStatus === 'open').length
+  const open = week.filter((r) => normStatus(r.sessionStatus) === 'OPEN').length
   return [
-    { name: 'Closed', value: closed },
-    { name: 'Late', value: late },
-    { name: 'Open', value: open },
+    { name: 'OPEN', value: open },
+    { name: 'CLOSED', value: closed },
+    { name: 'LATE', value: late },
   ].filter((s) => s.value > 0)
 }
 
@@ -194,7 +197,7 @@ function SuperAdminDashboard() {
 
   // ── KPIs ───────────────────────────────────────────────────────────────────
   const clockedInToday = records.filter(
-    (r) => isToday(r.date) && r.sessionStatus === 'open'
+    (r) => isToday(r.date) && normStatus(r.sessionStatus) === 'OPEN'
   ).length
 
   const lateToday = records.filter(
@@ -404,8 +407,8 @@ function SuperAdminDashboard() {
                 bg-slate-800 border border-slate-700
                 text-slate-200 text-sm font-mono
                 rounded-lg px-3 py-2
-                focus:outline-none focus:border-yellow-500/50
-                focus:ring-1 focus:ring-yellow-500/30
+                focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500/30
+                focus-visible:border-yellow-500/50
                 transition-colors duration-150
                 cursor-pointer
               "
@@ -440,7 +443,7 @@ function SuperAdminDashboard() {
                   <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
                     Total Sessions
                   </p>
-                  <p className="text-3xl font-bold text-slate-100 font-mono">
+                  <p className="text-3xl font-medium text-slate-100 font-mono">
                     {monthStats.totalSessions}
                   </p>
                 </div>
@@ -450,7 +453,7 @@ function SuperAdminDashboard() {
                   <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
                     Avg Hours / Day
                   </p>
-                  <p className="text-3xl font-bold text-slate-100 font-mono">
+                  <p className="text-3xl font-medium text-slate-100 font-mono">
                     {monthStats.avgHoursPerDay}
                     <span className="text-sm font-normal text-slate-500 ml-1 font-sans">
                       hrs
@@ -463,7 +466,7 @@ function SuperAdminDashboard() {
                   <p className="text-slate-400 text-xs font-mono uppercase tracking-widest mb-1">
                     Late Arrivals
                   </p>
-                  <p className="text-3xl font-bold text-slate-100 font-mono">
+                  <p className="text-3xl font-medium text-slate-100 font-mono">
                     {monthStats.latePercent}
                     <span className="text-sm font-normal text-slate-500 ml-1 font-sans">
                       %
@@ -561,9 +564,8 @@ function SuperAdminDashboard() {
               text-sm text-slate-200
               placeholder-slate-500
               font-sans
-              focus:outline-none
-              focus:border-yellow-500/50
-              focus:ring-1 focus:ring-yellow-500/30
+              focus:outline-none focus-visible:ring-1 focus-visible:ring-yellow-500/30
+              focus-visible:border-yellow-500/50
               transition-colors duration-150
             "
           />
