@@ -7,13 +7,13 @@ import {
   Legend,
 } from 'recharts'
 
-// Custom tooltip — MERIDIAN styled
+// Custom tooltip — Linear styled
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-slate-800 border border-yellow-500/20 rounded-lg px-3 py-2">
-        <p className="text-slate-400 text-xs font-sans mb-1">{label}</p>
-        <p className="text-yellow-500 text-sm font-mono font-medium">
+      <div className="card-elevated border-accent/20 rounded-lg px-3 py-2">
+        <p className="text-ink-muted text-xs font-sans mb-1">{label}</p>
+        <p className="text-accent text-sm font-mono font-medium">
           {payload[0].value} sessions
         </p>
       </div>
@@ -22,11 +22,11 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null
 }
 
-// Color mapping for session statuses
+// Color mapping for session statuses — Linear accent palette
 const STATUS_COLORS = {
-  OPEN: '#3b82f6',      // blue-500
-  CLOSED: '#22c55e',    // green-500
-  LATE: '#eab308',      // yellow-500
+  OPEN: 'var(--accent)',
+  CLOSED: 'var(--success)',
+  LATE: 'var(--warning)',
 }
 
 const SessionsChart = ({ data = [] }) => {
@@ -35,20 +35,20 @@ const SessionsChart = ({ data = [] }) => {
 
   if (chartData.length === 0) {
     return (
-      <div className="relative bg-slate-900 rounded-2xl p-6 overflow-hidden flex items-center justify-center h-64">
-        <p className="text-slate-500 text-sm font-sans">No session data for this period</p>
+      <div className="card flex items-center justify-center h-64">
+        <p className="text-ink-muted text-sm font-sans">No session data for this period</p>
       </div>
     )
   }
 
   return (
-    <div className="relative bg-slate-900 rounded-2xl p-6 overflow-hidden">
+    <div className="relative card-elevated overflow-hidden border-accent/20">
 
       {/* Corner bracket */}
-      <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-yellow-500 opacity-30 rounded-tr-sm pointer-events-none" />
+      <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 rounded-tr-sm pointer-events-none" />
 
       {/* Header */}
-      <p className="text-slate-400 text-xs font-medium uppercase tracking-wider font-sans mb-4">
+      <p className="text-ink-muted text-xs font-medium uppercase tracking-wider font-sans mb-4">
         Session Breakdown — This Week
       </p>
 
@@ -68,7 +68,7 @@ const SessionsChart = ({ data = [] }) => {
             labelLine={false}
           >
             {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#64748b'} />
+              <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || 'var(--ink-subtle)'} />
             ))}
           </Pie>
           <Tooltip content={<CustomTooltip />} />
