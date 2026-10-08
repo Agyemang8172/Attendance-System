@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
+import securityHeaders from "./middleware/securityHeaders.js";
 import { logger, correlationIdMiddleware, requestLogger, logError } from "./utils/logger.js";
 import { setupSwagger } from "./docs/swagger.js";
 
@@ -12,6 +13,12 @@ dotenv.config();
 const app = express();
 
 const PORT = process.env.PORT || 8000;
+
+// ── Security Headers ─────────────────────────────────────────────────────────
+
+// First, so every response carries them — including error responses, which are
+// the ones most likely to be reflected back at a browser.
+app.use(securityHeaders);
 
 // ── Logging & Correlation ID Middleware ────────────────────────────────────────
 
@@ -78,12 +85,40 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * D9 — a limiter keyed on the account as well as the address.
+ *
+ * The IP limiter above cannot see the difference between one person trying one
+ * password ten times and ten people behind the same office NAT trying ten
+ * different accounts. It also stops mattering the moment an attacker rotates
+ * addresses. This one bounds guesses against a single account however many
+ * sources they come from, which is the axis a credential attack actually runs
+ * along.
+ */
+const accountAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  keyGenerator: (req) =>
+    `account:${String(req.body?.email || "").toLowerCase()}:${req.ip}`,
+  message: {
+    success: false,
+    message: "Too many sign-in attempts for this account, please try again later.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // The library validates that keyGenerator output is a bare IP against its
+  // IPv6 subnet rules and throws during construction when it is not. This key
+  // deliberately joins an address to an email, so that check cannot apply.
+  validate: false,
+});
+
 // Rate limiting is disabled under test: the login limiter allows 10 attempts
 // per 15 minutes per IP, so a second test run inside that window would return
 // 429 before reaching the code under test.
 if (process.env.NODE_ENV !== "test") {
   app.use("/api/", limiter);
   app.use("/api/auth/login", authLimiter);
+  app.use("/api/auth/login", accountAuthLimiter);
 }
 
 // ── Routes ────────────────────────────────────────────────────────────────────

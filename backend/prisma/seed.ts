@@ -33,11 +33,10 @@ async function main() {
   // ── Read passwords from environment variables ──────────────────────────────
   const superadminPassword = process.env.SUPERADMIN_PASSWORD;
   const hrPassword = process.env.HR_PASSWORD;
-  const staffPassword = process.env.STAFF_PASSWORD;
 
-  if (!superadminPassword || !hrPassword || !staffPassword) {
+  if (!superadminPassword || !hrPassword) {
     throw new Error(
-      "Missing required environment variables: SUPERADMIN_PASSWORD, HR_PASSWORD, STAFF_PASSWORD"
+      "Missing required environment variables: SUPERADMIN_PASSWORD, HR_PASSWORD"
     );
   }
 
@@ -61,7 +60,6 @@ async function main() {
   // ── Hash passwords ────────────────────────────────────────────────────────
   const hashedSuperadminPassword = await hashPassword(superadminPassword);
   const hashedHrPassword = await hashPassword(hrPassword);
-  const hashedStaffPassword = await hashPassword(staffPassword);
 
   // ── Create Superadmin ─────────────────────────────────────────────────────
   const superadmin = await prisma.user.upsert({
@@ -103,44 +101,23 @@ async function main() {
   });
   console.log(`✅ HR upserted: ${hr.email}`);
 
-  // ── Create Staff Users ────────────────────────────────────────────────────
-  const staffData = [
-    { firstName: "John", lastName: "Doe", email: "john.doe@company.com", department: "Engineering", jobTitle: "Software Engineer" },
-    { firstName: "Jane", lastName: "Smith", email: "jane.smith@company.com", department: "Engineering", jobTitle: "Senior Developer" },
-    { firstName: "Mike", lastName: "Johnson", email: "mike.johnson@company.com", department: "Sales", jobTitle: "Sales Representative" },
-    { firstName: "Sarah", lastName: "Williams", email: "sarah.williams@company.com", department: "Marketing", jobTitle: "Marketing Specialist" },
-    { firstName: "David", lastName: "Brown", email: "david.brown@company.com", department: "Operations", jobTitle: "Operations Manager" },
-  ];
-
-  for (let i = 0; i < staffData.length; i++) {
-    const s = staffData[i];
-    const empCode = `EMP-${String(i + 3).padStart(4, "0")}`;
-
-    await prisma.user.upsert({
-      where: { email: s.email },
-      update: {},
-      create: {
-        employeeCode: empCode,
-        firstName: s.firstName,
-        lastName: s.lastName,
-        email: s.email,
-        password: hashedStaffPassword,
-        role: "STAFF",
-        department: s.department,
-        jobTitle: s.jobTitle,
-        isActive: true,
-        mustChangePassword: true,
-        shiftId: createdShifts[0].id,
-      },
-    });
-    console.log(`✅ Staff upserted: ${s.email} (${empCode})`);
-  }
+  // ── No staff fixtures ─────────────────────────────────────────────────────
+  // The seed provisions the two privileged accounts and nothing else. Staff
+  // records are business data: they arrive through POST /api/users, created by
+  // HR or SUPERADMIN, each with a real temporary credential handed to a real
+  // person. Placeholder accounts seeded here would be indistinguishable from
+  // live ones in a backup, in an export, or to whoever reads the attendance
+  // figures they accumulate.
+  //
+  // This also means an upsert run no longer *removes* staff that already
+  // exist — it simply stops adding new ones. Cleaning up rows left by earlier
+  // seeds is a separate, explicitly approved operation.
 
   console.log("\n🎉 Seeding complete!");
-  console.log("\n📋 Test Accounts (passwords from env vars):");
+  console.log("\n📋 Accounts (passwords from env vars):");
   console.log(`   Superadmin: superadmin@attendpro.com`);
   console.log(`   HR:         hr@attendpro.com`);
-  staffData.forEach(s => console.log(`   Staff:      ${s.email}`));
+  console.log("\n   Staff accounts are created through the application, not the seed.");
   console.log("\n⚠️  All accounts have mustChangePassword=true");
 }
 

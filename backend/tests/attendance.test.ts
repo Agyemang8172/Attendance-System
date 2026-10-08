@@ -1,35 +1,33 @@
 /**
  * Slice B — Attendance capture and correction.
  *
- * Exercises the five attendance endpoints against the local seeded database.
+ * Exercises the five attendance endpoints against the local database using the
+ * accounts provisioned by tests/fixtures.ts.
  * Asserts PRD §7 edge-case behaviours:
  *   - Second clock-in while open  → 400 with specific message
  *   - Clock-out with no open session → 400 (not 404)
  *   - dismissAlert scoped to caller's own records (issue 3, accepted)
  *
- * Read-only except dismissAlert which appends to remarks (idempotent enough).
+ * Read-only except dismissAlert which appends to remarks (idempotent enough),
+ * and the clock-in / clock-out pair which opens and closes one session.
  */
 import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import app from "../server.js";
-import prisma from "../config/prismaClient.js";
-
-const STAFF_EMAIL = "john.doe@company.com";
-const HR_EMAIL = "hr@attendpro.com";
-const SUPERADMIN_EMAIL = "superadmin@attendpro.com";
-
-function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`${name} not set`);
-  return v;
-}
+import {
+  ensureTestAccounts,
+  TEST_PASSWORD,
+  TEST_SUPERADMIN_EMAIL as SUPERADMIN_EMAIL,
+  TEST_HR_EMAIL as HR_EMAIL,
+  TEST_STAFF_EMAIL as STAFF_EMAIL,
+} from "./fixtures.js";
 
 async function signIn(email: string, password: string) {
   return request(app).post("/api/auth/login").send({ email, password });
 }
 
-async function tokenFor(envVar: string, email: string): Promise<string> {
-  const res = await signIn(email, requireEnv(envVar));
+async function tokenFor(email: string): Promise<string> {
+  const res = await signIn(email, TEST_PASSWORD);
   if (res.status !== 200) throw new Error(`Sign-in failed: ${res.status}`);
   return res.body.token as string;
 }
@@ -40,9 +38,10 @@ let superadminToken: string;
 let staffAttendanceId: string; // an OPEN session created in clock-in test
 
 beforeAll(async () => {
-  staffToken = await tokenFor("STAFF_PASSWORD", STAFF_EMAIL);
-  hrToken = await tokenFor("HR_PASSWORD", HR_EMAIL);
-  superadminToken = await tokenFor("SUPERADMIN_PASSWORD", SUPERADMIN_EMAIL);
+  await ensureTestAccounts();
+  staffToken = await tokenFor(STAFF_EMAIL);
+  hrToken = await tokenFor(HR_EMAIL);
+  superadminToken = await tokenFor(SUPERADMIN_EMAIL);
 });
 
 describe("POST /api/attendance/clock-in", () => {

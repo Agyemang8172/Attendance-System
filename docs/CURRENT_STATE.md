@@ -2,11 +2,35 @@
 
 > This file is maintained by the Orchestrator agent. It is updated at each phase transition to preserve context across long sessions.
 
+> **Stale below this line.** The pipeline table, agent roster, blockers and
+> evidence sections date from 2026-10-06 and still describe the MongoDB Atlas
+> deployment that has since been replaced by local Prisma Postgres. A full
+> refresh is scheduled with the final UI/UX verification milestone; treat the
+> detail underneath as historical until then. The header below is current.
+
 ## Current Task
-- **Task:** Stage 4 — Task Board DAG (next: stage 5, feature slice A)
-- **Branch:** `feature/prisma-postgresql`
-- **Triage Level:** NORMAL
-- **Status:** Stages 1, 2, and 3 complete. Awaiting Owner "approve" to commit stage 4 output.
+- **Task:** M1 — Authentication and user-management foundation
+- **Branch:** `feat/auth-foundation` (cut from `chore/git-foundation`)
+- **Triage Level:** STANDARD
+- **Status:** Implementation complete, type-check clean. Backend integration
+  suite awaiting human execution — it writes to Postgres, so the Engineer runs
+  it and reports the result.
+
+## Approved Plan
+`docs/IMPLEMENTATION_PLAN.md` — eleven milestones M0–M10, each on its own
+branch, each committed through `.agents/scripts/commit.sh` by the Engineer.
+
+- M0 **DONE** — `chore/git-foundation`, commit `fea8a00`, pushed. Fixed the
+  eslint ignore list (1538 errors → 5 real) and made `db-check.sh` fail closed
+  when no working Python is present. That fix immediately caught a real
+  finding: the init migration creates `shifts`, `users` and `attendances` with
+  no Row Level Security.
+- M1 **IN PROGRESS** — this branch.
+- M2–M10 **QUEUED**.
+
+Supporting documents, also committed in M0:
+`docs/DESIGN_PROPOSAL.md` (approved design system),
+`docs/AUTH_DESIGN_PROPOSAL.md` (approved auth and user-management design).
 
 ## Dev-OS Pipeline Status
 
