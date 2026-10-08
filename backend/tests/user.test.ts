@@ -529,6 +529,19 @@ describe("deactivated accounts lose their session immediately", () => {
     expect(targetSignIn.status).toBe(200);
     const targetToken = targetSignIn.body.token as string;
 
+    // A freshly created account still holds its temporary credential, so the
+    // forced-change gate would answer 403 here and the assertion below would be
+    // comparing a blocked request against a rejected one. Clear the gate first,
+    // so what follows is an ordinary account doing ordinary work.
+    const change = await request(app)
+      .put("/api/users/change-password")
+      .set("Authorization", `Bearer ${targetToken}`)
+      .send({
+        currentPassword: target.tempPassword,
+        newPassword: STRONG_NEW_PASSWORD,
+      });
+    expect(change.status).toBe(200);
+
     // Works while the account is active.
     const before = await request(app)
       .get("/api/attendance/my-attendance")
