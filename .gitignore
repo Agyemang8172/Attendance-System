@@ -52,3 +52,7 @@ backend/test-*.txt
 # backend/test-users.md carried a plaintext demo password in repo history;
 # any recreated copy is ignored here so it cannot be staged again.
 backend/test-users.md
+
+# Seed and fixture script — intentionally not version-controlled.
+# Kept local-only so it can never be pushed; restore a copy manually on a fresh clone.
+backend/prisma/seed.ts
