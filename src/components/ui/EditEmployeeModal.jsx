@@ -17,6 +17,9 @@ import toast from 'react-hot-toast'
 //  Guards:
 //    - Self-role-change blocked: if the logged-in superadmin edits their own
 //      row, the Role dropdown is disabled.
+//    - HR role-change blocked (D4): the only privilege HR lacks on a STAFF
+//      account they manage. The select stays visible but disabled, so the
+//      boundary is legible instead of hidden.
 //    - "Nothing changed" detection: if all fields match the original, Save
 //      closes the modal without calling the API.
 //
@@ -24,17 +27,17 @@ import toast from 'react-hot-toast'
 
 const Field = ({ label, ...inputProps }) => (
   <div>
-    <label className="block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2 font-sans">
+    <label className="block text-xs font-semibold uppercase tracking-widest text-chrome-ink-muted mb-2 font-sans">
       {label}
     </label>
     <input
       {...inputProps}
       className="
         w-full px-4 py-3
-        bg-slate-800 border border-slate-700
-        rounded-lg text-sm text-slate-200
-        placeholder-slate-500 font-sans
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
+        bg-chrome-elevated border border-chrome-line
+        rounded-lg text-sm text-chrome-ink
+        placeholder-chrome-ink-subtle font-sans
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-chrome focus-visible:border-transparent
         disabled:opacity-50 disabled:cursor-not-allowed
         transition duration-150
       "
@@ -45,6 +48,7 @@ const Field = ({ label, ...inputProps }) => (
 const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
   const currentUser = getCurrentUser()
   const isEditingSelf = currentUser?.email === user.email
+  const isHr = currentUser?.role === 'HR'
 
   // Pre-fill with the employee's current values.
   const [form, setForm] = useState({
@@ -70,14 +74,16 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
   const update = (key) => (e) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }))
   
-  // Check whether anything actually changed.
+  // Check whether anything actually changed. Role never counts for an HR
+  // caller who cannot change it anyway.
   const hasChanges = () => {
+    const roleChanged = !isHr && form.role !== (user.role || 'STAFF')
     return (
       form.firstName.trim() !== (user.firstName || '') ||
       form.lastName.trim() !== (user.lastName || '') ||
       form.email.trim() !== (user.email || '') ||
       form.department.trim() !== (user.department || '') ||
-      form.role !== (user.role || 'STAFF')
+      roleChanged
     )
   }
 
@@ -98,13 +104,16 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
 
     setSubmitting(true)
     try {
-      await api.put(`/users/${user.id}`, {
+      // HR writes profile fields only; role is SUPERADMIN's to change.
+      const payload = {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         email: form.email.trim(),
         department: form.department.trim(),
-        role: form.role,
-      })
+      }
+      if (!isHr) payload.role = form.role
+
+      await api.put(`/users/${user.id}`, payload)
       toast.success(`${form.firstName} updated.`)
       onUpdated()
       onClose()
@@ -120,37 +129,37 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
   }
 
   const goldButton =
-    'px-6 py-2.5 rounded-xl text-sm font-semibold font-sans bg-yellow-500 text-slate-900 hover:bg-yellow-400 transition-colors duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+    'px-6 py-2.5 rounded-xl text-sm font-semibold font-sans bg-brass-chrome text-ink hover:opacity-90 transition-opacity duration-150 shadow-elevated disabled:opacity-50 disabled:cursor-not-allowed'
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 overlay-scrim backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-slate-900 rounded-2xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-800"
+        className="relative bg-chrome rounded-2xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-chrome-line shadow-elevated"
       >
         {/* MERIDIAN corner bracket */}
-        <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-yellow-500 opacity-30 pointer-events-none" />
+        <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-brass-chrome opacity-30 pointer-events-none" />
 
         {/* Header */}
-        <p className="text-xs font-mono uppercase tracking-widest text-yellow-500/70 mb-3">
+        <p className="text-xs font-mono uppercase tracking-widest text-brass-chrome opacity-70 mb-3">
           Edit Account
         </p>
-        <h2 className="text-2xl font-bold text-stone-50 font-serif mb-2">
+        <h2 className="text-2xl font-bold text-chrome-ink font-serif mb-2">
           Edit Employee
         </h2>
-        <p className="text-slate-400 text-sm font-sans mb-1">
+        <p className="text-chrome-ink-muted text-sm font-sans mb-1">
           Update details for{' '}
-          <span className="text-stone-50 font-medium">
+          <span className="text-chrome-ink font-medium">
             {user.firstName} {user.lastName}
           </span>
         </p>
         {user.employeeCode && (
-          <p className="text-slate-500 text-xs font-mono mb-6">
+          <p className="text-chrome-ink-subtle text-xs font-mono mb-6">
             {user.employeeCode}
           </p>
         )}
@@ -192,20 +201,22 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
             disabled={submitting}
           />
 
-          {/* Role — disabled when editing yourself (self-demotion guard) */}
+          {/* Role — disabled when editing yourself (self-demotion guard) and
+              for HR callers (D4). Visible in both cases: the boundary is as
+              informative as the freedom. */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2 font-sans">
+            <label className="block text-xs font-semibold uppercase tracking-widest text-chrome-ink-muted mb-2 font-sans">
               Role
             </label>
             <select
               value={form.role}
               onChange={update('role')}
-              disabled={submitting || isEditingSelf}
+              disabled={submitting || isEditingSelf || isHr}
               className="
                 w-full px-4 py-3
-                bg-slate-800 border border-slate-700
-                rounded-lg text-sm text-slate-200 font-sans
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
+                bg-chrome-elevated border border-chrome-line
+                rounded-lg text-sm text-chrome-ink font-sans
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-chrome focus-visible:border-transparent
                 disabled:opacity-50 disabled:cursor-not-allowed
                 transition duration-150
               "
@@ -215,19 +226,24 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
               <option value="SUPERADMIN">Superadmin</option>
             </select>
             {isEditingSelf && (
-              <p className="text-slate-500 text-xs font-sans mt-1">
+              <p className="text-chrome-ink-subtle text-xs font-sans mt-1">
                 You cannot change your own role.
+              </p>
+            )}
+            {isHr && !isEditingSelf && (
+              <p className="text-chrome-ink-subtle text-xs font-sans mt-1">
+                Only the system administrator can change roles.
               </p>
             )}
           </div>
 
-          {error && <p className="text-red-400 text-xs font-sans">{error}</p>}
+          {error && <p className="text-chrome-error text-xs font-sans">{error}</p>}
 
           <div className="flex justify-end gap-3 pt-2">
             <button
               onClick={onClose}
               disabled={submitting}
-              className="px-4 py-2 text-slate-400 hover:text-slate-200 text-sm font-sans disabled:opacity-50"
+              className="px-4 py-2 text-chrome-ink-muted hover:text-chrome-ink text-sm font-sans disabled:opacity-50"
             >
               Cancel
             </button>

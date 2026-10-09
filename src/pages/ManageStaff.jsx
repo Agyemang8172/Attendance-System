@@ -9,7 +9,10 @@ import EditEmployeeModal from '../components/ui/EditEmployeeModal'
 
 // ─── ManageStaff ────────────────────────────────────────────────────────────
 //
-//  Superadmin-only page for managing employee accounts.
+//  Shared admin page (SUPERADMIN + HR) for managing employee accounts.
+//  The role in the eyebrow adapts to whoever opened it, so a page that one
+//  role owns never lies about who is looking.
+//
 //  This is the "smart" file: it talks to the backend, holds state, and feeds
 //  the dumb StaffTable. The Add Employee popup is wired here but built next.
 //
@@ -103,7 +106,7 @@ const ManageStaff = () => {
       <header className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <p className="text-xs font-mono uppercase tracking-widest text-accent mb-1">
-            Superadmin
+            {currentUser?.role === 'HR' ? 'Human Resources' : 'Superadmin'}
           </p>
           <h1 className="text-display-sm text-ink font-serif leading-tight">
             Manage Staff
@@ -223,30 +226,5 @@ const ManageStaff = () => {
     </Layout>
   )
 }
-
-const formatTodayLong = () =>
-  new Date().toLocaleDateString('en-GB', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-
-const isLate = (clockInStr) => {
-  const d = new Date(clockInStr)
-  return d.getHours() > 6 || (d.getHours() === 6 && d.getMinutes() >= 30)
-}
-
-const isToday = (dateStr) => {
-  const d = new Date(dateStr)
-  const now = new Date()
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  )
-}
-
-const normStatus = (s) => (s || '').toUpperCase()
 
 export default ManageStaff

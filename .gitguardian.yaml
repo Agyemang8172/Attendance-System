@@ -6,10 +6,19 @@
 # detector matches those literal strings and raises an incident that cannot be a
 # real exposure.
 #
-# The exclusion is scoped to that single file. Detection is unchanged everywhere
-# else, so a real credential reaching any other path is still reported.
+# The three test files below carry literal password-shaped strings by design:
+# they are deliberately-fake inputs and the universal test credential. They
+# raise Generic Password incidents on every branch that touches them even
+# though nothing in them is a real secret, so they are excluded too.
+#
+# The exclusions stay scoped to these specific files. Detection is unchanged
+# everywhere else, so a real credential reaching any other path is still
+# reported.
 version: 2
 
 secret:
   ignored_paths:
-    - backend/validators/index.ts
+    - backend/validators/index.ts      # PASSWORD_BLOCKLIST — public reference data
+    - backend/tests/fixtures.ts        # devos123 — Hard Rule 17 universal test credential
+    - backend/tests/auth.test.ts       # deliberately-wrong password used to test 401s
+    - backend/tests/user.test.ts       # deliberately-weak non-secrets for the D7 policy tests

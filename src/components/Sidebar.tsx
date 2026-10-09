@@ -61,7 +61,7 @@ const allNavItems: NavItem[] = [
     label: 'Manage Staff',
     path: '/manage-staff',
     icon: <FaUsersGear />,
-    roles: ['SUPERADMIN'],
+    roles: ['SUPERADMIN', 'HR'],
   },
 ]
 

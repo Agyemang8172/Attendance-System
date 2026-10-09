@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
+import { getCurrentUser } from '../../utils/auth'
 import api from '../../api/axios'
-import toast from 'react-hot-toast'
 
 // ─── AddEmployeeModal ─────────────────────────────────────────────────────────
 //
@@ -20,6 +20,12 @@ import toast from 'react-hot-toast'
 //    onCreated → () => void · called when the admin finishes, so the parent
 //                refetches the list
 //
+//  ── ROLE LOCK (D4) ───────────────────────────────────────────────────────────
+//  HR accounts may only create STAFF accounts — the backend refuses anything
+//  else with a 403. The Role select therefore stays visible but DISABLED for an
+//  HR caller, pinned to STAFF, rather than hidden (hiding is how privilege
+//  escalation slips through a UI that still talks to the old API).
+//
 //  ── BACKEND CONTRACT this component expects ──────────────────────────────────
 //    POST /users  with body { firstName, lastName, email, department, role }
 //    On success (201), the response must be:
@@ -32,17 +38,17 @@ import toast from 'react-hot-toast'
 
 const Field = ({ label, ...inputProps }) => (
   <div>
-    <label className="block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2 font-sans">
+    <label className="block text-xs font-semibold uppercase tracking-widest text-chrome-ink-muted mb-2 font-sans">
       {label}
     </label>
     <input
       {...inputProps}
       className="
         w-full px-4 py-3
-        bg-slate-800 border border-slate-700
-        rounded-lg text-sm text-slate-200
-        placeholder-slate-500 font-sans
-        focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
+        bg-chrome-elevated border border-chrome-line
+        rounded-lg text-sm text-chrome-ink
+        placeholder-chrome-ink-subtle font-sans
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-chrome focus-visible:border-transparent
         disabled:opacity-50 disabled:cursor-not-allowed
         transition duration-150
       "
@@ -65,14 +71,14 @@ const CopyRow = ({ label, value }) => {
 
   return (
     <div>
-      <p className="text-xs font-mono uppercase tracking-widest text-slate-400 mb-1">
+      <p className="text-xs font-mono uppercase tracking-widest text-chrome-ink-muted mb-1">
         {label}
       </p>
-      <div className="flex items-center justify-between gap-3 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3">
-        <span className="text-sm text-stone-50 font-mono break-all">{value}</span>
+      <div className="flex items-center justify-between gap-3 bg-chrome-elevated border border-chrome-line rounded-lg px-4 py-3">
+        <span className="text-sm text-chrome-ink font-mono break-all">{value}</span>
         <button
           onClick={copy}
-          className="shrink-0 text-xs font-mono uppercase tracking-wide text-yellow-500 hover:text-yellow-400 transition-colors duration-150"
+          className="shrink-0 text-xs font-mono uppercase tracking-wide text-brass-chrome hover:text-chrome-ink transition-colors duration-150"
         >
           {copied ? 'Copied' : 'Copy'}
         </button>
@@ -82,6 +88,9 @@ const CopyRow = ({ label, value }) => {
 }
 
 const AddEmployeeModal = ({ onClose, onCreated }) => {
+  const currentUser = getCurrentUser()
+  const isHr = currentUser?.role === 'HR'
+
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -124,7 +133,9 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
         lastName: form.lastName.trim(),
         email: form.email.trim(),
         department: form.department.trim(),
-        role: form.role,
+        // HR cannot mint HR or SUPERADMIN accounts (backend enforces this too),
+        // so an HR caller always creates STAFF.
+        role: isHr ? 'STAFF' : form.role,
       })
 
       const data = res.data?.data || {}
@@ -151,32 +162,32 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
   }
 
   const goldButton =
-    'px-6 py-2.5 rounded-xl text-sm font-semibold font-sans bg-yellow-500 text-slate-900 hover:bg-yellow-400 transition-colors duration-150 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+    'px-6 py-2.5 rounded-xl text-sm font-semibold font-sans bg-brass-chrome text-ink hover:opacity-90 transition-opacity duration-150 shadow-elevated disabled:opacity-50 disabled:cursor-not-allowed'
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 overlay-scrim backdrop-blur-sm flex items-center justify-center p-4"
       onClick={created ? undefined : onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-slate-900 rounded-2xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-slate-800"
+        className="relative bg-chrome rounded-2xl p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-chrome-line shadow-elevated"
       >
         {/* MERIDIAN corner bracket */}
-        <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-yellow-500 opacity-30 pointer-events-none" />
+        <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-brass-chrome opacity-30 pointer-events-none" />
 
         {created ? (
           /* ── STEP 2: REVEAL CREDENTIALS ───────────────────────────────── */
           <>
-            <p className="text-xs font-mono uppercase tracking-widest text-yellow-500/70 mb-3">
+            <p className="text-xs font-mono uppercase tracking-widest text-brass-chrome opacity-70 mb-3">
               Account Created
             </p>
-            <h2 className="text-2xl font-bold text-stone-50 font-serif mb-2">
+            <h2 className="text-2xl font-bold text-chrome-ink font-serif mb-2">
               {created.name} is set up
             </h2>
-            <p className="text-slate-400 text-sm font-sans mb-6">
+            <p className="text-chrome-ink-muted text-sm font-sans mb-6">
               Give {created.name.split(' ')[0]} their email and temporary password — that's
               what they log in with. They'll set their own password on first login.
             </p>
@@ -186,7 +197,7 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
               {created.tempPassword ? (
                 <CopyRow label="Temporary Password" value={created.tempPassword} />
               ) : (
-                <p className="text-red-400 text-xs font-sans">
+                <p className="text-chrome-error text-xs font-sans">
                   The server didn't send a temporary password. Make sure
                   createUser returns a <span className="font-mono">tempPassword</span> field.
                 </p>
@@ -194,7 +205,7 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
               <CopyRow label="Employee Code (for reference)" value={created.employeeCode} />
             </div>
 
-            <p className="text-slate-500 text-xs font-sans mt-6">
+            <p className="text-chrome-ink-subtle text-xs font-sans mt-6">
               This is the only time the temporary password is shown — copy it now.
             </p>
 
@@ -207,10 +218,10 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
         ) : (
           /* ── STEP 1: FORM ─────────────────────────────────────────────── */
           <>
-            <p className="text-xs font-mono uppercase tracking-widest text-yellow-500/70 mb-3">
+            <p className="text-xs font-mono uppercase tracking-widest text-brass-chrome opacity-70 mb-3">
               New Account
             </p>
-            <h2 className="text-2xl font-bold text-stone-50 font-serif mb-6">
+            <h2 className="text-2xl font-bold text-chrome-ink font-serif mb-6">
               Add Employee
             </h2>
 
@@ -250,20 +261,22 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
                 disabled={submitting}
               />
 
-              {/* Role */}
+              {/* Role — disabled for HR (D4): the select stays visible so the
+                  caller sees where the boundary is, but an HR caller cannot
+                  move it off STAFF. */}
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-widest text-slate-400 mb-2 font-sans">
+                <label className="block text-xs font-semibold uppercase tracking-widest text-chrome-ink-muted mb-2 font-sans">
                   Role
                 </label>
                 <select
                   value={form.role}
                   onChange={update('role')}
-                  disabled={submitting}
+                  disabled={submitting || isHr}
                   className="
                     w-full px-4 py-3
-                    bg-slate-800 border border-slate-700
-                    rounded-lg text-sm text-slate-200 font-sans
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:border-transparent
+                    bg-chrome-elevated border border-chrome-line
+                    rounded-lg text-sm text-chrome-ink font-sans
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-brass-chrome focus-visible:border-transparent
                     disabled:opacity-50 disabled:cursor-not-allowed
                     transition duration-150
                   "
@@ -272,15 +285,20 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
                   <option value="HR">HR</option>
                   <option value="SUPERADMIN">Superadmin</option>
                 </select>
+                {isHr && (
+                  <p className="text-chrome-ink-subtle text-xs font-sans mt-1">
+                    HR accounts can only create Staff accounts.
+                  </p>
+                )}
               </div>
 
-              {error && <p className="text-red-400 text-xs font-sans">{error}</p>}
+              {error && <p className="text-chrome-error text-xs font-sans">{error}</p>}
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   onClick={onClose}
                   disabled={submitting}
-                  className="px-4 py-2 text-slate-400 hover:text-slate-200 text-sm font-sans disabled:opacity-50"
+                  className="px-4 py-2 text-chrome-ink-muted hover:text-chrome-ink text-sm font-sans disabled:opacity-50"
                 >
                   Cancel
                 </button>
