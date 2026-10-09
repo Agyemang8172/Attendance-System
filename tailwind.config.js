@@ -40,6 +40,7 @@ export default {
         'chrome-ink': 'var(--chrome-ink)',
         'chrome-ink-muted': 'var(--chrome-ink-muted)',
         'chrome-ink-subtle': 'var(--chrome-ink-subtle)',
+        'chrome-error': 'var(--chrome-error)',
       },
       fontFamily: {
         /* §6 — three tiers. Display is the deviation from v1's single-family

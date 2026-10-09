@@ -95,6 +95,14 @@ describe('route guards reject callers outside the declared role', () => {
     await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
   })
 
+  it('admits HR to staff management without redirecting', async () => {
+    seedSession('HR')
+    visit('/manage-staff')
+
+    await screen.findByText(/loading employees/i)
+    expect(window.location.pathname).toBe('/manage-staff')
+  })
+
   it('bounces STAFF off the superadmin dashboard to its own home', async () => {
     seedSession('STAFF')
     visit('/superadmin-dashboard')

@@ -58,14 +58,14 @@ describe('navigation is filtered by role', () => {
     expect(screen.queryByText('Manage Staff')).not.toBeInTheDocument()
   })
 
-  it('shows HR its links and hides staff and superadmin-only ones', () => {
+  it('shows HR its links and hides staff only ones', () => {
     renderSidebar('HR')
 
     expect(screen.getByText('HR Dashboard')).toBeInTheDocument()
+    expect(screen.getByText('Manage Staff')).toBeInTheDocument()
     expect(screen.getByText('My Profile')).toBeInTheDocument()
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
     expect(screen.queryByText('My Schedule')).not.toBeInTheDocument()
-    expect(screen.queryByText('Manage Staff')).not.toBeInTheDocument()
   })
 
   it('shows SUPERADMIN staff management on top of its links', () => {

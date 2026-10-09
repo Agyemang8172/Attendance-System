@@ -23,7 +23,8 @@ const StaffRoute = ({ children }) => {
 }
 
 // HR & SUPERADMIN — anyone else bounces, never to login.
-const HrRoute = ({ children }) => {
+// Guards the HR dashboard and the shared staff-management workspace.
+const AdminRoute = ({ children }) => {
     const user = getCurrentUser()
     if (!isAuthenticated()) return <Navigate to="/login" replace />
    if (user?.role !== 'HR' && user?.role !== 'SUPERADMIN') return <Navigate to={roleHome(user?.role)} replace />
@@ -99,9 +100,9 @@ function App() {
          <Route
             path="/hr-dashboard"
             element={
-              <HrRoute>
+              <AdminRoute>
                 <HrDashboard />
-              </HrRoute>
+              </AdminRoute>
             }
           />
 
@@ -115,12 +116,12 @@ function App() {
                     }
                 />
 
-                {/* SuperAdmin only */}
+                {/* HR & SuperAdmin — shared staff-management workspace */}
         <Route path="/manage-staff"
             element={
-                <SuperAdminRoute>
+                <AdminRoute>
                     <ManageStaff />
-                </SuperAdminRoute>
+                </AdminRoute>
             }
         />
   
