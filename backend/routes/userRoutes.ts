@@ -2,6 +2,7 @@ import express from "express";
 import userController from "../controllers/userController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import authorizeRole from "../middleware/roleMiddleware.js";
+import requirePasswordChange from "../middleware/requirePasswordChange.js";
 import { validate } from "../middleware/validate.js";
 import {
   createUserSchema,
@@ -10,32 +11,27 @@ import {
   getUsersQuerySchema,
   getUserByIdSchema,
   changePasswordSchema,
+  resetPasswordSchema,
 } from "../validators/index.js";
 
 const router = express.Router();
 
-// ⚠️ Route ordering matters: static routes BEFORE parameterized routes
+// Route ordering matters: static routes BEFORE parameterized routes, because
+// "/change-password" would otherwise be captured by "/:id" as an ID.
 
-// GET /api/users — list all (HR / SUPERADMIN)
-router.get(
-  "/",
-  authMiddleware,
-  authorizeRole("SUPERADMIN", "HR"),
-  validate(getUsersQuerySchema),
-  userController.getAllUsers
-);
-
-// POST /api/users — create (SUPERADMIN only)
+// HR creates accounts too, but only staff ones — `createUser` scopes it.
+// Refusing HR outright here was blocking the one thing HR exists to do, while
+// the real protection lives in the controller where the target's role is known.
 router.post(
   "/",
   authMiddleware,
-  authorizeRole("SUPERADMIN"),
+  requirePasswordChange(),
+  authorizeRole("SUPERADMIN", "HR"),
   validate(createUserSchema),
   userController.createUser
 );
 
-// PUT /api/users/change-password — own password (authenticated)
-// MUST be before /:id to avoid matching "change-password" as an ID
+// Own password. The one route an account mid-forced-change is allowed to reach.
 router.put(
   "/change-password",
   authMiddleware,
@@ -43,29 +39,52 @@ router.put(
   userController.changePassword
 );
 
-// GET /api/users/:id — single user (authenticated)
+// Administrative reset. SUPERADMIN may reset anyone; HR is scoped to staff.
+router.put(
+  "/:id/reset-password",
+  authMiddleware,
+  requirePasswordChange(),
+  authorizeRole("SUPERADMIN", "HR"),
+  validate(resetPasswordSchema),
+  userController.resetPassword
+);
+
+// GET /api/users — list (HR sees staff only, enforced in the controller)
+router.get(
+  "/",
+  authMiddleware,
+  requirePasswordChange(),
+  authorizeRole("SUPERADMIN", "HR"),
+  validate(getUsersQuerySchema),
+  userController.getAllUsers
+);
+
+// GET /api/users/:id — single user (ownership checked in the controller)
 router.get(
   "/:id",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN", "HR", "STAFF"),
   validate(getUserByIdSchema),
   userController.getUserById
 );
 
-// PUT /api/users/:id — update user (SUPERADMIN / HR)
+// PUT /api/users/:id — update user (HR scoped to staff in the controller)
 router.put(
   "/:id",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN", "HR"),
   validate(updateUserSchema),
   userController.updateUser
 );
 
-// DELETE /api/users/:id — deactivate user (SUPERADMIN only)
+// DELETE /api/users/:id — deactivate (HR scoped to staff in the controller)
 router.delete(
   "/:id",
   authMiddleware,
-  authorizeRole("SUPERADMIN"),
+  requirePasswordChange(),
+  authorizeRole("SUPERADMIN", "HR"),
   validate(deleteUserSchema),
   userController.deleteUser
 );

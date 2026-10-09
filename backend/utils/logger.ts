@@ -153,6 +153,18 @@ export const auditLog = {
     );
   },
 
+  /**
+   * A sign-in attempt for an address that matches no account. Distinct from a
+   * failed password because it is the shape an address-enumeration sweep makes,
+   * and because there is no account to attribute it to.
+   */
+  loginRejected: (email: string, ip?: string, reason = "unknown_account") => {
+    authLogger.warn(
+      { email, ip, reason, event: "login_rejected" },
+      "Sign-in attempt rejected"
+    );
+  },
+
   clockIn: (userId: string, attendanceId: string, ip?: string) => {
     attendanceLogger.info(
       { userId, attendanceId, ip, event: "clock_in" },
@@ -179,6 +191,24 @@ export const auditLog = {
       { adminId, targetUserId, event: "user_deactivated" },
       "User account deactivated"
     );
+  },
+
+  userUpdated: (adminId: string, targetUserId: string, fields: string[]) => {
+    userLogger.info(
+      { adminId, targetUserId, fields, event: "user_updated" },
+      "User account updated"
+    );
+  },
+
+  passwordReset: (adminId: string, targetUserId: string) => {
+    authLogger.warn(
+      { adminId, targetUserId, event: "password_reset" },
+      "Password reset by administrator"
+    );
+  },
+
+  logout: (userId: string, ip?: string) => {
+    authLogger.info({ userId, ip, event: "logout" }, "User logged out");
   },
 
   passwordChanged: (userId: string) => {
