@@ -8,6 +8,7 @@ import {
 } from "../controllers/attendanceController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 import authorizeRole from "../middleware/roleMiddleware.js";
+import requirePasswordChange from "../middleware/requirePasswordChange.js";
 import { validate } from "../middleware/validate.js";
 import {
   clockInSchema,
@@ -19,12 +20,17 @@ import {
 
 const router = express.Router();
 
+// An account still holding the temporary credential has not finished signing
+// in, so it records no attendance. Every route here carries the gate; clocking
+// in is the first thing a person does after setting their password, not before.
+
 // ── Staff Routes ─────────────────────────────────────────────────────────────
 
 // POST /api/attendance/clock-in
 router.post(
   "/clock-in",
   authMiddleware,
+  requirePasswordChange(),
   validate(clockInSchema),
   clockIn
 );
@@ -33,6 +39,7 @@ router.post(
 router.post(
   "/clock-out",
   authMiddleware,
+  requirePasswordChange(),
   validate(clockOutSchema),
   clockOut
 );
@@ -41,6 +48,7 @@ router.post(
 router.get(
   "/my-attendance",
   authMiddleware,
+  requirePasswordChange(),
   validate(getMyAttendanceSchema),
   getMyAttendance
 );
@@ -51,6 +59,7 @@ router.get(
 router.get(
   "/all-attendance",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN", "HR"),
   validate(getAllAttendanceSchema),
   getAllAttendance
@@ -60,6 +69,7 @@ router.get(
 router.patch(
   "/:id/dismiss-alert",
   authMiddleware,
+  requirePasswordChange(),
   validate(attendanceIdSchema),
   dismissAlert
 );
