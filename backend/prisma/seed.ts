@@ -103,44 +103,33 @@ async function main() {
   });
   console.log(`✅ HR upserted: ${hr.email}`);
 
-  // ── Create Staff Users ────────────────────────────────────────────────────
-  const staffData = [
-    { firstName: "John", lastName: "Doe", email: "john.doe@company.com", department: "Engineering", jobTitle: "Software Engineer" },
-    { firstName: "Jane", lastName: "Smith", email: "jane.smith@company.com", department: "Engineering", jobTitle: "Senior Developer" },
-    { firstName: "Mike", lastName: "Johnson", email: "mike.johnson@company.com", department: "Sales", jobTitle: "Sales Representative" },
-    { firstName: "Sarah", lastName: "Williams", email: "sarah.williams@company.com", department: "Marketing", jobTitle: "Marketing Specialist" },
-    { firstName: "David", lastName: "Brown", email: "david.brown@company.com", department: "Operations", jobTitle: "Operations Manager" },
-  ];
-
-  for (let i = 0; i < staffData.length; i++) {
-    const s = staffData[i];
-    const empCode = `EMP-${String(i + 3).padStart(4, "0")}`;
-
-    await prisma.user.upsert({
-      where: { email: s.email },
-      update: {},
-      create: {
-        employeeCode: empCode,
-        firstName: s.firstName,
-        lastName: s.lastName,
-        email: s.email,
-        password: hashedStaffPassword,
-        role: "STAFF",
-        department: s.department,
-        jobTitle: s.jobTitle,
-        isActive: true,
-        mustChangePassword: true,
-        shiftId: createdShifts[0].id,
-      },
-    });
-    console.log(`✅ Staff upserted: ${s.email} (${empCode})`);
-  }
+  // ── Create the single staff user ──────────────────────────────────────────
+  // One named STAFF fixture instead of the five generic accounts. Backend and
+  // frontend suites sign in as this user via STAFF_PASSWORD.
+  const staff = await prisma.user.upsert({
+    where: { email: "staff@attendpro.com" },
+    update: {},
+    create: {
+      employeeCode: "EMP-0003",
+      firstName: "Jordan",
+      lastName: "Reed",
+      email: "staff@attendpro.com",
+      password: hashedStaffPassword,
+      role: "STAFF",
+      department: "Engineering",
+      jobTitle: "Software Engineer",
+      isActive: true,
+      mustChangePassword: true,
+      shiftId: createdShifts[0].id,
+    },
+  });
+  console.log(`✅ Staff upserted: ${staff.email} (${staff.employeeCode})`);
 
   console.log("\n🎉 Seeding complete!");
   console.log("\n📋 Test Accounts (passwords from env vars):");
   console.log(`   Superadmin: superadmin@attendpro.com`);
   console.log(`   HR:         hr@attendpro.com`);
-  staffData.forEach(s => console.log(`   Staff:      ${s.email}`));
+  console.log(`   Staff:      staff@attendpro.com`);
   console.log("\n⚠️  All accounts have mustChangePassword=true");
 }
 

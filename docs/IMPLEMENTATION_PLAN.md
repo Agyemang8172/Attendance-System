@@ -11,11 +11,11 @@
 | Decision | Effect |
 |---|---|
 | **HR creates STAFF accounts** | HR gains create / edit / deactivate **scoped to role `STAFF` only**. HR can never mint `HR` or `SUPERADMIN`. Role assignment stays SUPERADMIN-only (R6 without undoing R1). |
-| **Seed fixtures omitted** | `seed.ts` provisions **only the 2 privileged accounts**. The 5 `John Doe`-class STAFF records are removed from seed. |
+| **Seed fixtures replaced** *(supersedes "omitted")* | `seed.ts` provisions SUPERADMIN, HR, and **one** named STAFF fixture (`staff@attendpro.com`, Jordan Reed) instead of the 5 `John Doe`-class accounts. Removal of the old rows from the local DB is a separate destructive step (C2). |
 
 ### Two consequences found while checking these — they must be handled in the plan
 
-**C1 — Removing seed fixtures breaks 4 files.** These hardcode `john.doe@company.com`:
+**C1 — Replacing seed fixtures requires 4 files to follow.** These hardcoded `john.doe@company.com`:
 
 | File | Impact |
 |---|---|
@@ -24,11 +24,11 @@
 | `backend/tests/attendance.test.ts:17,43` | STAFF token for attendance suite dies |
 | `backend/test-suite.mjs:60` | (currently staged) script dies |
 
-**Resolution:** tests stop depending on seed data. `tests/setup.ts` provisions its own STAFF fixture in `beforeAll` and removes it in `afterAll`. This is correct practice — automated tests should own their fixtures — and it means the production seed can be minimal without weakening coverage. `backend/test-suite.mjs` gets the same treatment or is retired (see Q4).
+**Resolution (executed 2026-10-09):** the 5 generic accounts were replaced by a single named STAFF fixture, and the `STAFF_EMAIL` constant in the three vitest files now reads `staff@attendpro.com`. `backend/test-suite.mjs` was never merged, so it never needed porting. The old rows in the local DB are a separate concern (C2).
 
-**C2 — Omitting from seed does not delete existing rows.** Seed uses `upsert` with `update: {}`. Removing a record from `seed.ts` only stops *future* creation. The 5 rows already in your local database **stay there**. Removing them from the database is a destructive data operation requiring a separate, explicitly approved dry-run. **Not in this plan.** Flagged as Q3.
+**C2 — Replacing in seed does not delete existing rows.** Seed uses `upsert` with `update: {}`, so the changed seed stops *future* creation of the 5 old accounts but the rows already in the local database remain. Worse: `employeeCode` is `@unique` and the new fixture takes `EMP-0003`, which `john.doe` already owns — seeding fails until the old rows are removed. Deleting them is a destructive data operation requiring separate approval. **User action, ordered before `db:seed`.**
 
-**C3 — `seed.ts:36-43` hard-requires `STAFF_PASSWORD`.** It throws if the variable is absent. Once STAFF accounts are gone, that requirement must be dropped or the seed still fails. Included in Milestone 1.
+**C3 — `seed.ts:36-43` still requires `STAFF_PASSWORD`.** The single STAFF fixture keeps this variable in `.env`. It stays required; the earlier "drop the variable" note no longer applies.
 
 ---
 
@@ -174,7 +174,7 @@ Open a PR against `main`, squash-merge, delete the branch. Screenshots required 
 - **D8** `crypto.randomInt` temp credentials
 - **D9** `POST /auth/logout`, helmet, per-account login limiter, bcrypt cost 12, shorter TTL
 - **D10 tier 1** structured audit events
-- **Seed**: drop STAFF fixtures, drop the `STAFF_PASSWORD` hard requirement *(C3)*
+- **Seed**: single named STAFF fixture (`staff@attendpro.com`); `STAFF_PASSWORD` requirement retained *(C3, superseded)*
 - **Tests**: `tests/setup.ts` provisions its own STAFF fixture *(C1)*
 
 **Deferred (needs migration, DBA gate, your approval):** D3 Option B (`passwordChangedAt`), D10 tier 2 (`auth_events` table).
@@ -245,6 +245,20 @@ Asymmetric KPI bento (R10), sticky headers + sort + pagination (R5), skeletons (
 
 **Commit:** type `feat` → `redesign dashboards and data tables on the approved design system`
 
+**Notes recorded during implementation**
+
+- Cut from `feat/login-redesign` at `15be18c`, not from `feat/design-tokens` as the base table says, so M4 inherits the M3 `.input` spec, `.btn` `active:scale`, chrome tokens, and S7 Settings validation. Now that the sidebars are crossed, the M5 cut point only needs to reach back for account-popover chrome tokens, which M3 already supplies.
+- Soft tints are implemented as `color-mix` utilities in `index.css` (`.bg-*-soft`, `.border-*-soft`) rather than Tailwind opacity modifiers, which Tailwind silently drops on `var()` colours. The M2 Option 1 leaves were no-ops as a result; every M4 surface that uses a tint renders a real, blended colour. `border-l-warning` was verified present in the emitted CSS after `vite build`.
+- Bento composition (R10): new `KpiHero` (two-column, primary figure + action slot) and a dense `KpiCard` with a soft icon square and mono display value. Per-role bentos: STAFF = Weekly Hours + Streak + Attendance Rate (Late Arrivals dropped, §11 3-metrics cap); HR = Clocked In Today + Late Today + Not Yet Clocked Out; SA = Total Employees + Clocked In + Late.
+- Tables (R5): sticky header inside a `max-h-[560px]` scroll region, six sortable columns with `aria-sort` and fa6 indicators, pagination at 12/page with a "Showing X–Y of N records" footer, real zebra rows (`bg-surface-2` odd, `bg-surface-3` hover). The HR table sorts exceptions-first: a status-rank key puts LATE above OPEN above CLOSED, and late rows carry `border-l-warning`.
+- Page reset lives in the sort click handler, not an effect, to keep `react-hooks/set-state-in-effect` out of the tree. Out-of-range pages are clamped with `safePage = min(page, totalPages)`, so shrinking data (a search narrowing the set) never strands the user on an empty page.
+- Two pre-existing chart bugs fixed. HoursChart was reading `clockInTime` off already-aggregated `{ day, hours }` records and drew all-zero bars; it now plots the `data` prop directly. The HR SessionsChart was handed sentence-case labels (`Closed`) that never matched the uppercase `STATUS_COLORS` keys; labels are uppercased before lookup.
+- Schedule, Profile, and Settings use sentence-case eyebrows and section titles (role chips keep uppercase: they are codes), real day-cell tints with solid legend dots, and accent dividers written as `opacity-40` — the `/40` modifier is another Tailwind-on-`var()` no-op.
+- Skeleton primitives (§17) land in a new `src/components/ui/Skeleton.jsx` with a sibling `Skeleton.d.ts`. The declaration matters: without it, the three TypeScript pages importing `Skeleton` each add a TS7016. Types are exported for `Skeleton`, `BentoSkeleton`, `TableSkeleton(showEmployee)`, `ChartSkeleton`, `CalendarSkeleton`, and `BadgeGridSkeleton`, and their geometry matches the content they replace.
+- The fa6 sort indicator is `FaArrowsUpDown` — `FaArrowUpDown` does not exist.
+- `attendance-table.test.jsx` adds five cases: default `aria-sort`, date toggle asc → desc, pagination at 12/page plus footer text, `exceptionsFirst` ordering with the border class on late rows, and the empty state. Fixture note: an "on-time" record must use `at(6, 0)`; `at(7, 0)` is already past the 06:30 threshold and reads as late.
+- Gate results at commit time: vitest 28/28 (23 prior + 5 new); eslint at the known 5, all in files M4 does not touch; tsc 43 against a 45 baseline (the `Skeleton.d.ts` removed three fresh TS7016s); `vite build` green; ui-taste 25/25; env-check 9/9. The `gitleaks dir` scan flags `backend/.env` (the local `JWT_SECRET`), which is gitignored and untracked, so the git-based pre-push gate never sees it; no path exists for it into a commit.
+
 ---
 
 ### M5 — Sidebar / navigation · `feat/sidebar-navigation`
@@ -252,6 +266,17 @@ Asymmetric KPI bento (R10), sticky headers + sort + pagination (R5), skeletons (
 **Scope:** `Sidebar.tsx`, `Layout.tsx`, `App.jsx` guards. Chrome becomes the Login brand panel (continuity after sign-in). Replace profile-pill + naked logout with an accessible account popover (R7). Consolidate 5 icon families → `fa6` (R9). Fix route guards: role-aware `/` landing, wrong-role redirect to own home, remove duplicate `/profile` (R12).
 
 **Commit:** type `feat` → `rebuild sidebar and navigation with accessible account menu`
+
+**Notes recorded during implementation**
+
+- Cut from `feat/dashboard-redesign` at `fe7c993`, so M5 builds on M4's bentos and tables with M3's chrome tokens already in place. M3's note predicted this: the account popover only needs chrome tokens, and M3 supplied them.
+- The sidebar is a chrome consumer. It uses `bg-chrome` with a `chrome-line` border, the Login brand panel's ledger grid (`chrome-grid opacity-10`), brass signature (top strip, corner brackets, serif wordmark, tagline on `chrome-ink-muted`), and chrome nav states (`chrome-elevated` active + brass left indicator). The mobile drawer scrim and modal surfaces share `--chrome-elevated`; the scrim is a new utility.
+- Tailwind dropped `bg-[#0f172a]/55` and `opacity-[0.07]` from the build without warning — the same silent-drop family as M4's `var()` opacity findings. The fix is `.overlay-scrim` (real CSS, `rgba(15,23,42,.55)` per §7) and Login's existing `opacity-10`; both verified present in the emitted CSS.
+- R7 account menu: the profile-pill + naked logout row is gone. One trigger button (`aria-expanded`, `aria-haspopup`, `aria-controls`) with a double-chevron that rotates `rotate-180` on open (fa6 has no `FaAnglesUpDown`, so the pair is one glyph flipped), opening a `role="menu"` popover with three `role="menuitem"` entries — My Profile, Settings, Sign out. Keyboard behaviour: first item focused on open, focus returned to the trigger on close, Escape, click-outside, and Arrow Up/Down cycling.
+- R9 icon consolidation: four families (`fa`, `fa6`, `sl`, `ci`) collapsed to `react-icons/fa6` in ten files. FA6 renamed three classics — `FaHome`→`FaHouse`, `FaSearch`→`FaMagnifyingGlass`, `FaExclamationTriangle`→`FaTriangleExclamation` — and the sweep had to catch both the import and every JSX usage (two `<FaSearch>` elements in the dashboards were the easy miss).
+- R12 route guards: wrong-role visitors now bounce to `roleHome(role)` instead of `/login`; `/` is a role-aware landing (`AuthenticatedHome`); the duplicate `/profile` route declared twice in `App.jsx` is deleted. `auth-routing.test.jsx` wrong-role assertions were updated to the new destinations and a root-landing block asserts each role arrives on its own home.
+- Tests: `sidebar-account-menu.test.jsx` adds 9 cases — role-filtered nav for all three roles, `aria-expanded` open/close, Escape, click-outside, arrow-key cycling, sign-out (session cleared, app left), and menu navigation to Settings. Suite is 41/41.
+- Gate results at commit time: vitest 41/41, eslint 0 in changed files, tsc 43 against a 43 baseline (the Sidebar `initials` and Layout `children` errors are inherited identities, not new), `vite build` green with the chrome classes and `.overlay-scrim` present, ui-taste 25/25, env-check 9/9.
 
 ---
 
@@ -299,12 +324,12 @@ Asymmetric KPI bento (R10), sticky headers + sort + pagination (R5), skeletons (
 
 1. **Ordering** — confirm the M2/M3 token-layer-before-Login swap, or override?
 2. **Commit scopes** — option **(A)** no tooling change, or **(B)** add an optional scope prompt to `commit.sh`?
-3. **Existing seed fixture rows** — 5 STAFF rows sit in your local Postgres. Omitting them from seed leaves them in place. Delete them (destructive, needs a separate dry-run approval), leave them, or leave them and let HR deactivate them through the new UI?
+3. **Existing seed fixture rows** — **resolved 2026-10-09**: the 5 rows hold `EMP-0003..0007`, which blocks the new `staff@attendpro.com` fixture (`EMP-0003`, unique). Owner deletes the 5 old rows (destructive, owner-run) before re-seeding. See C2.
 4. **`backend/test-suite.mjs`** — currently staged; it's a hand-rolled script duplicating the vitest suites, and C1 breaks it anyway. Commit it as-is, rework it alongside the fixture change, or drop it in favour of `backend/tests/`?
 5. **`check.cjs`** — a 7-line scratch script. Commit or discard?
 6. **Backend test execution** — the backend suite writes to Postgres. Confirm I may run it at each gate, or do you want to run it yourself and hand me the output?
 7. **Deferred migrations** — D3 Option B (`passwordChangedAt`) and D10 tier 2 (`auth_events`). Approve in principle now so they can be scheduled, or defer until after M10?
-8. **Seed STAFF_PASSWORD** — `.env` still carries it. Remove the variable once fixtures are gone?
+8. **Seed STAFF_PASSWORD** — **resolved 2026-10-09**: the single STAFF fixture still needs it, so the variable stays in the gitignored `backend/.env`.
 
 ---
 

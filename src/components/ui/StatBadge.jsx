@@ -1,34 +1,37 @@
-// StatBadge — Linear styled status pill
-// Receives one prop: status ("OPEN" | "CLOSED" | "PRESENT" | "LATE" | "ABSENT" | "HALF_DAY" | "ON_LEAVE")
+// StatBadge — §8.5 status pill.
+// Tinted ground from the §5.4 status palette, pill radius, mono caption,
+// sentence-case label ("Late", not "LATE").
+// Receives status: "OPEN" | "CLOSED" | "PRESENT" | "LATE" | "ABSENT" |
+//                 "HALF_DAY" | "ON_LEAVE"
 
 const statusConfig = {
   open: {
     label: 'Open',
-    classes: 'bg-accent/15 text-accent border-accent/20',
+    classes: 'bg-accent-soft border-accent-soft text-accent',
   },
   closed: {
     label: 'Closed',
-    classes: 'bg-success/15 text-success border-success/20',
+    classes: 'bg-success-soft border-success-soft text-success',
   },
   present: {
     label: 'Present',
-    classes: 'bg-success/15 text-success border-success/20',
+    classes: 'bg-success-soft border-success-soft text-success',
   },
   late: {
     label: 'Late',
-    classes: 'bg-warning/15 text-warning border-warning/20',
+    classes: 'bg-warning-soft border-warning-soft text-warning',
   },
   absent: {
     label: 'Absent',
-    classes: 'bg-error/15 text-error border-error/20',
+    classes: 'bg-error-soft border-error-soft text-error',
   },
   half_day: {
     label: 'Half Day',
-    classes: 'bg-warning/15 text-warning border-warning/20',
+    classes: 'bg-warning-soft border-warning-soft text-warning',
   },
   on_leave: {
     label: 'On Leave',
-    classes: 'bg-accent/15 text-accent border-accent/20',
+    classes: 'bg-accent-soft border-accent-soft text-accent',
   },
 }
 
@@ -37,7 +40,7 @@ const StatBadge = ({ status }) => {
   const key = (status || '').toLowerCase()
   const config = statusConfig[key] || {
     label: status || 'Unknown',
-    classes: 'bg-ink-subtle/15 text-ink-subtle border-ink-subtle/20',
+    classes: 'bg-surface-2 border-hairline text-ink-muted',
   }
 
   return (

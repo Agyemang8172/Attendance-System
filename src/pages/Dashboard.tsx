@@ -3,17 +3,12 @@ import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
-import KpiCard from '../components/ui/KpiCard'
+import KpiCard, { KpiHero } from '../components/ui/KpiCard'
 import AttendanceTable from '../components/ui/AttendanceTable'
-import { FaClock, FaFire, FaChartLine, FaExclamationTriangle } from 'react-icons/fa'
-import { BsCircleFill } from 'react-icons/bs'
+import { BentoSkeleton, TableSkeleton } from '../components/ui/Skeleton'
+import { FaFire, FaChartLine, FaTriangleExclamation } from 'react-icons/fa6'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const isLate = (clockInStr: string) => {
-  const d = new Date(clockInStr)
-  return d.getHours() > 6 || (d.getHours() === 6 && d.getMinutes() >= 30)
-}
 
 const getGreeting = () => {
   const h = new Date().getHours()
@@ -29,6 +24,45 @@ const formatTodayLong = () =>
     month: 'long',
     year: 'numeric',
   })
+
+// ─── Live clock pill — the staff signature element (§11) ─────────────────────
+// Pulsing dot + monospaced time. Ticks independently so the rest of the page
+// does not re-render every second.
+
+const ClockPill = ({ isClockedIn }: { isClockedIn: boolean }) => {
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  const time = now.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+
+  return (
+    <div className="inline-flex items-center gap-2 bg-surface-1 border border-hairline rounded-full px-3 py-1.5">
+      <span className="relative flex w-2 h-2">
+        <span
+          className={`absolute inline-flex w-full h-full rounded-full opacity-60 animate-ping ${
+            isClockedIn ? 'bg-success' : 'bg-error'
+          }`}
+        />
+        <span
+          className={`relative inline-flex w-2 h-2 rounded-full ${
+            isClockedIn ? 'bg-success' : 'bg-error'
+          }`}
+        />
+      </span>
+      <span className="font-mono text-body-sm text-ink-muted tabular-nums">
+        {time}
+      </span>
+    </div>
+  )
+}
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
@@ -60,7 +94,7 @@ function Dashboard() {
         })
         toast(
           `You forgot to clock out on ${date}. The system clocked you out at 11:59 PM. Please review your record.`,
-          { icon: <FaExclamationTriangle aria-hidden="true" />, duration: 7000 }
+          { icon: <FaTriangleExclamation aria-hidden="true" />, duration: 7000 }
         )
         try { await api.patch(`/attendance/${r.id}/dismiss-alert`) } catch (_) {}
       })
@@ -105,7 +139,7 @@ function Dashboard() {
 
   // ── KPI calculations ───────────────────────────────────────────────────────
 
-  // 1. Weekly Hours — sum hoursWorked for the last 7 days
+  // Weekly Hours — sum hoursWorked for the last 7 days
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
   sevenDaysAgo.setHours(0, 0, 0, 0)
@@ -115,7 +149,7 @@ function Dashboard() {
     .reduce((sum, r) => sum + (r.hoursWorked || 0), 0)
     .toFixed(1)
 
-  // 2. Streak — consecutive closed sessions going backwards from today
+  // Streak — consecutive closed sessions going backwards from today
   const sortedClosed = [...records]
     .filter((r) => r.sessionStatus === 'CLOSED')
     .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -139,7 +173,7 @@ function Dashboard() {
     }
   }
 
-  // 3. Attendance Rate — closed sessions this calendar month / 22 working days
+  // Attendance Rate — closed sessions this calendar month / 22 working days
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const closedThisMonth = records.filter(
@@ -150,22 +184,15 @@ function Dashboard() {
       ? Math.min(Math.round((closedThisMonth / 22) * 100), 100)
       : 0
 
-  // 4. Late Arrivals — records this month where clockIn >= 06:30
-  const lateArrivals = records.filter(
-    (r) => new Date(r.date) >= startOfMonth && isLate(r.clockIn)
-  ).length
-
   // ──────────────────────────────────────────────────────────────────────────
 
   return (
     <Layout>
 
       {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-10">
-
-        {/* Left — date eyebrow + big greeting */}
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-8">
         <div>
-          <p className="text-ink-muted text-xs font-mono uppercase tracking-widest mb-4">
+          <p className="text-ink-muted text-caption font-mono mb-3">
             {formatTodayLong()}
           </p>
           <h1 className="text-display-xl text-ink font-serif leading-none tracking-tight">
@@ -173,92 +200,69 @@ function Dashboard() {
             {user?.firstName}.
           </h1>
           {/* Accent divider */}
-          <div className="mt-5 h-0.5 w-20 bg-accent" />
-        </div>
-
-        {/* Right — clock status pill + action button */}
-        <div className="flex items-center gap-4 sm:mb-1">
-
-          {/* Status indicator */}
-          <div className="flex items-center gap-2 bg-surface-1 border border-hairline rounded-full px-3 py-1.5">
-            <BsCircleFill
-              className={`text-[8px] ${isClockedIn ? 'text-success' : 'text-error'}`}
-            />
-            <span className="text-ink-muted text-xs font-mono">
-              {isClockedIn ? 'Clocked In' : 'Clocked Out'}
-            </span>
-          </div>
-
-          {/* Primary CTA — accent when clocking in, soft red when out */}
-          {isClockedIn ? (
-            <button
-              onClick={handleClockOut}
-              disabled={clockLoading}
-              className="btn-secondary"
-            >
-              {clockLoading ? 'Processing…' : 'Clock Out'}
-            </button>
-          ) : (
-            <button
-              onClick={handleClockIn}
-              disabled={clockLoading}
-              className="btn-primary"
-            >
-              {clockLoading ? 'Processing…' : 'Clock In'}
-            </button>
-          )}
+          <div className="mt-4 h-0.5 w-20 bg-accent" />
         </div>
       </header>
 
-      {/* ── KPI Grid ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-        <KpiCard
-          icon={<FaClock />}
-          label="Weekly Hours"
-          value={weeklyHours}
-          subtext="/ 40 hrs target"
-          colorScheme="blue"
-        />
-        <KpiCard
-          icon={<FaFire />}
-          label="Streak"
-          value={streak}
-          subtext="days on time"
-          colorScheme="gold"
-        />
-        <KpiCard
-          icon={<FaChartLine />}
-          label="Attendance Rate"
-          value={`${attendanceRate}%`}
-          subtext="this month"
-          colorScheme="green"
-        />
-        <KpiCard
-          icon={<FaExclamationTriangle />}
-          label="Late Arrivals"
-          value={lateArrivals}
-          subtext="this month"
-          colorScheme="red"
-        />
-      </div>
+      {/* ── KPI Bento — hero + two dense metrics (R10, §11) ─────────────── */}
+      {fetching ? (
+        <BentoSkeleton />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <KpiHero
+            eyebrow="Weekly Hours — trailing 7 days"
+            value={weeklyHours}
+            unit="hrs"
+            subtext="of a 40 hr target"
+          >
+            <ClockPill isClockedIn={isClockedIn} />
+            {isClockedIn ? (
+              <button
+                onClick={handleClockOut}
+                disabled={clockLoading}
+                className="btn-secondary"
+              >
+                {clockLoading ? 'Processing…' : 'Clock Out'}
+              </button>
+            ) : (
+              <button
+                onClick={handleClockIn}
+                disabled={clockLoading}
+                className="btn-primary"
+              >
+                {clockLoading ? 'Processing…' : 'Clock In'}
+              </button>
+            )}
+          </KpiHero>
+
+          <KpiCard
+            icon={<FaFire aria-hidden="true" />}
+            label="Streak"
+            value={streak}
+            subtext="days on time"
+            scheme="success"
+          />
+          <KpiCard
+            icon={<FaChartLine aria-hidden="true" />}
+            label="Attendance Rate"
+            value={`${attendanceRate}%`}
+            subtext="this month"
+            scheme="accent"
+          />
+        </div>
+      )}
 
       {/* ── Attendance History ────────────────────────────────────────────── */}
       <section>
-        <div className="mb-5">
-          <p className="text-xs font-mono uppercase tracking-widest text-ink-muted">
-            Attendance History
-          </p>
-          <div className="mt-2 h-0.5 w-10 bg-accent/60" />
+        <div className="mb-4">
+          <h2 className="text-body-sm font-medium text-ink">Attendance History</h2>
+          <div className="mt-2 h-0.5 w-10 bg-accent opacity-40" />
         </div>
 
         {fetching ? (
-          <div className="card flex items-center justify-center">
-            <p className="text-ink-muted text-sm font-sans animate-pulse">
-              Loading records…
-            </p>
-          </div>
+          <TableSkeleton />
         ) : (
-          <AttendanceTable records={records} showEmployee={false} />
+          <AttendanceTable records={records} />
         )}
       </section>
 

@@ -12,7 +12,7 @@ import prisma from "../config/prismaClient.js";
 
 const SUPERADMIN_EMAIL = "superadmin@attendpro.com";
 const HR_EMAIL = "hr@attendpro.com";
-const STAFF_EMAIL = "john.doe@company.com";
+const STAFF_EMAIL = "staff@attendpro.com";
 
 function requireEnv(name: string): string {
   const v = process.env[name];

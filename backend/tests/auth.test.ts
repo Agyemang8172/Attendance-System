@@ -14,7 +14,7 @@ import app from "../server.js";
 
 const SUPERADMIN_EMAIL = "superadmin@attendpro.com";
 const HR_EMAIL = "hr@attendpro.com";
-const STAFF_EMAIL = "john.doe@company.com";
+const STAFF_EMAIL = "staff@attendpro.com";
 
 /** A password that is not a real credential — deliberately wrong every time. */
 const WRONG_PASSWORD = "definitely-not-the-password";

@@ -9,15 +9,19 @@
 > detail underneath as historical until then. The header below is current.
 
 ## Current Task
-- **Task:** M3 — Login redesign (`feat/login-redesign`, cut from `feat/design-tokens`)
+- **Task:** M5 — Sidebar / navigation (`feat/sidebar-navigation`, cut from
+  `feat/dashboard-redesign` at `fe7c993`)
 - **Triage Level:** STANDARD
-- **Status:** Implemented. Login and SetPassword rebuilt on the approved
-  split-screen with correct contrast (subtext 4.59:1, focus ring 4.81:1),
-  `auth-*` retired for real (zero refs left in `src` or the bundle), S15
-  guard on `/set-password`, M1 `PASSWORD_CHANGE_REQUIRED` interceptor wired,
-  and S7 client/server policy in one shared module. Frontend suite 23/23,
-  build green, eslint at the known 5, tsc at the known 45, ui-taste 24/24.
-  Awaiting browser review and push approval.
+- **Status:** Implemented. Sidebar is a chrome consumer now (Login brand-panel
+  continuity: ledger grid, brass signature, chrome tokens). Profile-pill +
+  naked logout replaced by an accessible account menu (R7): single trigger
+  with rotating double-chevron, `aria-expanded` popover with Profile /
+  Settings / Sign out, keyboard nav, Escape, click-outside. All four icon
+  families consolidated to `react-icons/fa6` (R9, 10 files). Route guards
+  bounce wrong-role users to their own home and `/` lands each role on its
+  home (R12); duplicate `/profile` deleted. Frontend suite 41/41, tsc 43
+  (baseline), eslint 0 in changed files, build green, ui-taste 25/25,
+  env-check 9/9. Awaiting browser review and push approval.
 
 ## Approved Plan
 `docs/IMPLEMENTATION_PLAN.md` — eleven milestones M0–M10, each on its own
@@ -25,10 +29,14 @@ branch, each committed through `.agents/scripts/commit.sh`.
 
 - M0 **DONE** — `chore/git-foundation`, commit `fea8a00`, pushed.
 - M1 **DONE** — `feat/auth-foundation`, commits `7927e1f` and `c5ee5ff`, plus the
-  GitGuardian config `9f08982`, pushed. Backend suite 71/71. Awaiting merge.
-- M2 **DONE** — `feat/design-tokens`, commit `6ad2bd6`, pushed. Awaiting merge.
-- M3 **IN PROGRESS** — this branch.
-- M4–M10 **QUEUED**.
+  GitGuardian config `9f08982`, pushed. Backend suite 71/71.
+- M2 **DONE** — `feat/design-tokens`, commit `6ad2bd6`, merged to `main`.
+- M3 **DONE** — `feat/login-redesign`, commit `15be18c`, merged to `main`.
+- M4 **DONE** — `feat/dashboard-redesign`, commit `277ec10` restored as the
+  push base; policy commit `fe7c993`. Pushed; PR open, awaiting merge.
+- M5 **IN PROGRESS** — this branch.
+- M6–M10 **QUEUED**.
+- M5–M10 **QUEUED**.
 
 ## Dev-OS Pipeline Status
 

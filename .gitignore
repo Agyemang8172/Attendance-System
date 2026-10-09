@@ -45,3 +45,10 @@ vite.config.js
 vite.config.d.ts
 backend/tables.txt
 backend/test-*.txt
+
+# Security policy: live credentials live ONLY in gitignored env files
+# (backend/.env is excluded above; .env.example keeps dummy placeholders).
+# Never commit passwords or API keys in READMEs, docs, or fixture files.
+# backend/test-users.md carried a plaintext demo password in repo history;
+# any recreated copy is ignored here so it cannot be staged again.
+backend/test-users.md

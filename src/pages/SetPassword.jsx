@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { getCurrentUser, updateCurrentUser, roleHome } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
-import { FaEye, FaEyeSlash } from 'react-icons/fa'
+import { FaEye, FaEyeSlash } from 'react-icons/fa6'
 import MeridianArt from '../assets/meridian.svg'
 import { validatePassword } from '../utils/passwordPolicy'
 
