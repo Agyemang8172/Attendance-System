@@ -11,11 +11,11 @@ import { BentoSkeleton, ChartSkeleton, TableSkeleton } from '../components/ui/Sk
 import {
   FaUsers,
   FaClock,
-  FaSearch,
+  FaMagnifyingGlass,
   FaFileCsv,
   FaFileExcel,
   FaFilePdf,
-} from 'react-icons/fa'
+} from 'react-icons/fa6'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -505,7 +505,7 @@ function SuperAdminDashboard() {
 
         {/* Search input */}
         <div className="relative mb-4">
-          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-subtle text-xs pointer-events-none" />
+          <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-subtle text-xs pointer-events-none" />
           <input
             type="text"
             value={searchQuery}

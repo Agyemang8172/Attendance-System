@@ -3,7 +3,7 @@ import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
 import { CalendarSkeleton } from '../components/ui/Skeleton'
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa'
+import { FaChevronLeft, FaChevronRight } from 'react-icons/fa6'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

@@ -267,6 +267,17 @@ Asymmetric KPI bento (R10), sticky headers + sort + pagination (R5), skeletons (
 
 **Commit:** type `feat` → `rebuild sidebar and navigation with accessible account menu`
 
+**Notes recorded during implementation**
+
+- Cut from `feat/dashboard-redesign` at `fe7c993`, so M5 builds on M4's bentos and tables with M3's chrome tokens already in place. M3's note predicted this: the account popover only needs chrome tokens, and M3 supplied them.
+- The sidebar is a chrome consumer. It uses `bg-chrome` with a `chrome-line` border, the Login brand panel's ledger grid (`chrome-grid opacity-10`), brass signature (top strip, corner brackets, serif wordmark, tagline on `chrome-ink-muted`), and chrome nav states (`chrome-elevated` active + brass left indicator). The mobile drawer scrim and modal surfaces share `--chrome-elevated`; the scrim is a new utility.
+- Tailwind dropped `bg-[#0f172a]/55` and `opacity-[0.07]` from the build without warning — the same silent-drop family as M4's `var()` opacity findings. The fix is `.overlay-scrim` (real CSS, `rgba(15,23,42,.55)` per §7) and Login's existing `opacity-10`; both verified present in the emitted CSS.
+- R7 account menu: the profile-pill + naked logout row is gone. One trigger button (`aria-expanded`, `aria-haspopup`, `aria-controls`) with a double-chevron that rotates `rotate-180` on open (fa6 has no `FaAnglesUpDown`, so the pair is one glyph flipped), opening a `role="menu"` popover with three `role="menuitem"` entries — My Profile, Settings, Sign out. Keyboard behaviour: first item focused on open, focus returned to the trigger on close, Escape, click-outside, and Arrow Up/Down cycling.
+- R9 icon consolidation: four families (`fa`, `fa6`, `sl`, `ci`) collapsed to `react-icons/fa6` in ten files. FA6 renamed three classics — `FaHome`→`FaHouse`, `FaSearch`→`FaMagnifyingGlass`, `FaExclamationTriangle`→`FaTriangleExclamation` — and the sweep had to catch both the import and every JSX usage (two `<FaSearch>` elements in the dashboards were the easy miss).
+- R12 route guards: wrong-role visitors now bounce to `roleHome(role)` instead of `/login`; `/` is a role-aware landing (`AuthenticatedHome`); the duplicate `/profile` route declared twice in `App.jsx` is deleted. `auth-routing.test.jsx` wrong-role assertions were updated to the new destinations and a root-landing block asserts each role arrives on its own home.
+- Tests: `sidebar-account-menu.test.jsx` adds 9 cases — role-filtered nav for all three roles, `aria-expanded` open/close, Escape, click-outside, arrow-key cycling, sign-out (session cleared, app left), and menu navigation to Settings. Suite is 41/41.
+- Gate results at commit time: vitest 41/41, eslint 0 in changed files, tsc 43 against a 43 baseline (the Sidebar `initials` and Layout `children` errors are inherited identities, not new), `vite build` green with the chrome classes and `.overlay-scrim` present, ui-taste 25/25, env-check 9/9.
+
 ---
 
 ### M6 — Staff management · `feat/staff-management`

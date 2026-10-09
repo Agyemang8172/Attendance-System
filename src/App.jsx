@@ -14,34 +14,40 @@ import SetPassword from './pages/SetPassword'
 
 // ── Route Guards ──────────────────────────────────────────
 
-// Staff only — logged in + role is STAFF
+// Staff only — logged in + role is STAFF; any other role bounces to its own home.
 const StaffRoute = ({ children }) => {
     const user = getCurrentUser()
-    if (!isAuthenticated()) return <Navigate to="/login" />
-    if (user?.role !== 'STAFF') return <Navigate to="/login" />
+    if (!isAuthenticated()) return <Navigate to="/login" replace />
+    if (user?.role !== 'STAFF') return <Navigate to={roleHome(user?.role)} replace />
     return children
 }
 
-// HR only — logged in + role is HR or SUPERADMIN
+// HR & SUPERADMIN — anyone else bounces, never to login.
 const HrRoute = ({ children }) => {
     const user = getCurrentUser()
-    if (!isAuthenticated()) return <Navigate to="/login" />
-   if (user?.role !== 'HR' && user?.role !== 'SUPERADMIN') return <Navigate to="/login" />
+    if (!isAuthenticated()) return <Navigate to="/login" replace />
+   if (user?.role !== 'HR' && user?.role !== 'SUPERADMIN') return <Navigate to={roleHome(user?.role)} replace />
     return children
 }
 
-// SuperAdmin only — logged in + role is SUPERADMIN
+// SuperAdmin only — everyone else goes to their own home.
 const SuperAdminRoute = ({ children }) => {
     const user = getCurrentUser()
-    if (!isAuthenticated()) return <Navigate to="/login" />
-    if (user?.role !== 'SUPERADMIN') return <Navigate to="/login" />
+    if (!isAuthenticated()) return <Navigate to="/login" replace />
+    if (user?.role !== 'SUPERADMIN') return <Navigate to={roleHome(user?.role)} replace />
     return children
 }
 
 // Any logged in user — staff, hr, superadmin
 const ProtectedRoute = ({ children }) => {
-    if (!isAuthenticated()) return <Navigate to="/login" />
+    if (!isAuthenticated()) return <Navigate to="/login" replace />
     return children
+}
+
+// Role-aware landing for "/": authenticated users reach their own home.
+const AuthenticatedHome = () => {
+    if (!isAuthenticated()) return <Navigate to="/login" replace />
+    return <Navigate to={roleHome(getCurrentUser()?.role)} replace />
 }
 
 // SetPassword only — logged in AND the account still owes a password change.
@@ -120,14 +126,6 @@ function App() {
   
 
                  {/* All logged in roles */}
-                <Route path="/profile"
-                    element={
-                        <ProtectedRoute>
-                            <Profile />
-                        </ProtectedRoute>
-                    }
-                />
-
                 <Route path="/settings"
                     element={
                         <ProtectedRoute>
@@ -144,8 +142,8 @@ function App() {
                     }
                  />
 
-                {/* Fallback — catch everything else */}
-                <Route path="/" element={<Navigate to="/login" />} />
+                {/* Role-aware landing — authenticated users reach their own home */}
+                <Route path="/" element={<AuthenticatedHome />} />
                 <Route path="*" element={<Navigate to="/login" />} />
 
             </Routes>

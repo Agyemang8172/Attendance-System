@@ -4,7 +4,7 @@ import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
 import { BadgeGridSkeleton } from '../components/ui/Skeleton'
-import { FaLock, FaCheck, FaFire, FaBolt, FaGem, FaTrophy } from 'react-icons/fa'
+import { FaLock, FaCheck, FaFire, FaBolt, FaGem, FaTrophy } from 'react-icons/fa6'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

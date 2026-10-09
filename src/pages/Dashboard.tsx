@@ -6,7 +6,7 @@ import Layout from '../components/Layout'
 import KpiCard, { KpiHero } from '../components/ui/KpiCard'
 import AttendanceTable from '../components/ui/AttendanceTable'
 import { BentoSkeleton, TableSkeleton } from '../components/ui/Skeleton'
-import { FaFire, FaChartLine, FaExclamationTriangle } from 'react-icons/fa'
+import { FaFire, FaChartLine, FaTriangleExclamation } from 'react-icons/fa6'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -94,7 +94,7 @@ function Dashboard() {
         })
         toast(
           `You forgot to clock out on ${date}. The system clocked you out at 11:59 PM. Please review your record.`,
-          { icon: <FaExclamationTriangle aria-hidden="true" />, duration: 7000 }
+          { icon: <FaTriangleExclamation aria-hidden="true" />, duration: 7000 }
         )
         try { await api.patch(`/attendance/${r.id}/dismiss-alert`) } catch (_) {}
       })

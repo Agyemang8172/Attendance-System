@@ -3,7 +3,7 @@ import { getCurrentUser } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
-import { FaEye, FaEyeSlash } from 'react-icons/fa'
+import { FaEye, FaEyeSlash } from 'react-icons/fa6'
 import { validatePassword } from '../utils/passwordPolicy'
 
 // ─── Password Field ───────────────────────────────────────────────────────────

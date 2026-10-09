@@ -8,7 +8,7 @@ import AttendanceTable from '../components/ui/AttendanceTable'
 import HoursChart from '../components/charts/HoursChart'
 import SessionsChart from '../components/charts/SessionsChart'
 import { BentoSkeleton, ChartSkeleton, TableSkeleton } from '../components/ui/Skeleton'
-import { FaClock, FaUserCheck, FaSearch } from 'react-icons/fa'
+import { FaClock, FaUserCheck, FaMagnifyingGlass } from 'react-icons/fa6'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -233,7 +233,7 @@ function HrDashboard() {
 
         {/* Search input */}
         <div className="relative mb-4">
-          <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-subtle text-xs pointer-events-none" />
+          <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-subtle text-xs pointer-events-none" />
           <input
             type="text"
             value={searchQuery}

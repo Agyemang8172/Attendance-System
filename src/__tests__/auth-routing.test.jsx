@@ -74,32 +74,32 @@ describe('route guards reject callers outside the declared role', () => {
     expect(await screen.findByRole('button', { name: /sign in/i })).toBeInTheDocument()
   })
 
-  it('refuses STAFF on the HR dashboard', async () => {
+  it('bounces STAFF off the HR dashboard to its own home', async () => {
     seedSession('STAFF')
     visit('/hr-dashboard')
 
-    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
   })
 
-  it('refuses HR on the superadmin dashboard', async () => {
+  it('bounces HR off the superadmin dashboard to its own home', async () => {
     seedSession('HR')
     visit('/superadmin-dashboard')
 
-    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+    await waitFor(() => expect(window.location.pathname).toBe('/hr-dashboard'))
   })
 
-  it('refuses STAFF on staff management', async () => {
+  it('bounces STAFF off staff management to its own home', async () => {
     seedSession('STAFF')
     visit('/manage-staff')
 
-    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
   })
 
-  it('refuses STAFF on the superadmin dashboard', async () => {
+  it('bounces STAFF off the superadmin dashboard to its own home', async () => {
     seedSession('STAFF')
     visit('/superadmin-dashboard')
 
-    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
   })
 
   it('admits HR to the HR dashboard without redirecting', async () => {
@@ -108,6 +108,35 @@ describe('route guards reject callers outside the declared role', () => {
 
     await screen.findByText(/full attendance overview/i)
     expect(window.location.pathname).toBe('/hr-dashboard')
+  })
+})
+
+describe('the root path lands each role on its own home', () => {
+  it('sends an unauthenticated visitor to the sign-in page', async () => {
+    visit('/')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+  })
+
+  it('lands STAFF on the staff dashboard', async () => {
+    seedSession('STAFF')
+    visit('/')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
+  })
+
+  it('lands HR on the HR dashboard', async () => {
+    seedSession('HR')
+    visit('/')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/hr-dashboard'))
+  })
+
+  it('lands SUPERADMIN on the superadmin dashboard', async () => {
+    seedSession('SUPERADMIN')
+    visit('/')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/superadmin-dashboard'))
   })
 })
 

@@ -1,6 +1,6 @@
 import { useState, ReactNode } from 'react'
 import Sidebar from './Sidebar'
-import { CiMenuBurger } from 'react-icons/ci'
+import { FaBars } from 'react-icons/fa6'
 
 interface LayoutProps {
   children: ReactNode
@@ -17,15 +17,16 @@ const Layout = ({ children }) => {
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Mobile topbar — only visible below lg */}
-      <div className="lg:hidden bg-canvas px-4 py-3 flex items-center gap-4 border-b border-hairline">
+      {/* Mobile topbar — only visible below lg, chrome surface like the sidebar */}
+      <div className="lg:hidden bg-chrome px-4 py-3 flex items-center gap-4 border-b border-chrome-line">
         <button
           onClick={() => setSidebarOpen(true)}
-          className="text-ink-subtle hover:text-accent transition-colors text-xl"
+          aria-label="Open navigation menu"
+          className="text-chrome-ink-muted hover:text-chrome-ink transition-colors text-xl"
         >
-          <CiMenuBurger />
+          <FaBars />
         </button>
-        <span className="text-ink text-sm font-bold font-serif tracking-wide">
+        <span className="text-brass-chrome text-sm font-bold font-serif tracking-wide">
           AttendPro
         </span>
       </div>

@@ -216,6 +216,11 @@
   .bg-surface-3 { background-color: var(--surface-3); }
   .bg-surface-4 { background-color: var(--surface-4); }
 
+  /* Mobile drawer scrim — §7 overlay backdrop (rgba(15,23,42,.55)).
+     Written out because Tailwind drops both `/55` on a var() colour and
+     arbitrary-value opacity modifiers, so the class must be real CSS. */
+  .overlay-scrim { background-color: rgba(15, 23, 42, 0.55); }
+
   /* Text utilities */
   .text-ink { color: var(--ink); }
   .text-ink-muted { color: var(--ink-muted); }
