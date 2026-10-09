@@ -11,11 +11,11 @@
 | Decision | Effect |
 |---|---|
 | **HR creates STAFF accounts** | HR gains create / edit / deactivate **scoped to role `STAFF` only**. HR can never mint `HR` or `SUPERADMIN`. Role assignment stays SUPERADMIN-only (R6 without undoing R1). |
-| **Seed fixtures omitted** | `seed.ts` provisions **only the 2 privileged accounts**. The 5 `John Doe`-class STAFF records are removed from seed. |
+| **Seed fixtures replaced** *(supersedes "omitted")* | `seed.ts` provisions SUPERADMIN, HR, and **one** named STAFF fixture (`staff@attendpro.com`, Jordan Reed) instead of the 5 `John Doe`-class accounts. Removal of the old rows from the local DB is a separate destructive step (C2). |
 
 ### Two consequences found while checking these — they must be handled in the plan
 
-**C1 — Removing seed fixtures breaks 4 files.** These hardcode `john.doe@company.com`:
+**C1 — Replacing seed fixtures requires 4 files to follow.** These hardcoded `john.doe@company.com`:
 
 | File | Impact |
 |---|---|
@@ -24,11 +24,11 @@
 | `backend/tests/attendance.test.ts:17,43` | STAFF token for attendance suite dies |
 | `backend/test-suite.mjs:60` | (currently staged) script dies |
 
-**Resolution:** tests stop depending on seed data. `tests/setup.ts` provisions its own STAFF fixture in `beforeAll` and removes it in `afterAll`. This is correct practice — automated tests should own their fixtures — and it means the production seed can be minimal without weakening coverage. `backend/test-suite.mjs` gets the same treatment or is retired (see Q4).
+**Resolution (executed 2026-10-09):** the 5 generic accounts were replaced by a single named STAFF fixture, and the `STAFF_EMAIL` constant in the three vitest files now reads `staff@attendpro.com`. `backend/test-suite.mjs` was never merged, so it never needed porting. The old rows in the local DB are a separate concern (C2).
 
-**C2 — Omitting from seed does not delete existing rows.** Seed uses `upsert` with `update: {}`. Removing a record from `seed.ts` only stops *future* creation. The 5 rows already in your local database **stay there**. Removing them from the database is a destructive data operation requiring a separate, explicitly approved dry-run. **Not in this plan.** Flagged as Q3.
+**C2 — Replacing in seed does not delete existing rows.** Seed uses `upsert` with `update: {}`, so the changed seed stops *future* creation of the 5 old accounts but the rows already in the local database remain. Worse: `employeeCode` is `@unique` and the new fixture takes `EMP-0003`, which `john.doe` already owns — seeding fails until the old rows are removed. Deleting them is a destructive data operation requiring separate approval. **User action, ordered before `db:seed`.**
 
-**C3 — `seed.ts:36-43` hard-requires `STAFF_PASSWORD`.** It throws if the variable is absent. Once STAFF accounts are gone, that requirement must be dropped or the seed still fails. Included in Milestone 1.
+**C3 — `seed.ts:36-43` still requires `STAFF_PASSWORD`.** The single STAFF fixture keeps this variable in `.env`. It stays required; the earlier "drop the variable" note no longer applies.
 
 ---
 
@@ -174,7 +174,7 @@ Open a PR against `main`, squash-merge, delete the branch. Screenshots required 
 - **D8** `crypto.randomInt` temp credentials
 - **D9** `POST /auth/logout`, helmet, per-account login limiter, bcrypt cost 12, shorter TTL
 - **D10 tier 1** structured audit events
-- **Seed**: drop STAFF fixtures, drop the `STAFF_PASSWORD` hard requirement *(C3)*
+- **Seed**: single named STAFF fixture (`staff@attendpro.com`); `STAFF_PASSWORD` requirement retained *(C3, superseded)*
 - **Tests**: `tests/setup.ts` provisions its own STAFF fixture *(C1)*
 
 **Deferred (needs migration, DBA gate, your approval):** D3 Option B (`passwordChangedAt`), D10 tier 2 (`auth_events` table).
@@ -324,12 +324,12 @@ Asymmetric KPI bento (R10), sticky headers + sort + pagination (R5), skeletons (
 
 1. **Ordering** — confirm the M2/M3 token-layer-before-Login swap, or override?
 2. **Commit scopes** — option **(A)** no tooling change, or **(B)** add an optional scope prompt to `commit.sh`?
-3. **Existing seed fixture rows** — 5 STAFF rows sit in your local Postgres. Omitting them from seed leaves them in place. Delete them (destructive, needs a separate dry-run approval), leave them, or leave them and let HR deactivate them through the new UI?
+3. **Existing seed fixture rows** — **resolved 2026-10-09**: the 5 rows hold `EMP-0003..0007`, which blocks the new `staff@attendpro.com` fixture (`EMP-0003`, unique). Owner deletes the 5 old rows (destructive, owner-run) before re-seeding. See C2.
 4. **`backend/test-suite.mjs`** — currently staged; it's a hand-rolled script duplicating the vitest suites, and C1 breaks it anyway. Commit it as-is, rework it alongside the fixture change, or drop it in favour of `backend/tests/`?
 5. **`check.cjs`** — a 7-line scratch script. Commit or discard?
 6. **Backend test execution** — the backend suite writes to Postgres. Confirm I may run it at each gate, or do you want to run it yourself and hand me the output?
 7. **Deferred migrations** — D3 Option B (`passwordChangedAt`) and D10 tier 2 (`auth_events`). Approve in principle now so they can be scheduled, or defer until after M10?
-8. **Seed STAFF_PASSWORD** — `.env` still carries it. Remove the variable once fixtures are gone?
+8. **Seed STAFF_PASSWORD** — **resolved 2026-10-09**: the single STAFF fixture still needs it, so the variable stays in the gitignored `backend/.env`.
 
 ---
 

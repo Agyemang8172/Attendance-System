@@ -14,7 +14,7 @@ import request from "supertest";
 import app from "../server.js";
 import prisma from "../config/prismaClient.js";
 
-const STAFF_EMAIL = "john.doe@company.com";
+const STAFF_EMAIL = "staff@attendpro.com";
 const HR_EMAIL = "hr@attendpro.com";
 const SUPERADMIN_EMAIL = "superadmin@attendpro.com";
 
