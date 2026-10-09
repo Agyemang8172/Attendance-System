@@ -5,7 +5,7 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import Dashboard from './pages/Dashboard'
 import { isAuthenticated } from './utils/auth'
 import { Toaster } from 'react-hot-toast'
-import { getCurrentUser } from './utils/auth'
+import { getCurrentUser, roleHome } from './utils/auth'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import Schedule from './pages/Schedule'
@@ -41,6 +41,16 @@ const SuperAdminRoute = ({ children }) => {
 // Any logged in user — staff, hr, superadmin
 const ProtectedRoute = ({ children }) => {
     if (!isAuthenticated()) return <Navigate to="/login" />
+    return children
+}
+
+// SetPassword only — logged in AND the account still owes a password change.
+// S15: an account whose flag is already clear must never reach the password
+// screen; it is bounced to its role home instead.
+const SetPasswordRoute = ({ children }) => {
+    const user = getCurrentUser()
+    if (!isAuthenticated()) return <Navigate to="/login" />
+    if (user?.mustChangePassword === false) return <Navigate to={roleHome(user?.role)} />
     return children
 }
 
@@ -128,9 +138,9 @@ function App() {
 
                 <Route path="/set-password"
                     element={
-                        <ProtectedRoute>
+                        <SetPasswordRoute>
                             <SetPassword />
-                        </ProtectedRoute>
+                        </SetPasswordRoute>
                     }
                  />
 

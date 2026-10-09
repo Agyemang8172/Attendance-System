@@ -9,25 +9,26 @@
 > detail underneath as historical until then. The header below is current.
 
 ## Current Task
-- **Task:** M2 — Shared design system (token layer)
-- **Branch:** `feat/design-tokens` (cut from `chore/git-foundation`, per the base
-  column in `docs/IMPLEMENTATION_PLAN.md`)
+- **Task:** M3 — Login redesign (`feat/login-redesign`, cut from `feat/design-tokens`)
 - **Triage Level:** STANDARD
-- **Status:** Values written. Build, lint, type-check, unit tests and the UI
-  taste gate are green. A contrast audit of the final values passes 20 of 23
-  pairs; the two misses are recorded in the plan with the reason they are
-  carried forward rather than patched here. Awaiting browser review and push
-  approval.
+- **Status:** Implemented. Login and SetPassword rebuilt on the approved
+  split-screen with correct contrast (subtext 4.59:1, focus ring 4.81:1),
+  `auth-*` retired for real (zero refs left in `src` or the bundle), S15
+  guard on `/set-password`, M1 `PASSWORD_CHANGE_REQUIRED` interceptor wired,
+  and S7 client/server policy in one shared module. Frontend suite 23/23,
+  build green, eslint at the known 5, tsc at the known 45, ui-taste 24/24.
+  Awaiting browser review and push approval.
 
 ## Approved Plan
 `docs/IMPLEMENTATION_PLAN.md` — eleven milestones M0–M10, each on its own
 branch, each committed through `.agents/scripts/commit.sh`.
 
 - M0 **DONE** — `chore/git-foundation`, commit `fea8a00`, pushed.
-- M1 **DONE** — `feat/auth-foundation`, commits `7927e1f` and `c5ee5ff`, pushed,
-  backend suite 71/71. Awaiting merge.
-- M2 **IN PROGRESS** — this branch.
-- M3–M10 **QUEUED**.
+- M1 **DONE** — `feat/auth-foundation`, commits `7927e1f` and `c5ee5ff`, plus the
+  GitGuardian config `9f08982`, pushed. Backend suite 71/71. Awaiting merge.
+- M2 **DONE** — `feat/design-tokens`, commit `6ad2bd6`, pushed. Awaiting merge.
+- M3 **IN PROGRESS** — this branch.
+- M4–M10 **QUEUED**.
 
 ## Dev-OS Pipeline Status
 
