@@ -6,7 +6,7 @@
 # detector matches those literal strings and raises an incident that cannot be a
 # real exposure.
 #
-# The three test files below carry literal password-shaped strings by design:
+# The four test files below carry literal password-shaped strings by design:
 # they are deliberately-fake inputs and the universal test credential. They
 # raise Generic Password incidents on every branch that touches them even
 # though nothing in them is a real secret, so they are excluded too.
@@ -22,3 +22,4 @@ secret:
     - backend/tests/fixtures.ts        # devos123 — Hard Rule 17 universal test credential
     - backend/tests/auth.test.ts       # deliberately-wrong password used to test 401s
     - backend/tests/user.test.ts       # deliberately-weak non-secrets for the D7 policy tests
+    - src/__tests__/staff-workflows.test.jsx  # deliberately-fake temp passwords for the reset/reveal tests
