@@ -2,24 +2,21 @@
 
 > This file is maintained by the Orchestrator agent. It is updated at each phase transition to preserve context across long sessions.
 
-> **Stale below this line.** The pipeline table, agent roster, blockers and
-> evidence sections date from 2026-10-06 and still describe the MongoDB Atlas
-> deployment that has since been replaced by local Prisma Postgres. A full
-> refresh is scheduled with the final UI/UX verification milestone; treat the
-> detail underneath as historical until then. The header below is current.
+> **Historical below this line.** The pipeline table, agent roster, blockers
+> and evidence sections date from 2026-10-06 and describe the MongoDB Atlas
+> era. They are preserved as the historical record; the header above this
+> note is current as of the final milestone refresh (2026-10-10).
 
 ## Current Task
-- **Task:** M9 — Security testing on `test/security-suite`
-- **Triage Level:** CRITICAL (authorization/security-adjacent)
-- **Status:** M9 delivered and verified. `backend/tests/security.test.ts`
-  closes the M8 hand-off: the >72-char ceiling (400), logout during the
-  forced-change gate (200), the six response headers (S9), temp-credential
-  entropy shape (S11), and the last-SUPERADMIN invariant (case 11).
-  `src/__tests__/password-policy.test.js` mirrors the policy client-side.
-  Backend **78/78** green (owner-run, serial); frontend **63/63**.
-  Case 11 is asserted as an invariant — the literal 409 branch is unreachable
-  through the composed routes (the caller is always an active SUPERADMIN and
-  is counted), which the suite and `REGRESSION_SNAPSHOT.md` §4 document.
+- **Task:** M10 — Final UI/UX verification on `qa/final-uiux-verification`
+- **Triage Level:** STANDARD (frontend polish + documentation refresh)
+- **Status:** M10 delivered. Agent-executed gates green: `ui-taste-check`
+  0 violations across 24 files, all 20 anti-ai-ui rules audited against the
+  code, frontend **63/63**, eslint and `vite build` clean. The §13-rule-9
+  sweep fixed the two remaining uppercase residuals (StaffTable header,
+  ManageStaff eyebrow). Owner-run steps — the three-role browser walkthrough
+  and the in-browser contrast re-measure — are itemised in
+  `docs/REGRESSION_SNAPSHOT.md` §5.
 
 ## Approved Plan
 `docs/IMPLEMENTATION_PLAN.md` — eleven milestones M0–M10, each on its own
@@ -39,12 +36,14 @@ branch, each committed through `.agents/scripts/commit.sh`.
 - M8 **DONE** — `test/regression-suite`, commit `38b0920` (+ docs `dc681a3`),
   merged to `main` via PR #13. Backend 71/71 and frontend 58/58 green as of
   2026-10-10.
-- M9 **DONE (unmerged)** — `test/security-suite`: added `security.test.ts`
-  (5 case-closing tests) and `password-policy.test.js` (5 policy tests).
-  Backend 78/78 and frontend 63/63 green as of 2026-10-10.
-- M10 **QUEUED** — `qa/final-uiux-verification`: browser walkthrough of all
-  three roles, contrast re-measured in-browser, `CURRENT_STATE.md` +
-  `AUDIT_REPORT.md` refreshed.
+- M9 **DONE** — `test/security-suite`, commit `165e09b`, merged to `main` via
+  PR #14. Backend 78/78 and frontend 63/63 green as of 2026-10-10.
+- M10 **DONE (unmerged)** — `qa/final-uiux-verification`: agent-executed
+  checks green (ui-taste-check 0/24, 20-rule audit, frontend 63/63, eslint
+  and build clean), two uppercase residuals fixed, `CURRENT_STATE.md`,
+  `AUDIT_REPORT.md` and `REGRESSION_SNAPSHOT.md` refreshed. Owner-run browser
+  walkthrough and contrast re-measure itemised in `REGRESSION_SNAPSHOT.md`
+  §5.
 
 ## Dev-OS Pipeline Status
 

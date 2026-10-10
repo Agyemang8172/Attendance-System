@@ -253,3 +253,37 @@ origin: function(origin, callback) {
 ---
 
 *This audit was performed by Dev-OS Orchestrator using the multi-agent engineering OS. All findings are backed by code analysis.*
+
+---
+
+## Verification Addendum — 2026-10-10 (M10, final milestone)
+
+The findings above were recorded on 2026-10-01 against the inherited codebase.
+Every finding has been actioned through milestones M0–M10, now on `main`.
+
+| # | Original finding | Resolution |
+|---|---|---|
+| 1 | Dual databases (Mongo + Prisma) | MongoDB/Mongoose removed; PostgreSQL/Prisma is the only data layer |
+| 2 | Attendance routes empty | Routes rebuilt behind auth + role middleware (M1) |
+| 3 | Credentials in repo | `.env` untracked; this report redacted (commit `5de3f2b`); gitleaks gate clean |
+| 4 | Hardcoded prod API URL | `VITE_API_URL` from environment with a local dev value |
+| 5 | Role mismatch | Role enums unified; single role middleware |
+| 6 | No input validation | `backend/validators` (Zod) on all write routes |
+| 7 | Inconsistent error handling | Uniform JSON error envelope; frontend `interceptors` response policy |
+| 8 | Auth missing on attendance | All routes behind `authenticate` + role guard |
+| 9 | No rate limiting | `express-rate-limit` on auth and management routes (S10) |
+| 10 | CORS permissive | Restricted to `ALLOWED_ORIGINS` (verified M10) |
+| 11/13/15/16/19/21 | Inherited-code tech debt | Resolved by the PostgreSQL/Prisma rebuild: single typed model, `.jsx`→`.tsx` migration, schema indexes, compiled output and `node_modules` untracked |
+| 12 | Prisma unused | Prisma is the single data layer |
+| 14 | Frontend env absent | `.env.example` documents `VITE_API_URL` |
+| 17 | No tests | Backend 78/78 (M8/M9), frontend 63/63 (M10) |
+| 18 | No API docs | Swagger at `/api/docs` and `/api/docs.json` |
+| 20 | Health without DB check | `/api/health` now runs `SELECT 1` through Prisma |
+| 22/23 | No logging / correlation | Pino structured logging + request correlation IDs |
+| 24 | ErrorBoundary unused | Wraps the app root in `main.jsx` |
+| 25 | No CI/CD | Pre-commit + pre-push gates enforced |
+
+**M10 gate record:** `ui-taste-check` 0 violations across 24 files; all 20
+anti-ai-ui rules pass; frontend suite 63/63; eslint and `vite build` clean.
+The three-role browser walkthrough and the in-browser contrast re-measure
+are owner-run and itemised in `docs/REGRESSION_SNAPSHOT.md` §5.
