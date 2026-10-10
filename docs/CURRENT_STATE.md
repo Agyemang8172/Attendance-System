@@ -9,14 +9,26 @@
 > detail underneath as historical until then. The header below is current.
 
 ## Current Task
-- **Task:** M1 merge — bring the auth/D4 foundation onto `main`
-  (branch `merge/m1-into-main`, integrating `feat/auth-foundation`)
+- **Task:** M7 merge — HR / Super Admin account and attendance workflows on `main`
+  (branch `feat/staff-management`, stacked M6 + M7)
 - **Triage Level:** STANDARD
-- **Status:** M1 merged to `main`. D4 enforcement is live: `requirePasswordChange`
-  gate, `securityHeaders`, account-scoped login limiter, SUPERADMIN-only role
-  changes, HR create/edit/deactivate scoped to STAFF, reset-password, and the
-  shared password policy. Backend suite green (serial). Seed script stays
-  untracked and gitignored (`backend/prisma/seed.ts`) — never pushed.
+- **Status:** M6 and M7 merged to `main`. Staff management is open to both
+  SUPERADMIN and HR with HR scoped to STAFF accounts (modals role-locked —
+  disabled, never hidden), and the account workflows are complete: admin
+  password-reset UI (two-step confirm → reveal temp password), reactivate flow
+  (Active/Inactive view toggle, SUPERADMIN-only reactivation, disabled state for
+  HR), and actionable empty states. Backend fix shipped: `getUsersQuerySchema`
+  `isActive` now validates as `z.enum(["true","false"])` so `?isActive=false`
+  no longer coerces to `true` (zod `coerce.boolean("false")` bug). Backend
+  suite green (serial — owner-run). Seed script stays untracked and gitignored
+  (`backend/prisma/seed.ts`) — never pushed. GitGuardian merge-blocked once on
+  a password-shaped doc-comment literal (`tempPassword: "amber-fox-93"` in
+  `ResetPasswordModal.jsx`); the M7 commit was rewritten (`584d796`), that
+  literal and the `brass-otter-77` test mocks scrubbed, and
+  `src/__tests__/staff-workflows.test.jsx` added to `.gitguardian.yaml`
+  ignored_paths. Note for a future cleanup: the merged M6 files
+  `AddEmployeeModal.jsx`/`staff-management.test.jsx` still carry the same
+  `amber-tiger-42` pattern on `main`.
 
 ## Approved Plan
 `docs/IMPLEMENTATION_PLAN.md` — eleven milestones M0–M10, each on its own
@@ -29,7 +41,11 @@ branch, each committed through `.agents/scripts/commit.sh`.
 - M3 **DONE** — `feat/login-redesign`, commit `15be18c`, merged to `main`.
 - M4 **DONE** — `feat/dashboard-redesign`, commit `277ec10`, pushed and merged.
 - M5 **DONE** — `feat/sidebar-navigation`, commit `d599fee`, merged to `main`.
-- M6–M10 **QUEUED**. Next: M6, HR-open staff management.
+- M6 **DONE** — `feat/staff-management`, commit `76da9a0` (+ `.gitguardian.yaml`
+  `624b5b2`), merged to `main` via PR #11.
+- M7 **DONE** — `feat/staff-management` (stacked), commit `584d796`, merged to
+  `main` via PR #12.
+- M8–M10 **QUEUED**. Next: M8, regression testing.
 
 ## Dev-OS Pipeline Status
 
