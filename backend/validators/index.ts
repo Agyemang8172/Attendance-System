@@ -139,7 +139,12 @@ export const getUsersQuerySchema = {
     search: z.string().optional(),
     department: z.string().optional(),
     role: z.enum(["STAFF", "HR", "SUPERADMIN"]).optional(),
-    isActive: z.coerce.boolean().optional(),
+    // `isActive` arrives as the string "false", and `z.coerce.boolean()` turns
+    // that into `Boolean("false")` = true — silently inverting the filter and
+    // showing active users in place of deactivated ones. The controller reads
+    // the raw string (`!== "false"`), so validation keeps it a string: only
+    // the two literals pass, and "false" stays "false" end to end.
+    isActive: z.enum(["true", "false"]).optional(),
   }),
 };
 
