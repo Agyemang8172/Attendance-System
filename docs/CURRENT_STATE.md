@@ -9,26 +9,17 @@
 > detail underneath as historical until then. The header below is current.
 
 ## Current Task
-- **Task:** M7 merge — HR / Super Admin account and attendance workflows on `main`
-  (branch `feat/staff-management`, stacked M6 + M7)
-- **Triage Level:** STANDARD
-- **Status:** M6 and M7 merged to `main`. Staff management is open to both
-  SUPERADMIN and HR with HR scoped to STAFF accounts (modals role-locked —
-  disabled, never hidden), and the account workflows are complete: admin
-  password-reset UI (two-step confirm → reveal temp password), reactivate flow
-  (Active/Inactive view toggle, SUPERADMIN-only reactivation, disabled state for
-  HR), and actionable empty states. Backend fix shipped: `getUsersQuerySchema`
-  `isActive` now validates as `z.enum(["true","false"])` so `?isActive=false`
-  no longer coerces to `true` (zod `coerce.boolean("false")` bug). Backend
-  suite green (serial — owner-run). Seed script stays untracked and gitignored
-  (`backend/prisma/seed.ts`) — never pushed. GitGuardian merge-blocked once on
-  a password-shaped doc-comment literal (`tempPassword: "amber-fox-93"` in
-  `ResetPasswordModal.jsx`); the M7 commit was rewritten (`584d796`), that
-  literal and the `brass-otter-77` test mocks scrubbed, and
-  `src/__tests__/staff-workflows.test.jsx` added to `.gitguardian.yaml`
-  ignored_paths. Note for a future cleanup: the merged M6 files
-  `AddEmployeeModal.jsx`/`staff-management.test.jsx` still carry the same
-  `amber-tiger-42` pattern on `main`.
+- **Task:** M9 — Security testing on `test/security-suite`
+- **Triage Level:** CRITICAL (authorization/security-adjacent)
+- **Status:** M9 delivered and verified. `backend/tests/security.test.ts`
+  closes the M8 hand-off: the >72-char ceiling (400), logout during the
+  forced-change gate (200), the six response headers (S9), temp-credential
+  entropy shape (S11), and the last-SUPERADMIN invariant (case 11).
+  `src/__tests__/password-policy.test.js` mirrors the policy client-side.
+  Backend **78/78** green (owner-run, serial); frontend **63/63**.
+  Case 11 is asserted as an invariant — the literal 409 branch is unreachable
+  through the composed routes (the caller is always an active SUPERADMIN and
+  is counted), which the suite and `REGRESSION_SNAPSHOT.md` §4 document.
 
 ## Approved Plan
 `docs/IMPLEMENTATION_PLAN.md` — eleven milestones M0–M10, each on its own
@@ -45,11 +36,15 @@ branch, each committed through `.agents/scripts/commit.sh`.
   `624b5b2`), merged to `main` via PR #11.
 - M7 **DONE** — `feat/staff-management` (stacked), commit `584d796`, merged to
   `main` via PR #12.
-- M8 **IN PROGRESS** — `test/regression-suite`: snapshot of the 15 auth
-  security cases in `docs/REGRESSION_SNAPSHOT.md`; interactive walkthroughs in
-  `docs/TESTING_GUIDE.md`. Backend 71/71 and frontend 58/58 green as of
+- M8 **DONE** — `test/regression-suite`, commit `38b0920` (+ docs `dc681a3`),
+  merged to `main` via PR #13. Backend 71/71 and frontend 58/58 green as of
   2026-10-10.
-- M9–M10 **QUEUED**. Next: M9, security testing (`test/security-suite`).
+- M9 **DONE (unmerged)** — `test/security-suite`: added `security.test.ts`
+  (5 case-closing tests) and `password-policy.test.js` (5 policy tests).
+  Backend 78/78 and frontend 63/63 green as of 2026-10-10.
+- M10 **QUEUED** — `qa/final-uiux-verification`: browser walkthrough of all
+  three roles, contrast re-measured in-browser, `CURRENT_STATE.md` +
+  `AUDIT_REPORT.md` refreshed.
 
 ## Dev-OS Pipeline Status
 
