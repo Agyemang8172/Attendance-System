@@ -45,7 +45,11 @@ branch, each committed through `.agents/scripts/commit.sh`.
   `624b5b2`), merged to `main` via PR #11.
 - M7 **DONE** — `feat/staff-management` (stacked), commit `584d796`, merged to
   `main` via PR #12.
-- M8–M10 **QUEUED**. Next: M8, regression testing.
+- M8 **IN PROGRESS** — `test/regression-suite`: snapshot of the 15 auth
+  security cases in `docs/REGRESSION_SNAPSHOT.md`; interactive walkthroughs in
+  `docs/TESTING_GUIDE.md`. Backend 71/71 and frontend 58/58 green as of
+  2026-10-10.
+- M9–M10 **QUEUED**. Next: M9, security testing (`test/security-suite`).
 
 ## Dev-OS Pipeline Status
 
