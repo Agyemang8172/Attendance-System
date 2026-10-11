@@ -8,15 +8,15 @@
 > note is current as of the final milestone refresh (2026-10-10).
 
 ## Current Task
-- **Task:** M10 — Final UI/UX verification on `qa/final-uiux-verification`
-- **Triage Level:** STANDARD (frontend polish + documentation refresh)
-- **Status:** M10 delivered. Agent-executed gates green: `ui-taste-check`
-  0 violations across 24 files, all 20 anti-ai-ui rules audited against the
-  code, frontend **63/63**, eslint and `vite build` clean. The §13-rule-9
-  sweep fixed the two remaining uppercase residuals (StaffTable header,
-  ManageStaff eyebrow). Owner-run steps — the three-role browser walkthrough
-  and the in-browser contrast re-measure — are itemised in
-  `docs/REGRESSION_SNAPSHOT.md` §5.
+- **Task:** Project complete — milestones M0–M10 all merged to `main`
+- **Triage Level:** —
+- **Status:** M10 (final UI/UX verification) merged via PR #15, commit
+  `20a1e43`. Agent-executed gates green: `ui-taste-check` 0 violations across
+  24 files, all 20 anti-ai-ui rules audited against the code, frontend
+  **63/63**, eslint and `vite build` clean. The §13-rule-9 sweep fixed the two
+  remaining uppercase residuals (StaffTable header, ManageStaff eyebrow).
+  Owner-run steps — the three-role browser walkthrough and the in-browser
+  contrast re-measure — are itemised in `docs/REGRESSION_SNAPSHOT.md` §5.
 
 ## Approved Plan
 `docs/IMPLEMENTATION_PLAN.md` — eleven milestones M0–M10, each on its own
@@ -38,12 +38,12 @@ branch, each committed through `.agents/scripts/commit.sh`.
   2026-10-10.
 - M9 **DONE** — `test/security-suite`, commit `165e09b`, merged to `main` via
   PR #14. Backend 78/78 and frontend 63/63 green as of 2026-10-10.
-- M10 **DONE (unmerged)** — `qa/final-uiux-verification`: agent-executed
-  checks green (ui-taste-check 0/24, 20-rule audit, frontend 63/63, eslint
-  and build clean), two uppercase residuals fixed, `CURRENT_STATE.md`,
-  `AUDIT_REPORT.md` and `REGRESSION_SNAPSHOT.md` refreshed. Owner-run browser
-  walkthrough and contrast re-measure itemised in `REGRESSION_SNAPSHOT.md`
-  §5.
+- M10 **DONE** — `qa/final-uiux-verification`, commit `20a1e43`, merged to
+  `main` via PR #15. Agent-executed checks green (ui-taste-check 0/24, 20-rule
+  audit, frontend 63/63, eslint and build clean); two uppercase residuals
+  fixed; `CURRENT_STATE.md`, `AUDIT_REPORT.md` and `REGRESSION_SNAPSHOT.md`
+  refreshed. Owner-run browser walkthrough and contrast re-measure itemised in
+  `REGRESSION_SNAPSHOT.md` §5.
 
 ## Dev-OS Pipeline Status
 
