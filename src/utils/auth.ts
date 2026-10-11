@@ -13,15 +13,25 @@ export const logout = (): void => {
     localStorage.removeItem('user');
 };
 
-// Returns true if token exists, false if not
+// Returns true only when a token AND a user with a known role are stored.
+// A leftover token on its own is not a session: without a role the guards
+// cannot decide a destination, so it must be treated as signed out.
 export const isAuthenticated = () : boolean => {
-    return localStorage.getItem('token') !== null;
+    if (localStorage.getItem('token') === null) return false;
+    const role = getCurrentUser()?.role;
+    return role === 'STAFF' || role === 'HR' || role === 'SUPERADMIN';
 }
 
-// Returns the full user object or null
+// Returns the full user object or null. Never throws: a corrupt or legacy
+// `user` value reads back as null so callers fall through to the login guard.
 export const getCurrentUser = () : AuthUser | null => {
     const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    if (!user) return null;
+    try {
+        return JSON.parse(user);
+    } catch {
+        return null;
+    }
 }
 
 // Returns the raw JWT token string or null

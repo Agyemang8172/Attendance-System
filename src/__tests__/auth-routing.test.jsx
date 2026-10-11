@@ -119,6 +119,35 @@ describe('route guards reject callers outside the declared role', () => {
   })
 })
 
+// A leftover token is not a session. Without a user + known role the guard
+// cannot pick a destination; it used to redirect to /dashboard (its own
+// fallback) and render a blank page instead of the sign-in screen.
+describe('a stale or invalid session is treated as signed out', () => {
+  it('sends a token with no user to the sign-in page', async () => {
+    localStorage.setItem('token', 'stale-token')
+    visit('/dashboard')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+    expect(await screen.findByRole('button', { name: /sign in/i })).toBeInTheDocument()
+  })
+
+  it('sends a token with an unknown role to the sign-in page', async () => {
+    localStorage.setItem('token', 'stale-token')
+    localStorage.setItem('user', JSON.stringify({ role: 'ADMIN' }))
+    visit('/dashboard')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+  })
+
+  it('treats a corrupt user value as signed out', async () => {
+    localStorage.setItem('token', 'stale-token')
+    localStorage.setItem('user', 'not-json')
+    visit('/dashboard')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+  })
+})
+
 describe('the root path lands each role on its own home', () => {
   it('sends an unauthenticated visitor to the sign-in page', async () => {
     visit('/')
