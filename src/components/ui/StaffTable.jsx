@@ -40,7 +40,7 @@ const RolePill = ({ role }) => {
 }
 
 const TH = ({ children }) => (
-  <th className="px-4 py-3 text-left text-caption font-medium uppercase tracking-widest text-ink-muted whitespace-nowrap">
+  <th className="px-4 py-3 text-left text-caption font-medium text-ink-muted whitespace-nowrap">
     {children}
   </th>
 )

@@ -102,3 +102,76 @@ invariant it exists to protect.
 - M10 (`qa/final-uiux-verification`) stays the last milestone: browser
   walkthrough of all three roles, contrast re-measured in-browser, and
   `CURRENT_STATE.md` + `AUDIT_REPORT.md` refreshed.
+
+## 5. M10 — Final UI/UX verification (`qa/final-uiux-verification`)
+
+Delivered on `qa/final-uiux-verification`. Agent-executed gates pass:
+
+| Item | Result |
+|---|---|
+| `ui-taste-check src` | **0 violations**, 24 files scanned |
+| Anti-ai-ui 20-rule audit | All pass — verified against the code, not just the scanner (see below) |
+| §13 rule 9 / §15 uppercase sweep | 22 → 20 uses; the two non-compliant residuals fixed |
+| Frontend suite | **63/63** green (7 files) |
+| eslint + `vite build` | Clean |
+
+### 20-rule audit notes
+
+- §1/§2/§4/§5/§13/§14/§20 — mechanically scanned: zero emojis in templates,
+  zero sparkles, no indigo/purple gradients, no glassmorphism (the only
+  `backdrop-blur` is the modal scrim), no placeholder entities, no radial
+  blobs, no floating pills.
+- §3 — sidebar account menu is an accessible popover (`aria-expanded`,
+  `aria-haspopup`, keyboard navigation) with `Profile` / `Settings` / `Sign
+  out` — the profile-pill pattern is gone.
+- §6/§8 — KPI grid is an asymmetric bento: `KpiHero` spans two columns and
+  carries the clock action; two dense metric cards follow.
+- §9 — `active:scale-[0.98]` lives in the `.btn-*` primitives in `index.css`,
+  so every button carries it.
+- §10 — focus rings via `.input-*`/`.btn-*` (`ring-accent` = `#b45309` on
+  paper) and explicit `ring-brass-chrome` on chrome surfaces — the §13 rule 4
+  polarity split is respected.
+- §11 — tables carry sticky headers, sort indicators with `aria-sort`, and
+  pagination with "Showing x–y of z records".
+- §12 — empty states carry a concrete action (StaffTable: "+ Add Employee" /
+  "View Active Employees").
+- §15/§17/§18/§19 — one icon family (`react-icons/fa6`, 10 imports), skeleton
+  loaders in five pages, left-aligned copy, and the uppercase sweep below.
+
+### §13-rule-9 sweep — the two fixed residuals
+
+`ui-taste-check` cannot see `uppercase tracking-widest`, so the all-caps
+overkill was audited by hand. Of the 22 uses, 20 are inside the permitted
+grammar: the brand tagline, status markers (ErrorBoundary "Error", modal
+step markers in mono brass), and the Login/SetPassword nameplate labels
+retained by §10.1 and the §12 Q3 exception. Two were outside it:
+
+| Site | Before | After |
+|---|---|---|
+| `StaffTable.jsx` `TH` | uppercase on every column header | sentence-case `text-caption font-medium`, matching `AttendanceTable` |
+| `ManageStaff.jsx` page eyebrow | uppercase "Human Resources" / "Superadmin" | mono sentence-case `text-ink-muted text-caption`, matching the other pages' header eyebrow |
+
+Both are class-only changes; the rendered strings are unchanged, so no test
+or screen-reader text moved.
+
+### Owner-run steps (itemised for the final close-out)
+
+1. **Browser walkthrough** of all three roles against `DESIGN_PROPOSAL`
+   §10.1–§10.3 — STAFF (`staff@test.attendpro.com`), HR
+   (`hr@test.attendpro.com`), SUPERADMIN (`superadmin@test.attendpro.com`),
+   password `devos123`, via `docs/TESTING_GUIDE.md`. Confirm the retained
+   elements (§10.1), the redesigned ones (§10.2), and the resolved
+   inconsistencies (§10.3).
+2. **In-browser contrast re-measure** of the §5 pairs — §5.2 ink table,
+   §5.3 brass, §5.4 status tints, §5.5 chrome ink. Target ratios are
+   recorded in `DESIGN_PROPOSAL.md` §5; the two owner-recorded values stay
+   from M3.
+
+### M10 hand-off — plan closed
+
+- M0–M10 are all delivered; the project plan has no further milestone work.
+- Deferred debt is unchanged from §4: S6 JWT revocation, the S10 throttling
+  browser check, entropy as a structural ceiling, and the unreachable 409
+  branch.
+- `docs/CURRENT_STATE.md` was refreshed at M10; the MongoDB-era detail
+  underneath the header is tagged historical.

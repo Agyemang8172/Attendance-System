@@ -170,7 +170,7 @@ const ManageStaff = () => {
       {/* ── Page Header ──────────────────────────────────────────────────── */}
       <header className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <p className="text-xs font-mono uppercase tracking-widest text-accent mb-1">
+          <p className="text-ink-muted text-caption font-mono mb-1">
             {isHr ? 'Human Resources' : 'Superadmin'}
           </p>
           <h1 className="text-display-sm text-ink font-serif leading-tight">
