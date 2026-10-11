@@ -31,3 +31,12 @@ Each entry follows this structure:
 - **Root cause:** Early commits carried a real credential in documentation and a fixture file; the env-file-only pattern was not yet established.
 - **Resolution:** Sensitive values are now confined to gitignored env files (`backend/.env` is excluded; `.env.example` holds dummy placeholders only). `backend/test-users.md` was removed from the tree (`d3996cd`), `README.md` now points readers to the contact links instead of a password, and `.gitignore` guards `backend/test-users.md` so any recreated copy cannot be staged. The three historical findings were handled with an Ignore action in the GitGuardian dashboard. M3 and M4 commits both scan clean with gitleaks.
 - **Prevention rule:** No credentials in READMEs, docs, or fixture files, under any circumstances. Live secrets go only in gitignored env files; anything else is a documented dummy. Any doc or fixture that has carried credentials is gitignored permanently.
+
+---
+
+### 2026-10-11 — Leftover Token Rendered a Blank Dashboard
+- **Domain:** Auth, Frontend Routing
+- **What went wrong:** Visiting `/dashboard` with a stale `token` in localStorage but no usable `user` showed a blank page instead of the login screen.
+- **Root cause:** `isAuthenticated()` checked for a token only. The guard passed that first check, found no recognised role, and bounced to `roleHome(undefined)`, which returns `/dashboard` — the page already rendering. The self-redirect resolved to nothing, so the outlet stayed empty.
+- **Resolution:** `isAuthenticated()` now requires a token and a stored user with a known role, and `getCurrentUser()` returns `null` for corrupt JSON instead of throwing. Three regression tests cover the token-only, unknown-role and corrupt-user cases; the frontend suite is 66/66.
+- **Prevention rule:** Treat a session as valid only when both the credential and the identity behind it are present and recognisable. A guard whose fallback points at its own current route can loop silently, so every role-to-destination map needs a sign-out path for unknown input.

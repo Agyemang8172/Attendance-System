@@ -18,6 +18,25 @@
   Owner-run steps — the three-role browser walkthrough and the in-browser
   contrast re-measure — are itemised in `docs/REGRESSION_SNAPSHOT.md` §5.
 
+## Post-M10 Fix (2026-10-11)
+
+- **Issue:** Opening `http://localhost:5173/dashboard` with a leftover `token`
+  still in localStorage showed a blank page instead of the sign-in screen.
+- **Root cause:** `isAuthenticated()` returned true on token presence alone.
+  With no `user` (or an unrecognised role) the guard fell through to
+  `roleHome(undefined)`, which returns `/dashboard` — the route already open —
+  so the redirect became a no-op and nothing rendered.
+- **Fix:** `src/utils/auth.ts` now needs a token **and** a stored user whose role
+  is `STAFF`, `HR` or `SUPERADMIN`; `getCurrentUser()` parses defensively and
+  returns `null` on a corrupt value. Every guard already consulted
+  `isAuthenticated()` before picking a destination, so this single change closes
+  the loop for all of them.
+- **Verified:** frontend **66/66** (three new regression tests), eslint and
+  `vite build` clean; reproduced and re-checked in headless Chrome — stale token,
+  null user and unknown role now all land on `/login`, while valid STAFF and HR
+  sessions still reach their dashboards.
+- **Commit:** `08ed0ab` on `main`.
+
 ## Approved Plan
 `docs/IMPLEMENTATION_PLAN.md` — eleven milestones M0–M10, each on its own
 branch, each committed through `.agents/scripts/commit.sh`.
