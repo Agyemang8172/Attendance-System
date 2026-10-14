@@ -2,6 +2,38 @@
 
 > This file is maintained by the Orchestrator agent. It is updated at each phase transition to preserve context across long sessions.
 
+## Current Session — 2026-10-14
+
+- **Task:** Dev-OS v4.5.0 upgrade, scanner restoration, AttendPro M0 kickoff
+- **Branch:** `main`, ahead of `origin/main` by 4 commits, nothing pushed
+- **Mode:** interactive, Orchestrator locked
+
+Completed:
+
+- Upgraded Dev-OS 4.3.0 to 4.5.0 with `npx @olives/devos update -p opencode`. `doctor`
+  reports every check green. The release adds the `pm`, `tech-writer`, `sre` and
+  `tech-lead` agents, new slash commands, and hard rules 22 and 23. Commit `fd79702`.
+- The 4.5.0 package downgraded four scanners (`db-check.sh`, `ui-taste-check.sh`,
+  `install-hooks.sh`, `env-check.sh`) to raw `python3` calls. This host resolves
+  `python3` to the Microsoft Store stub, which exits 49 and prints nothing, so the
+  scanners reported clean without inspecting anything. The maintained versions were
+  restored before the upgrade commit, so no downgrade is recorded.
+- Committed the cross-harness configs `.cursor/`, `.codex/`, `.cursorrules`,
+  `.windsurfrules`, `ANTIGRAVITY.md`, `CLAUDE.md` and `GEMINI.md`. Commit `c3e98e1`.
+
+Verified:
+
+- `db-check.sh` fails closed and names the three tables (`users`, `shifts`,
+  `attendances`) that migration `20261005000000_init` creates without RLS. The same
+  migration used to pass the gate silently.
+
+Scope note: the material below describes an earlier generation of this project, the
+MongoDB to Prisma migration and the M0–M10 UI/RBAC build. The current baseline is the
+AttendPro PRD (kiosk QR check-in with SMS OTP, corrections, reporting). That PRD is not
+yet saved under `docs/`, and its M0 is starting.
+
+## Historical Snapshot
+
 > **Historical below this line.** The pipeline table, agent roster, blockers
 > and evidence sections date from 2026-10-06 and describe the MongoDB Atlas
 > era. They are preserved as the historical record; the header above this
