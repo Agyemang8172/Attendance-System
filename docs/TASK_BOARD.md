@@ -2,7 +2,54 @@
 
 > Single source of truth for active task execution, dependencies, and gating status.
 > Maintained by the **Orchestrator** agent.
-> Refreshed at stage 4 on 2026-10-06. Evidence lives in `docs/CURRENT_STATE.md`.
+> AttendPro baseline opened 2026-10-14. Evidence lives in `docs/CURRENT_STATE.md`.
+
+---
+
+## AttendPro — Active Board (2026-10-14)
+
+The programme is AttendPro. M0 (investigation) closed on 2026-10-14; the board below is the
+M0 → M9 plan. The plan has two gates: the owner approves this design at the end of M0, and
+each milestone closes at its own human checkpoint before its commit.
+
+M0 evidence artefacts:
+
+- `docs/ATTENDPRO_PRD.md` — PRD v1.0, persisted.
+- `docs/attendpro/M0-REALITY-CHECK.md` — repository reality check.
+- `docs/attendpro/M0-FORENSIC-RECONCILIATION.md` — re-verification of every §22 finding.
+- `docs/attendpro/DECISION-REGISTER.md` — O1 to O14.
+
+### [ HUMAN_CHECKPOINT ] — M0 design approval
+
+- **Assignee:** Owner
+- **DependsOn:** none
+- **State:** M0 artefacts delivered; awaiting the literal word "approve"
+- **On approval:** M1 (architecture) opens; nothing is implemented before then
+- **Also pending owner input:** O1 to O14 in the decision register
+
+### [ QUEUED ] — AttendPro milestones
+
+| Milestone | Scope | Gate | DependsOn |
+|-----------|-------|------|-----------|
+| M1 | Architecture and UI design: navigation map, screen inventory, component plan, API contracts, data model with fields/enums/indexes, kiosk security proposal. Owner approves the approved design set. | design review | M0 |
+| M2 | Foundation: business/tenant model, migration with RLS and safe FK behaviour, isolated test database, nested-repo preservation decision executed. | tests + migration review | M1 |
+| M3 | Shifts, policies, and the status rule engine with policy snapshots. | QA + security | M2 |
+| M4 | SUPERADMIN management: employees, shift assignment, scheduling, policies, kiosk registration, settings. | QA + security | M3 |
+| M5 | Kiosk: device auth, QR credentials, verification sessions, OTP issue/verify with limits, atomic punch, tenant isolation tests. | security gate | M4 |
+| M6 | Automatic clock-out job, shift-aware, timezone-aware, flagged automatic. | QA | M5 |
+| M7 | Help requests, attendance corrections with audit trail and no self-approval, reports, audit log, data retention. | QA + security | M6 |
+| M8 | Staff and HR dashboard completion: schedule, off-days, exceptions, public landing page. | QA | M7 |
+| M9 | Full test suite, testing guide, CI, security review, close-out. | release review | M8 |
+
+### [ BLOCKED ] — carried risks
+
+- **Test isolation (F7 / O14):** backend tests write to the development database. A separate
+  test database must exist before M2 runs integration tests.
+- **Frontend type check (F1):** 43 `tsc` errors and no `typecheck` script. M8 cannot be
+  called complete while the frontend fails its type check; the errors are remediated inside
+  the slices that own those files.
+- **Nested `backend/.git` (F5 / O13):** preserved untouched until the owner approves a
+  preservation method.
 
 ---
 
@@ -18,7 +65,14 @@
 
 ---
 
-## Gate Rules In Force
+---
+
+> **Prior generation — superseded.** Everything below this line belongs to the earlier
+> dev-os bootstrap (the `dev-os` monorepo slice plan, `DESIGN.md` findings, `TASK-2xx`,
+> `TASK-3xx`, `TASK-4xx`). It is kept for history and is not the active board. The active
+> board is the AttendPro section above.
+
+## Gate Rules In Force (prior generation)
 
 From `DESIGN.md` section 8 (approved 2026-10-06):
 
