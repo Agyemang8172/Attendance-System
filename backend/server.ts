@@ -7,6 +7,10 @@ import attendanceRoutes from "./routes/attendanceRoutes.js";
 import shiftRoutes from "./routes/shiftRoutes.js";
 import assignmentRoutes from "./routes/assignmentRoutes.js";
 import policyRoutes from "./routes/policyRoutes.js";
+import hrRoutes from "./routes/hrRoutes.js";
+import siteRoutes from "./routes/siteRoutes.js";
+import calendarRoutes from "./routes/calendarRoutes.js";
+import qrRoutes from "./routes/qrRoutes.js";
 import securityHeaders from "./middleware/securityHeaders.js";
 import { logger, correlationIdMiddleware, requestLogger, logError } from "./utils/logger.js";
 import { setupSwagger } from "./docs/swagger.js";
@@ -132,6 +136,10 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/business/shifts", shiftRoutes);
 app.use("/api/business", assignmentRoutes);
 app.use("/api/business/policies", policyRoutes);
+app.use("/api/hr", hrRoutes);
+app.use("/api/sites", siteRoutes);
+app.use("/api/business/calendars", calendarRoutes);
+app.use("/api/business", qrRoutes);
 
 // Health check
 app.get("/api/health", async (_req, res) => {

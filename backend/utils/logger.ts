@@ -274,4 +274,64 @@ export const auditLog = {
       "Policy version created"
     );
   },
+
+  pinReset: (adminId: string, targetUserId: string) => {
+    userLogger.info(
+      { adminId, targetUserId, event: "pin_reset" },
+      "Kiosk PIN reset by administrator"
+    );
+  },
+
+  siteCreated: (adminId: string, siteId: string, businessId: string) => {
+    userLogger.info(
+      { adminId, siteId, businessId, event: "site_created" },
+      "Site created"
+    );
+  },
+
+  siteUpdated: (adminId: string, siteId: string, businessId: string) => {
+    userLogger.info(
+      { adminId, siteId, businessId, event: "site_updated" },
+      "Site updated"
+    );
+  },
+
+  siteDeactivated: (adminId: string, siteId: string, businessId: string) => {
+    userLogger.warn(
+      { adminId, siteId, businessId, event: "site_deactivated" },
+      "Site deactivated"
+    );
+  },
+
+  calendarUpdated: (adminId: string, calendarId: string, businessId: string) => {
+    userLogger.info(
+      { adminId, calendarId, businessId, event: "calendar_updated" },
+      "Work calendar updated"
+    );
+  },
+
+  calendarExceptionCreated: (
+    adminId: string,
+    exceptionId: string,
+    businessId: string
+  ) => {
+    userLogger.info(
+      { adminId, exceptionId, businessId, event: "calendar_exception_created" },
+      "Calendar exception created"
+    );
+  },
+
+  qrIssued: (adminId: string, employeeId: string, businessId: string) => {
+    userLogger.info(
+      { adminId, employeeId, businessId, event: "qr_reissued" },
+      "QR credential issued"
+    );
+  },
+
+  qrRevoked: (adminId: string, credentialId: string, businessId: string) => {
+    userLogger.warn(
+      { adminId, credentialId, businessId, event: "qr_revoked" },
+      "QR credential revoked"
+    );
+  },
 };

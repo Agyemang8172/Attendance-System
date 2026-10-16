@@ -8,7 +8,7 @@
 
 ## AttendPro — Active Board (2026-10-14)
 
-The programme is AttendPro. M0 (investigation) is committed (`c4ee602`), and the M1 design set is committed (`b403a66`). M1 is **approved** (owner, 2026-10-16). M2 (implementation foundation) is **complete** (`a74c72a`): 19-model Prisma schema, nine forward migrations with Row Level Security, test-database guard built. M3 (shifts, policies, status rule engine, timing policy) is **complete**: backend controllers, routes, validators and status engine implemented, `tsc` clean at zero errors. Nothing has been pushed to `origin/main`.
+The programme is AttendPro. M0 (investigation) is committed (`c4ee602`), and the M1 design set is committed (`b403a66`). M1 is **approved** (owner, 2026-10-16). M2 (implementation foundation) is **complete** (`a74c72a`): 19-model Prisma schema, nine forward migrations with Row Level Security, test-database guard built. M3 (shifts, policies, status rule engine, timing policy) is **complete**: backend controllers, routes, validators and status engine implemented, `tsc` clean at zero errors. M4 (employees, sites, calendars, QR credentials) is **complete**: HR routes with audited PIN reset, sites with geo-fence, work calendars, QR issue/revoke. Nothing has been pushed to `origin/main`.
 
 M0 artefacts (committed):
 
@@ -49,9 +49,24 @@ M1 design set (committed `b403a66`):
   - Routes registered in `backend/server.ts`
 - **Verification:** `tsc --noEmit` = 0 errors; `prisma validate` valid; `db-check.sh` passed; humanize-check clean
 
-### [ QUEUED ] — M4 SUPERADMIN employee & site management
+### [ COMPLETE ] — M4 SUPERADMIN employee, site, calendar and badge management
 
-- **DependsOn:** M3
+- **Orchestration:** implemented in-session, then independently reviewed by a review agent (verdict: safe after fixes) and documented by a separate docs agent; both findings applied.
+- **DependsOn:** M3 (complete)
+- **State:** reviewed, fixes applied, all gates green
+- **Delivered:**
+  - `backend/routes/hrRoutes.ts` — `/api/hr` reusing the `userController` list/create/update handlers rather than duplicating them; tenant scoping added inside those handlers
+  - `userController.resetPin` — audited kiosk PIN reset (`HMAC-SHA-256` with `PIN_HMAC_KEY` and a per-record salt), lockout counters cleared, PIN never returned
+  - `backend/controllers/siteController.ts` + `routes/siteRoutes.ts` — sites CRUD with geo-fence validation
+  - `backend/controllers/calendarController.ts` + `routes/calendarRoutes.ts` — calendars, single default (O22), dated exceptions
+  - `backend/controllers/qrController.ts` + `routes/qrRoutes.ts` — QR issue (token shown once, only a keyed hash stored) and revoke
+  - validators and audit events for all of the above
+- **Verification:** `tsc --noEmit` = 0 errors; `prisma validate` valid; `db-check.sh` passed on 10 migrations; `humanize-check` clean. Review-agent fixes applied: per-tenant last-superadmin rule (also on delete), round-trip calendar-date check, STAFF-only PIN reset target, directory gate parity, IANA timezone validation, policy-derived site radius, distinct default-calendar conflict message. `docs/TESTING_GUIDE.md` gained Scenarios I–O from the docs agent.
+- **Deferred:** tenant-isolation regression tests (reviewer MINOR-5); kiosk session invalidation on PIN reset (reviewer MINOR-6, lands with M5).
+
+### [ QUEUED ] — M5 kiosk pairing and QR+PIN attention
+
+- **DependsOn:** M4
 
 ### [ QUEUED ] — AttendPro milestones
 
@@ -61,7 +76,7 @@ M1 design set (committed `b403a66`):
 | M1 | Architecture and UI design (full set delivered) | approved (owner, 2026-10-16) | M0 |
 | M2 | Foundation: tenant model, schema/migrations with RLS, isolated test database, repository reconciliation | complete (committed `a74c72a`) | M1 (approved) |
 | M3 | Shifts, policies, status rule engine, timing policy (effective-dated) | complete (tsc clean, 0 errors) | M2 |
-| M4 | SUPERADMIN: employees, shift assignment, calendars/sites/kiosks, policies | QA + security | M3 |
+| M4 | SUPERADMIN: employees, shift assignment, calendars/sites/kiosks, policies | complete (tsc clean, 0 errors, uncommitted) | M3 |
 | M5 | Kiosk: pairing, QR+PIN, location assessment, atomic punch, tenant isolation | security gate | M4 |
 | M6 | Automatic clock-out job, shift-aware, flagged | QA | M5 |
 | M7 | Help requests, corrections with audit trail (no self-approval), reports, audit, retention | QA + security | M6 |

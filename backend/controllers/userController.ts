@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import { createHmac, randomBytes, randomInt } from "crypto";
 import { Request, Response } from "express";
 import prisma from "../config/prismaClient.js";
 import { auditLog, userLogger } from "../utils/logger.js";
@@ -50,11 +51,12 @@ const assertHrMayActOn = (res: Response, targetRole: string): boolean => {
   return true;
 };
 
-const countActiveSuperadmins = async (excludeId?: string) =>
+const countActiveSuperadmins = async (businessId: string, excludeId?: string) =>
   prisma.user.count({
     where: {
       role: "SUPERADMIN",
       isActive: true,
+      businessId,
       ...(excludeId ? { id: { not: excludeId } } : {}),
     },
   });
@@ -76,7 +78,17 @@ export const getAllUsers = async (req: Request, res: Response) => {
       return;
     }
 
-    const where: Record<string, unknown> = { isActive };
+    // Tenant scope: everything reads inside the caller's business only.
+    const caller = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { businessId: true },
+    });
+    if (!caller?.businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+
+    const where: Record<string, unknown> = { isActive, businessId: caller.businessId };
 
     // HR looks after staff. A request that asks HR for HR or SUPERADMIN
     // accounts is answered with staff rather than refused, so the response
@@ -322,10 +334,25 @@ export const updateUser = async (req: Request, res: Response) => {
 
     const target = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true, isActive: true },
+      select: { id: true, role: true, isActive: true, businessId: true },
     });
 
     if (!target) {
+      res.status(404).json({ message: "User not found!" });
+      return;
+    }
+
+    // Tenant scope: a target in another business is answered as absent, so the
+    // response never confirms whether such an account exists.
+    const callerBusiness = await prisma.user.findUnique({
+      where: { id: caller.userId },
+      select: { businessId: true },
+    });
+    if (!callerBusiness?.businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+    if (target.businessId !== callerBusiness.businessId) {
       res.status(404).json({ message: "User not found!" });
       return;
     }
@@ -370,7 +397,10 @@ export const updateUser = async (req: Request, res: Response) => {
     // Demoting or deactivating the last SUPERADMIN locks everyone out of the
     // one role that can undo it.
     if (target.role === "SUPERADMIN" && (changesRole || deactivates)) {
-      const remaining = await countActiveSuperadmins(target.id);
+      const remaining = await countActiveSuperadmins(
+        callerBusiness.businessId,
+        target.id
+      );
       if (remaining === 0) {
         res.status(409).json({
           success: false,
@@ -433,10 +463,27 @@ export const deleteUser = async (req: Request, res: Response) => {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true, isActive: true },
+      select: { id: true, role: true, isActive: true, businessId: true },
     });
 
     if (!user) {
+      res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+      return;
+    }
+
+    // Tenant scope: a target in another business is answered as absent.
+    const callerBusiness = await prisma.user.findUnique({
+      where: { id: caller.userId },
+      select: { businessId: true },
+    });
+    if (!callerBusiness?.businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+    if (user.businessId !== callerBusiness.businessId) {
       res.status(404).json({
         success: false,
         message: "User not found",
@@ -463,7 +510,10 @@ export const deleteUser = async (req: Request, res: Response) => {
     }
 
     if (user.role === "SUPERADMIN") {
-      const remaining = await countActiveSuperadmins(user.id);
+      const remaining = await countActiveSuperadmins(
+        callerBusiness.businessId,
+        user.id
+      );
       if (remaining === 0) {
         res.status(409).json({
           success: false,
@@ -637,6 +687,125 @@ export const changePassword = async (req: Request, res: Response) => {
   }
 };
 
+// ── Reset kiosk PIN (M4) ─────────────────────────────────────────────────────
+
+/**
+ * An audited HR reset of a staff member's kiosk PIN (O2, O7).
+ *
+ * The PIN is six random digits from `crypto.randomInt`. It is stored as
+ * `HMAC-SHA-256(key = PIN_HMAC_KEY, message = employeeId || pin || salt)`
+ * with a per-record salt (kiosk §5.1), never a bare hash. The response never
+ * carries the old or the new PIN; the employee learns it out of band.
+ */
+export const resetPin = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
+    const caller = req.user;
+
+    const pinHmacKey = process.env.PIN_HMAC_KEY;
+    if (!pinHmacKey) {
+      // Fail closed: without the server key, a stored PIN would be weaker
+      // than the contract, so the reset is refused rather than downgraded.
+      userLogger.error({ event: "pin_reset_missing_key" }, "PIN_HMAC_KEY is not set");
+      res.status(500).json({ success: false, message: "Server error" });
+      return;
+    }
+
+    const targetId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const { reason } = (req.body || {}) as { reason?: string };
+    if (!reason || reason.length > 500) {
+      res.status(400).json({
+        success: false,
+        message: "A reason of at most 500 characters is required",
+      });
+      return;
+    }
+
+    const callerBusiness = await prisma.user.findUnique({
+      where: { id: caller.userId },
+      select: { businessId: true },
+    });
+    if (!callerBusiness?.businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+
+    const target = await prisma.user.findUnique({
+      where: { id: targetId },
+      select: { id: true, role: true, businessId: true },
+    });
+    if (!target || target.businessId !== callerBusiness.businessId) {
+      res.status(404).json({ success: false, message: "User not found!" });
+      return;
+    }
+
+    // The target must be staff regardless of who calls: the kiosk PIN has no
+    // meaning for HR or SUPERADMIN accounts, and the contract scopes the
+    // target to STAFF for both HR and SUPERADMIN.
+    if (target.role !== "STAFF") {
+      res.status(403).json({
+        success: false,
+        message: "PINs belong to staff accounts only",
+      });
+      return;
+    }
+
+    const pin = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const pinSalt = randomBytes(16).toString("hex");
+    const pinHash = createHmac("sha256", pinHmacKey)
+      .update(`${target.id}${pin}${pinSalt}`)
+      .digest("hex");
+    const pinUpdatedAt = new Date();
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id: target.id },
+        data: {
+          pinHash,
+          pinSalt,
+          pinUpdatedAt,
+          pinFailedCount: 0,
+          pinLockedUntil: null,
+          pinLastFailedAt: null,
+          mustChangePin: true,
+        },
+        select: { id: true, pinUpdatedAt: true },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          businessId: callerBusiness.businessId,
+          actorType: "USER",
+          actorUserId: caller.userId,
+          action: "hr.reset_pin",
+          entityType: "user",
+          entityId: target.id,
+          reason,
+        },
+      });
+
+      return user;
+    });
+
+    auditLog.pinReset(caller.userId, target.id);
+    res.status(201).json({
+      success: true,
+      data: { userId: updated.id, pinUpdatedAt: updated.pinUpdatedAt },
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({
+        success: false,
+        message: "Server error",
+        error: error.message,
+      });
+    }
+  }
+};
+
 export default {
   getAllUsers,
   getUserById,
@@ -645,4 +814,5 @@ export default {
   deleteUser,
   resetPassword,
   changePassword,
+  resetPin,
 };

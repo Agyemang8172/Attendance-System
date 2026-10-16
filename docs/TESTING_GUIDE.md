@@ -185,6 +185,283 @@ that step, which makes them the faster path for feature testing.
 
 ---
 
+The scenarios below test features that live mostly on the API. To call them,
+sign in through the API once, copy the `token` from the response, and send it as
+an `Authorization: Bearer <token>` header on every call:
+
+```
+curl -s -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"superadmin@test.attendpro.com","password":"devos123"}'
+```
+
+Where a step says `<id>`, paste an id you copied from an earlier response.
+Ids in the steps are placeholders, not literal text. `page` defaults to 1 and
+`limit` to 50 (max 100); list responses carry a `pagination` object with
+`currentPage`, `totalPages`, and `total`.
+
+### Scenario I: Employee Directory, Creation & Updates (HR / SUPERADMIN)
+
+- [ ] 1. Sign in as `hr@test.attendpro.com` through the API and call
+      `GET /api/hr/employees?page=1&limit=10`. Verify you get a paginated list
+      and it contains only STAFF members. HR is scoped to STAFF in the list.
+- [ ] 2. Try the filters: `GET /api/hr/employees?search=Ama`,
+      `GET /api/hr/employees?department=Operations`, and
+      `GET /api/hr/employees?isActive=false`. Verify each narrows the rows and
+      the `pagination.total` matches what you see.
+- [ ] 3. Still as HR, call `POST /api/hr/employees` with this body and verify a
+      `201` response that contains `data` (the new employee) and `tempPassword`:
+
+      ```json
+      {
+        "firstName": "Ama",
+        "lastName": "Mensah",
+        "email": "ama.mensah@test.attendpro.com",
+        "department": "Operations",
+        "role": "STAFF",
+        "jobTitle": "Data Clerk"
+      }
+      ```
+
+- [ ] 4. Verify the temporary password appears exactly once. Sending the same
+      request again with the same email must return `409` (email taken). Copy
+      the new employee's `id` and keep it — later scenarios use it.
+- [ ] 5. Repeat the create call with `"role": "HR"`. Verify HR is refused with
+      `403` (HR may only create STAFF). Test the same as SUPERADMIN and verify
+      the same refusal — only SUPERADMIN account administration under
+      `/api/users` changes roles.
+- [ ] 6. As HR, call `PATCH /api/hr/employees/<id>` on the employee you created
+      with `{ "department": "Finance", "jobTitle": "Data Assistant" }`. Verify
+      the response returns the updated row and the change shows in step 2's
+      department filter.
+- [ ] 7. Negative: as HR, call `PATCH /api/hr/employees/<id>` where `<id>` is a
+      HR or SUPERADMIN account id. Verify `403` — HR may update STAFF only.
+- [ ] 8. As SUPERADMIN, call `PATCH /api/hr/employees/<id>` on your **own**
+      account with `{ "isActive": false }` and again with
+      `{ "role": "HR" }`. Both must return `409`: the last active SUPERADMIN
+      cannot be deactivated or demoted.
+
+### Scenario J: Audited Kiosk PIN Reset (HR / SUPERADMIN)
+
+- [ ] 1. Sign in as `hr@test.attendpro.com` and call
+      `POST /api/hr/users/<id>/reset-pin` where `<id>` is Ama Mensah's employee
+      id from Scenario I, with this body:
+
+      ```json
+      { "reason": "Employee forgot PIN at the kiosk on 2026-10-16" }
+      ```
+
+      Verify a `201` response with `{ data: { userId, pinUpdatedAt } }`.
+- [ ] 2. Read the full response body. Verify it does **not** contain the new
+      PIN, the old PIN, or any PIN-like value. HR never sees the PIN.
+- [ ] 3. Call `GET /api/audit?action=<pin-reset action>` as SUPERADMIN (or the
+      audit endpoint with a `startDate` covering today). Verify a new audit row
+      exists for this reset that names the actor, the target user, and the
+      reason, and carries no PIN value.
+- [ ] 4. Negative: call the same endpoint with `{}` (no reason). Verify `400`.
+- [ ] 5. Negative: call it with a reason longer than 500 characters (paste
+      501 characters of filler). Verify `400`.
+- [ ] 6. Negative: call it with a well-formed but random UUID that does not
+      exist. Verify `404` (a cross-business id returns the same refusal).
+- [ ] 7. Negative: sign in as `staff@test.attendpro.com` and call the same
+      endpoint against your own id. Verify `401` or `403` — STAFF cannot reach
+      it.
+
+### Scenario K: Sites & Geo-fences (SUPERADMIN)
+
+- [ ] 1. Sign in as `superadmin@test.attendpro.com` and call `POST /api/sites`
+      with:
+
+      ```json
+      {
+        "name": "Accra Head Office",
+        "latitude": 5.6037,
+        "longitude": -0.187,
+        "radiusMeters": 150
+      }
+      ```
+
+      Verify `201` and that the response echoes the fields. Copy the site `id`.
+- [ ] 2. Negative: send `radiusMeters: 10` (below 25) and again with
+      `radiusMeters: 2000` (above 1000). Both must return `400` with a
+      validation message.
+- [ ] 3. Negative: send `latitude: 95` and `longitude: -190` in two further
+      calls. Both must return `400`.
+- [ ] 4. Negative: send the exact same body as step 1 again (same name). Verify
+      `409` — names are unique per business.
+- [ ] 5. Sign in as `hr@test.attendpro.com` and call `POST /api/sites`. Verify
+      `403` — HR may read sites (`GET /api/sites`) but not create them.
+- [ ] 6. As SUPERADMIN, call `GET /api/sites` and verify the new site appears
+      with `isActive: true`.
+- [ ] 7. Call `POST /api/sites/<id>/deactivate` (no body) and verify the
+      success message.
+- [ ] 8. Verify history survives: if any attendance attempts or kiosks already
+      reference this site, confirm those rows still show the site id and name
+      after deactivation. Deactivating a site removes it from new assessments
+      but never deletes past records.
+
+### Scenario L: Work Calendars & Exceptions (SUPERADMIN)
+
+- [ ] 1. Call `GET /api/business/calendars` as `hr@test.attendpro.com` and
+      verify the response is a list of `{ calendar, exceptions }` objects.
+      HR may read calendars; SUPERADMIN edits them.
+- [ ] 2. Switch to SUPERADMIN and call `PATCH /api/business/calendars/<id>`
+      with:
+
+      ```json
+      {
+        "timezone": "Africa/Accra",
+        "saturday": false,
+        "sunday": false
+      }
+      ```
+
+      Verify the response returns the updated calendar and `GET` now shows the
+      new timezone and weekday flags.
+- [ ] 3. Call `POST /api/business/calendars/<id>/exceptions` with:
+
+      ```json
+      { "date": "2026-12-25", "kind": "HOLIDAY", "name": "Christmas Day" }
+      ```
+
+      Verify `201` and that the exception appears in the calendar's
+      `exceptions` list on the next `GET`.
+- [ ] 4. Add a working day: call the same endpoint with
+      `{ "date": "2026-12-27", "kind": "WORKING_OVERRIDE", "name": "Year-end cover" }`.
+      Verify `201`.
+- [ ] 5. Negative: repeat step 3's body exactly (same date). Verify `409` —
+      one exception per calendar and date.
+- [ ] 6. Negative: send `"kind": "SICK_DAY"`. Verify `400` — only `HOLIDAY`
+      and `WORKING_OVERRIDE` are accepted.
+- [ ] 7. Negative: send `"date": "25/12/2026"`. Verify `400` — the format must
+      be `YYYY-MM-DD`.
+- [ ] 8. One-default rule: if a second calendar exists (see the note below),
+      call `PATCH /api/business/calendars/<second-id>` with
+      `{ "isDefault": true }`. Re-list the calendars and verify the second
+      calendar is now default and the first is no longer marked default —
+      at most one default per business.
+
+> There is no documented route that creates a work calendar. The default-swap
+> check in step 8 needs two calendars, so it depends on the seed data or any
+> creation path added later. If your local database has only one calendar,
+> note the gap and move on.
+
+### Scenario M: QR Badge Credentials (SUPERADMIN)
+
+- [ ] 1. As SUPERADMIN, call
+      `POST /api/business/employees/<id>/qr-credential` where `<id>` is Ama
+      Mensah's employee id. Verify `201` with `data.id` (credential id) and
+      `data.qrPayload`. Copy the payload now — it is shown exactly once.
+- [ ] 2. Call `GET`-style re-reads or re-issue on purpose: call the same
+      endpoint again. Verify `201` again but with a **different** `qrPayload`.
+      The first credential is now revoked: in the database, its
+      `qr_credentials` row has `revoked_at` set. Issue another and revoke it
+      afterwards (step 4) if you want to keep the badge stable.
+- [ ] 3. Negative: sign in as `hr@test.attendpro.com` and call the same
+      endpoint. Verify `403` — only SUPERADMIN issues badges.
+- [ ] 4. As SUPERADMIN, call
+      `POST /api/business/qr-credentials/<credential-id>/revoke` (no body).
+      Verify the success response and that the credential shows as revoked.
+- [ ] 5. Negative: revoke the same credential id again, or use a random
+      well-formed UUID. Verify `404` (or the appropriate already-revoked
+      refusal) — nothing is silently accepted.
+- [ ] 6. Verify in the audit log that issuance and revocation each wrote a row
+      (action `qr.reissued` on issuance) and that no audit row contains the
+      payload value.
+
+### Scenario N: Shifts & Shift Assignments (SUPERADMIN, M3)
+
+- [ ] 1. Call `POST /api/business/shifts` as SUPERADMIN with:
+
+      ```json
+      {
+        "name": "Night Security",
+        "startMinute": 1080,
+        "endMinute": 360,
+        "crossesMidnight": true
+      }
+      ```
+
+      Minutes count from 00:00, so 1080 is 18:00 and 360 is 06:00. Verify
+      `201` and copy the shift id.
+- [ ] 2. Negative: send `startMinute: 1440`. Verify `400` — the range is
+      0..1439 (1439 is 23:59).
+- [ ] 3. Negative: send `{ "startMinute": 480, "endMinute": 300 }` without
+      `crossesMidnight`. Verify `400` — end must be after start unless the
+      shift crosses midnight. Re-send with `crossesMidnight: true` and verify
+      it is accepted (then deactivate this throwaway shift with
+      `POST /api/business/shifts/<id>/deactivate`).
+- [ ] 4. Shifts have **no delete route**. Verify this: try
+      `DELETE /api/business/shifts/<id>` and confirm it is not a valid route.
+      Deactivation is the only removal path, and it never deletes attendance
+      rows.
+- [ ] 5. Assign the shift: call
+      `POST /api/business/shifts/<shift-id>/assignments` with:
+
+      ```json
+      { "employeeId": "<Ama Mensah's id>", "effectiveFrom": "2026-10-20" }
+      ```
+
+      Verify `201 { data: assignment }` and copy the assignment id.
+- [ ] 6. Verify the sync in the database: the `users` row for Ama Mensah now
+      has `shift_id` equal to the assigned shift.
+- [ ] 7. Assign her to a second shift with a later `effectiveFrom` (for example
+      `2026-10-27`). Verify `201`, then call
+      `GET /api/business/assignments?employeeId=<Ama Mensah's id>` and verify
+      the first assignment now has `effectiveTo` set to the second one's
+      `effectiveFrom` — the open assignment was auto-closed and only one is
+      still open.
+- [ ] 8. Close the newest assignment: call
+      `DELETE /api/business/assignments/<assignment-id>` and verify success.
+      Re-list the assignments and verify that row's `effectiveTo` is now set.
+      Nothing is deleted from the table; history is closed, not removed.
+- [ ] 9. Negative: call the assignment endpoint with an employee id that does
+      not exist. Verify `404`.
+
+### Scenario O: Workplace Policies & Versions (SUPERADMIN, M3)
+
+- [ ] 1. Call `GET /api/business/policies` as SUPERADMIN and note whether a
+      policy already exists (the automated suite or previous testing may have
+      created one).
+- [ ] 2. If none exists, call `POST /api/business/policies` with:
+
+      ```json
+      {
+        "name": "Default timing policy",
+        "graceLateMinutes": 15,
+        "graceEarlyMinutes": 10,
+        "earlyThresholdMinutes": 20,
+        "autoClockOutEnabled": true,
+        "autoClockOutBufferMinutes": 120,
+        "autoClockOutMaxOpenMinutes": 840,
+        "correctionWindowDays": 7,
+        "geoFenceRadiusMeters": 150,
+        "locationAccuracyThresholdMeters": 50,
+        "gpsFreshnessSeconds": 60,
+        "observePublicHolidays": true,
+        "effectiveFrom": "2026-10-20"
+      }
+      ```
+
+      Verify `201 { data: { policy, version } }`. The first policy created
+      becomes the default, so verify the default flag is set on it.
+- [ ] 3. Re-check `GET /api/business/policies`. Verify the response shows the
+      policy with its versions list and that version 1 matches the values you
+      sent.
+- [ ] 4. Publish a change: call `POST /api/business/policies/<id>/versions`
+      with the same fields but `graceLateMinutes: 10` and
+      `effectiveFrom: "2026-11-01"`. Verify `201`. Re-list the policies and
+      verify the old version is closed with an `effectiveTo` and the new one
+      is open from `2026-11-01`.
+- [ ] 5. Negative: call the versions endpoint again with an `effectiveFrom`
+      **before** the current version's start (for example `2026-10-25`).
+      Verify the request is rejected with a validation or conflict status —
+      versions must start after the version now in force.
+- [ ] 6. Negative: send `graceLateMinutes: 200`. Verify `400` — the allowed
+      range is 0..120.
+
+---
+
 ## 4. Known Limitations & Notes
 
 - **Rate limiting:** failed logins are throttled per IP (10 attempts / 15

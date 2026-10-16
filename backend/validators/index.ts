@@ -320,3 +320,112 @@ export const createPolicyVersionSchema = {
     effectiveFrom: z.string().datetime("Invalid effective from date"),
   }),
 };
+// ── M4 — HR, sites, calendars, QR credentials ────────────────────────────────
+
+export const resetPinSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid user ID format"),
+  }),
+  body: z.object({
+    reason: z.string().min(1, "A reason is required").max(500, "Reason must be at most 500 characters"),
+  }),
+};
+
+export const siteIdSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid site ID format"),
+  }),
+};
+
+export const siteListQuerySchema = {
+  query: z.object({
+    isActive: z.enum(["true", "false"]).optional(),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(50),
+  }),
+};
+
+export const createSiteSchema = {
+  body: z.object({
+    name: z.string().min(1, "Name is required").max(80, "Name must be at most 80 characters"),
+    latitude: z.coerce.number().min(-90).max(90),
+    longitude: z.coerce.number().min(-180).max(180),
+    radiusMeters: z.coerce.number().int().min(25).max(1000).optional(),
+    isActive: z.boolean().optional(),
+  }),
+};
+
+export const updateSiteSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid site ID format"),
+  }),
+  body: z.object({
+    name: z.string().min(1).max(80).optional(),
+    latitude: z.coerce.number().min(-90).max(90).optional(),
+    longitude: z.coerce.number().min(-180).max(180).optional(),
+    radiusMeters: z.coerce.number().int().min(25).max(1000).optional(),
+    isActive: z.boolean().optional(),
+  }),
+};
+
+export const calendarIdSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid calendar ID format"),
+  }),
+};
+
+export const updateCalendarSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid calendar ID format"),
+  }),
+  body: z
+    .object({
+      name: z.string().min(1).max(80).optional(),
+      monday: z.boolean().optional(),
+      tuesday: z.boolean().optional(),
+      wednesday: z.boolean().optional(),
+      thursday: z.boolean().optional(),
+      friday: z.boolean().optional(),
+      saturday: z.boolean().optional(),
+      sunday: z.boolean().optional(),
+      timezone: z.string().min(1).max(64).optional(),
+      isDefault: z.boolean().optional(),
+    })
+    // The column is documented as an IANA name and the evaluation paths parse
+    // it later; "Not/AZone" must fail here rather than downstream.
+    .refine(
+      (data) => {
+        if (data.timezone === undefined) return true;
+        try {
+          new Intl.DateTimeFormat(undefined, { timeZone: data.timezone });
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      { message: "Timezone must be a valid IANA name", path: ["timezone"] }
+    ),
+};
+
+export const createCalendarExceptionSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid calendar ID format"),
+  }),
+  body: z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+    kind: z.enum(["HOLIDAY", "WORKING_OVERRIDE"]),
+    name: z.string().min(1, "Name is required").max(80, "Name must be at most 80 characters"),
+  }),
+};
+
+export const qrCredentialIdSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid credential ID format"),
+  }),
+};
+
+export const employeeIdSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid employee ID format"),
+  }),
+};

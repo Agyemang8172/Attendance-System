@@ -4,7 +4,7 @@
 
 ## Current Session — 2026-10-16
 
-- **Task:** M3 implementation complete. Shifts, shift assignments, workplace policies with effective-dated versions, and the status rule engine are implemented on the backend. M2 foundation (committed `a74c72a`) is the base.
+- **Task:** M4 implementation complete on top of M3. Employee management (`/api/hr`), audited kiosk PIN reset, sites with geo-fence, work calendars with exceptions, and QR credential issue/revoke are implemented on the backend. M3 is committed.
 - **Branch:** `main`, nine commits ahead of `origin/main`, nothing pushed
 - **Mode:** interactive, Orchestrator locked
 - **State:** M3 code is written and compiles cleanly (`tsc --noEmit` = 0 errors), uncommitted. `docs/attendpro/*.md` still pass `humanize-check.sh`.
@@ -29,11 +29,23 @@ Verification:
 
 Pending:
 
+- M4 code is written and verified, uncommitted, awaiting the owner's commit decision.
 - Owner input O14: `backend/.env` has an empty `DATABASE_URL`, so the migration chain cannot run against a test database yet (no database migrated anywhere).
 - Owner input O13: repository reconciliation Phase 2 complete (histories are separate); Phase 1 backups taken.
+- New environment keys `PIN_HMAC_KEY` and `QR_SECRET_KEY` are required by the M4 PIN and QR handlers; both fail closed when unset. `backend/.env.example` is gitignored, so documenting them locally is still a pending owner decision.
 - No `src/` (frontend) changes.
 
-Frontend/backend state: backend M3 complete; frontend untouched.
+Completed (2026-10-16, M4):
+
+- Phase 1+2 Employee management: `backend/routes/hrRoutes.ts` mounts the existing `userController` list/create/update handlers at `/api/hr/employees` (HR scoped to STAFF, last-superadmin rule) instead of duplicating them; handlers gained business_id tenant scoping in `userController.ts`. New audited `resetPin` (`POST /api/hr/users/:id/reset-pin`): six random digits, stored as `HMAC-SHA-256(PIN_HMAC_KEY, employeeId||pin||salt)`, clears lockout counters, writes an `audit_logs` row, PIN never returned.
+- Phase 3 Sites: `backend/controllers/siteController.ts` + `routes/siteRoutes.ts` — list/create/update/deactivate with lat/long/radius validation and name unique per business.
+- Phase 4 Calendars: `backend/controllers/calendarController.ts` + `routes/calendarRoutes.ts` — list with exceptions, update (single default calendar per business, O22), add holiday or working-override exceptions (unique per calendar and date).
+- Phase 5 QR credentials: `backend/controllers/qrController.ts` + `routes/qrRoutes.ts` at `/api/business` — issue (transaction: revoke active credential then insert; raw token shown once) and revoke. Token stored only as `HMAC-SHA-256(QR_SECRET_KEY, token)`.
+- Validators for PIN reset, sites, calendars and credentials added in `backend/validators/index.ts`; audit events for all of the above in `backend/utils/logger.ts`; all routers registered in `backend/server.ts`.
+
+M4 verification: `tsc --noEmit` zero errors; `prisma validate` valid; `db-check.sh` passed; humanize-check clean on the M4 plan.
+
+Frontend/backend state: backend M4 complete; frontend untouched.
 
 ---
 
