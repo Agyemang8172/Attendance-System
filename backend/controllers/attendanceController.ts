@@ -1,5 +1,6 @@
 import prisma from "../config/prismaClient.js";
 import { Request, Response } from "express";
+import { evaluateClockInStatus } from "../utils/statusEngine.js";
 
 // ── Ensure user is authenticated ──────────────────────────────────────────────
 const getUserId = (req: Request): string | null => {
@@ -34,13 +35,67 @@ export const clockIn = async (req: Request, res: Response) => {
 
     const { checkInIp, checkInLat, checkInLng, remarks } = req.body;
 
+    // Load the caller's shift and the business's current policy so the punch
+    // can be classified (EARLY / ON_TIME / LATE / OPEN_SESSION).
+    const caller = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, shiftId: true, businessId: true },
+    });
+    const businessId = caller?.businessId ?? null;
+    if (!businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+
+    let shift = null;
+    if (caller?.shiftId) {
+      shift = await prisma.shift.findUnique({
+        where: { id: caller.shiftId },
+        select: { id: true, startMinute: true, endMinute: true, crossesMidnight: true },
+      });
+    }
+
+    let policy = null;
+    if (businessId) {
+      const now = new Date();
+      const workplacePolicy = await prisma.workplacePolicy.findFirst({
+        where: { businessId, isDefault: true },
+        include: {
+          versions: {
+            where: {
+              effectiveFrom: { lte: now },
+              OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
+            },
+            orderBy: { versionNumber: "desc" },
+            take: 1,
+          },
+        },
+      });
+      policy = workplacePolicy?.versions[0] ?? null;
+    }
+
+    const clockInTime = new Date();
+    const status = evaluateClockInStatus(
+      clockInTime,
+      shift ? {
+        startMinute: shift.startMinute,
+        endMinute: shift.endMinute,
+        crossesMidnight: shift.crossesMidnight,
+      } : null,
+      policy ? {
+        graceEarlyMinutes: policy.graceEarlyMinutes,
+        graceLateMinutes: policy.graceLateMinutes,
+      } : null
+    );
+
     const record = await prisma.attendance.create({
       data: {
         userId,
-        clockIn: new Date(),
+        businessId,
+        clockIn: clockInTime,
         date: today,
         sessionStatus: "OPEN",
-        status: "PRESENT",
+        status,
         checkInIp: checkInIp || null,
         checkInLat: checkInLat || null,
         checkInLng: checkInLng || null,

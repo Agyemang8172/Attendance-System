@@ -4,6 +4,9 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
+import shiftRoutes from "./routes/shiftRoutes.js";
+import assignmentRoutes from "./routes/assignmentRoutes.js";
+import policyRoutes from "./routes/policyRoutes.js";
 import securityHeaders from "./middleware/securityHeaders.js";
 import { logger, correlationIdMiddleware, requestLogger, logError } from "./utils/logger.js";
 import { setupSwagger } from "./docs/swagger.js";
@@ -126,6 +129,9 @@ if (process.env.NODE_ENV !== "test") {
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/business/shifts", shiftRoutes);
+app.use("/api/business", assignmentRoutes);
+app.use("/api/business/policies", policyRoutes);
 
 // Health check
 app.get("/api/health", async (_req, res) => {

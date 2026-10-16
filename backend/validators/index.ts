@@ -179,7 +179,86 @@ export const getAllAttendanceSchema = {
     userId: z.string().uuid().optional(),
     department: z.string().optional(),
     sessionStatus: z.enum(["OPEN", "CLOSED"]).optional(),
-    status: z.enum(["PRESENT", "ABSENT", "LATE", "HALF_DAY", "ON_LEAVE"]).optional(),
+    status: z
+      .enum([
+        "EARLY",
+        "ON_TIME",
+        "LATE",
+        "OPEN_SESSION",
+        "CLOCK_OUT_MISSING",
+        "AUTO_CLOSED",
+        "ABSENT",
+        "REQUIRES_REVIEW",
+      ])
+      .optional(),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(50),
+  }),
+};
+
+export const shiftIdSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid shift ID format"),
+  }),
+};
+
+export const shiftListQuerySchema = {
+  query: z.object({
+    isActive: z.enum(["true", "false"]).optional(),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(50),
+  }),
+};
+
+export const createShiftSchema = {
+  body: z
+    .object({
+      name: z.string().min(1, "Name is required").max(80, "Name must be at most 80 characters"),
+      startMinute: z.coerce.number().int("Must be a whole number").min(0).max(1439),
+      endMinute: z.coerce.number().int("Must be a whole number").min(0).max(1439),
+      crossesMidnight: z.boolean().optional(),
+    })
+    .refine(
+      (data) => data.crossesMidnight || data.endMinute > data.startMinute,
+      {
+        message: "End minute must be after start minute unless the shift crosses midnight",
+        path: ["endMinute"],
+      }
+    ),
+};
+
+export const updateShiftSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid shift ID format"),
+  }),
+  body: z.object({
+    name: z.string().min(1).max(80).optional(),
+    startMinute: z.coerce.number().int("Must be a whole number").min(0).max(1439).optional(),
+    endMinute: z.coerce.number().int("Must be a whole number").min(0).max(1439).optional(),
+    crossesMidnight: z.boolean().optional(),
+    isActive: z.boolean().optional(),
+  }),
+};
+
+export const createAssignmentSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid shift ID format"),
+  }),
+  body: z.object({
+    employeeId: z.string().uuid("Invalid employee ID format"),
+    effectiveFrom: z.string().datetime("Invalid effective from date"),
+  }),
+};
+
+export const assignmentIdSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid assignment ID format"),
+  }),
+};
+
+export const assignmentListQuerySchema = {
+  query: z.object({
+    employeeId: z.string().uuid("Invalid employee ID format").optional(),
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(50),
   }),
@@ -194,5 +273,50 @@ export const attendanceIdSchema = {
 export const dismissAlertSchema = {
   params: z.object({
     id: z.string().uuid("Invalid attendance ID format"),
+  }),
+};
+
+export const policyIdSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid policy ID format"),
+  }),
+};
+
+export const createPolicySchema = {
+  body: z.object({
+    name: z.string().min(1, "Name is required").max(80, "Name must be at most 80 characters"),
+    shiftId: z.string().uuid("Invalid shift ID format").optional(),
+    graceEarlyMinutes: z.coerce.number().int().min(0).max(120).optional(),
+    graceLateMinutes: z.coerce.number().int().min(0).max(120).optional(),
+    earlyThresholdMinutes: z.coerce.number().int().min(0).max(120).optional(),
+    autoClockOutEnabled: z.boolean().optional(),
+    autoClockOutBufferMinutes: z.coerce.number().int().min(0).max(720).optional(),
+    autoClockOutMaxOpenMinutes: z.coerce.number().int().min(60).max(1440).optional(),
+    correctionWindowDays: z.coerce.number().int().min(1).max(7).optional(),
+    geoFenceRadiusMeters: z.coerce.number().int().min(25).max(1000).optional(),
+    locationAccuracyThresholdMeters: z.coerce.number().int().min(10).max(500).optional(),
+    gpsFreshnessSeconds: z.coerce.number().int().min(10).max(600).optional(),
+    observePublicHolidays: z.boolean().optional(),
+    effectiveFrom: z.string().datetime("Invalid effective from date"),
+  }),
+};
+
+export const createPolicyVersionSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid policy ID format"),
+  }),
+  body: z.object({
+    graceEarlyMinutes: z.coerce.number().int().min(0).max(120).optional(),
+    graceLateMinutes: z.coerce.number().int().min(0).max(120).optional(),
+    earlyThresholdMinutes: z.coerce.number().int().min(0).max(120).optional(),
+    autoClockOutEnabled: z.boolean().optional(),
+    autoClockOutBufferMinutes: z.coerce.number().int().min(0).max(720).optional(),
+    autoClockOutMaxOpenMinutes: z.coerce.number().int().min(60).max(1440).optional(),
+    correctionWindowDays: z.coerce.number().int().min(1).max(7).optional(),
+    geoFenceRadiusMeters: z.coerce.number().int().min(25).max(1000).optional(),
+    locationAccuracyThresholdMeters: z.coerce.number().int().min(10).max(500).optional(),
+    gpsFreshnessSeconds: z.coerce.number().int().min(10).max(600).optional(),
+    observePublicHolidays: z.boolean().optional(),
+    effectiveFrom: z.string().datetime("Invalid effective from date"),
   }),
 };

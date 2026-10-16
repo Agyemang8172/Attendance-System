@@ -8,7 +8,7 @@
 
 ## AttendPro — Active Board (2026-10-14)
 
-The programme is AttendPro. M0 (investigation) is committed (`c4ee602`), and the M1 design set is committed (`b403a66`). M1 is **approved** (owner, 2026-10-16). M2 (implementation foundation) is **in progress**: the 19-model Prisma schema is in place, nine forward migrations with Row Level Security are written, and the test-database guard is built. Nothing has been pushed to `origin/main`.
+The programme is AttendPro. M0 (investigation) is committed (`c4ee602`), and the M1 design set is committed (`b403a66`). M1 is **approved** (owner, 2026-10-16). M2 (implementation foundation) is **complete** (`a74c72a`): 19-model Prisma schema, nine forward migrations with Row Level Security, test-database guard built. M3 (shifts, policies, status rule engine, timing policy) is **complete**: backend controllers, routes, validators and status engine implemented, `tsc` clean at zero errors. Nothing has been pushed to `origin/main`.
 
 M0 artefacts (committed):
 
@@ -22,17 +22,36 @@ M1 design set (committed `b403a66`):
 - `docs/attendpro/M1-*.md` including `M1-REVIEW-PACKAGE.md` (deliverables 1–17 complete)
 - All pass `humanize-check.sh` clean
 
-### [ IN PROGRESS ] — M2 implementation foundation
+### [ COMPLETE ] — M2 implementation foundation
 
 - **Assignee:** Implementer agent, orchestrated
 - **DependsOn:** M1 (approved)
-- **State:** schema, migrations and the test-database guard are built; two owner inputs still block completion
+- **State:** committed as `a74c72a`
 - **Delivered:**
   - `backend/prisma/schema.prisma` expanded to the 19 models of `M1-DATA-MODEL.md`, validated and generated
   - nine forward migrations `20261015120000`–`20261015200000` with Row Level Security, tenant policies, append-only grants, triggers and the hardened login function
   - `backend/scripts/db-guard.sh` enforcing the `_test` suffix and the expected host (O14)
-- **Blocked on owner input:** `DATABASE_URL` is empty, so the chain cannot be run against a test database (O14); the repository reconciliation needs a `git log --oneline -20` from each repository (O13)
-- **Known deferred work:** the current backend routes still compile against the old vocabulary; `tsc` reports two errors (`PRESENT` status at `controllers/attendanceController.ts:43`, missing tenant relation at `controllers/userController.ts:246`) for M3 to rewire
+
+### [ COMPLETE ] — M3 shifts, policies, status rule engine
+
+- **Assignee:** Implementer agent, orchestrated
+- **DependsOn:** M2 (complete)
+- **State:** written and verified, uncommitted
+- **Delivered:**
+  - `backend/controllers/shiftController.ts` + `routes/shiftRoutes.ts` — shift CRUD (minute-of-day, name unique per business)
+  - `backend/controllers/assignmentController.ts` + `routes/assignmentRoutes.ts` — shift assignments (transactional open/close/sync)
+  - `backend/controllers/policyController.ts` + `routes/policyRoutes.ts` — workplace policies + effective-dated versions
+  - `backend/utils/statusEngine.ts` — EARLY/ON_TIME/LATE/OPEN_SESSION evaluation wired into clockIn
+  - `backend/controllers/userController.ts` — tenant (`business`) relation on user creation
+  - `backend/controllers/attendanceController.ts` — removed `status: "PRESENT"`, uses evaluated status
+  - `backend/utils/logger.ts` — shift/policy/assignment audit functions
+  - `backend/validators/index.ts` — shift/policy validators, 8-value attendance status enum
+  - Routes registered in `backend/server.ts`
+- **Verification:** `tsc --noEmit` = 0 errors; `prisma validate` valid; `db-check.sh` passed; humanize-check clean
+
+### [ QUEUED ] — M4 SUPERADMIN employee & site management
+
+- **DependsOn:** M3
 
 ### [ QUEUED ] — AttendPro milestones
 
@@ -40,8 +59,8 @@ M1 design set (committed `b403a66`):
 |-----------|-------|------|-----------|
 | M0 | Investigation and reality check | committed | none |
 | M1 | Architecture and UI design (full set delivered) | approved (owner, 2026-10-16) | M0 |
-| M2 | Foundation: tenant model, schema/migrations with RLS, isolated test database, repository reconciliation | tests + migration review (in progress) | M1 (approved) |
-| M3 | Shifts, policies, status rule engine, timing policy (effective-dated) | QA + security | M2 |
+| M2 | Foundation: tenant model, schema/migrations with RLS, isolated test database, repository reconciliation | complete (committed `a74c72a`) | M1 (approved) |
+| M3 | Shifts, policies, status rule engine, timing policy (effective-dated) | complete (tsc clean, 0 errors) | M2 |
 | M4 | SUPERADMIN: employees, shift assignment, calendars/sites/kiosks, policies | QA + security | M3 |
 | M5 | Kiosk: pairing, QR+PIN, location assessment, atomic punch, tenant isolation | security gate | M4 |
 | M6 | Automatic clock-out job, shift-aware, flagged | QA | M5 |

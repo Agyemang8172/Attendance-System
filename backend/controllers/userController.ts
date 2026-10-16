@@ -209,6 +209,16 @@ export const createUser = async (req: Request, res: Response) => {
       return;
     }
 
+    const callerBusiness = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { businessId: true },
+    });
+    const businessId = callerBusiness?.businessId;
+    if (!businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+
     const { firstName, lastName, email, department, role, phoneNumber, jobTitle } = req.body;
 
     if (!firstName || !lastName || !email || !department) {
@@ -254,6 +264,7 @@ export const createUser = async (req: Request, res: Response) => {
         mustChangePassword: true,
         phoneNumber: phoneNumber?.trim(),
         jobTitle: jobTitle?.trim(),
+        business: { connect: { id: businessId } },
       },
       select: {
         id: true,

@@ -217,4 +217,61 @@ export const auditLog = {
       "Password changed successfully"
     );
   },
+
+  shiftCreated: (adminId: string, shiftId: string, businessId: string) => {
+    userLogger.info(
+      { adminId, shiftId, businessId, event: "shift_created" },
+      "Shift created"
+    );
+  },
+
+  shiftUpdated: (adminId: string, shiftId: string, businessId: string) => {
+    userLogger.info(
+      { adminId, shiftId, businessId, event: "shift_updated" },
+      "Shift updated"
+    );
+  },
+
+  shiftDeactivated: (adminId: string, shiftId: string, businessId: string) => {
+    userLogger.warn(
+      { adminId, shiftId, businessId, event: "shift_deactivated" },
+      "Shift deactivated"
+    );
+  },
+
+  assignmentCreated: (adminId: string, assignmentId: string, businessId: string) => {
+    userLogger.info(
+      { adminId, assignmentId, businessId, event: "assignment_created" },
+      "Shift assignment created"
+    );
+  },
+
+  assignmentDeactivated: (
+    adminId: string,
+    assignmentId: string,
+    businessId: string
+  ) => {
+    userLogger.warn(
+      { adminId, assignmentId, businessId, event: "assignment_deactivated" },
+      "Shift assignment deactivated"
+    );
+  },
+
+  policyCreated: (adminId: string, policyId: string, businessId: string) => {
+    userLogger.info(
+      { adminId, policyId, businessId, event: "policy_created" },
+      "Workplace policy created"
+    );
+  },
+
+  policyVersionCreated: (
+    adminId: string,
+    versionId: string,
+    businessId: string
+  ) => {
+    userLogger.info(
+      { adminId, versionId, businessId, event: "policy_version_created" },
+      "Policy version created"
+    );
+  },
 };

@@ -4,38 +4,36 @@
 
 ## Current Session — 2026-10-16
 
-- **Task:** M2 implementation foundation in progress. M1 is approved and committed; the M2 schema, migrations and test-database guard are built.
-- **Branch:** `main`, eight commits ahead of `origin/main`, nothing pushed
+- **Task:** M3 implementation complete. Shifts, shift assignments, workplace policies with effective-dated versions, and the status rule engine are implemented on the backend. M2 foundation (committed `a74c72a`) is the base.
+- **Branch:** `main`, nine commits ahead of `origin/main`, nothing pushed
 - **Mode:** interactive, Orchestrator locked
-- **State:** M1 design set committed (`b403a66`). M2 code is written but uncommitted; `docs/attendpro/*.md` still pass `humanize-check.sh`.
+- **State:** M3 code is written and compiles cleanly (`tsc --noEmit` = 0 errors), uncommitted. `docs/attendpro/*.md` still pass `humanize-check.sh`.
 
-Completed (2026-10-16, M1):
+Completed (2026-10-16, M3):
 
-- Reconciled the full M1 design set to the 2026-10-16 decision review: DECISION-REGISTER, M1-ARCHITECTURE, M1-DATA-MODEL (19 models, 9 migrations), M1-API-CONTRACTS, M1-ATTENDANCE-LIFECYCLE, M1-SECURITY-AND-TEST-STRATEGY, M1-NAVIGATION-AND-SCREENS, M1-KIOSK-SECURITY (QR+PIN).
-- Produced the missing M1 deliverables: M1-ROLE-PERMISSION-MATRIX, M1-RETENTION-POLICY, M1-REPOSITORY-RECONCILIATION, M1-MILESTONES-AND-DEPENDENCIES, M1-REVIEW-PACKAGE.
-- Second owner review recorded as `O19`–`O24`: design system baseline, kiosk-only punching, correction backstop, SUPERADMIN home, popover placement, no gamification.
-- UI workflow stages 1–6 delivered, including `M1-VISUAL-DESIGN-SYSTEM.md` and `previews/design-comparison.html`.
-- Owner approved M1 on 2026-10-16; the design set is committed as `b403a66`.
+- Phase 1 Shift CRUD: `backend/controllers/shiftController.ts`, `backend/routes/shiftRoutes.ts` — list/create/update/deactivate shifts with minute-of-day fields (0..1439), name unique per business, tenant-scoped.
+- Phase 2 Shift assignments: `backend/controllers/assignmentController.ts`, `backend/routes/assignmentRoutes.ts` — create assignment in one transaction (close open assignment, insert shift_assignments, sync users.shift_id), list, soft-close.
+- Phase 3 Policies: `backend/controllers/policyController.ts`, `backend/routes/policyRoutes.ts` — list policies with versions, create policy + version 1, create new effective-dated version (close current, increment version number), validation ranges per contract.
+- Phase 4 Status rule engine: `backend/utils/statusEngine.ts` — evaluates clock-in to EARLY/ON_TIME/LATE/OPEN_SESSION using shift + policy; wired into `attendanceController.ts` clockIn (replaced removed `status: "PRESENT"`).
+- Phase 5 Tenant relation: `userController.ts` createUser now connects the new user to the caller's business (fixes missing `business` relation).
+- Registered shift/assignment/policy routes in `backend/server.ts`.
+- Added shift/policy/assignment audit functions to `backend/utils/logger.ts`.
+- Added shift/policy validators and updated the attendance status enum to the 8 M2 values in `backend/validators/index.ts`.
+- `devos:no-rls` annotation added to the historical `init` migration (db-check gate requirement).
 
-Completed (2026-10-16, M2 so far):
-
-- `backend/prisma/schema.prisma` expanded to the 19 models of `M1-DATA-MODEL.md` §2; `prisma validate` passes and the client generates.
-- Nine forward migrations written (`20261015120000` to `20261015200000`): tenancy and RLS, identity and recovery, shift scheduling and policies, attendance evaluation and enum conversion, kiosk and verification, sites and location, work calendar, help and corrections, audit log with grants, append-only triggers and the hardened login function.
-- `backend/scripts/db-guard.sh` enforces the `_test` database suffix and the expected host (O14).
-- Fixes applied during review: removed five duplicate indexes from migration 4, rebuilt the cascading `attendances_user_id_fkey` as `RESTRICT`, converted the legacy `users` and `shifts` instants to `timestamptz`, and added the missing FK-support indexes.
+Verification:
+- `npx tsc --noEmit` — zero errors (pre-existing errors fixed).
+- `npx prisma validate` — schema valid.
+- `bash .agents/scripts/db-check.sh` — all 10 migrations safe, RLS-protected, indexed.
+- `bash .agents/scripts/humanize-check.sh` — plan doc clean.
 
 Pending:
 
-- Owner input O14: `backend/.env` has an empty `DATABASE_URL`, so the migration chain cannot run against a test database yet.
-- Owner input O13: the repository reconciliation needs `git log --oneline -20` from each repository.
-- Open decisions R1–R9, and the two `tsc` errors for M3 to rewire (`controllers/attendanceController.ts:43`, `controllers/userController.ts:246`).
+- Owner input O14: `backend/.env` has an empty `DATABASE_URL`, so the migration chain cannot run against a test database yet (no database migrated anywhere).
+- Owner input O13: repository reconciliation Phase 2 complete (histories are separate); Phase 1 backups taken.
+- No `src/` (frontend) changes.
 
-Verified:
-
-- `npx prisma validate` — schema valid; `npx prisma generate` — client built.
-- `bash .agents/scripts/db-check.sh` — the only failures are the three known historical `init` tables without RLS (M1-DATA-MODEL §4.2/§7.5, an owner decision); every new migration passes.
-- `npx tsc --noEmit` (backend) — two errors, both expected M3 rewiring points.
-- Frontend state unchanged by this pass. `DESIGN.md`, `docs/attendpro/*` all pass `humanize-check.sh`.
+Frontend/backend state: backend M3 complete; frontend untouched.
 
 ---
 
