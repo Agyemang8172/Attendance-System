@@ -2,45 +2,35 @@
 
 > This file is maintained by the Orchestrator agent. It is updated at each phase transition to preserve context across long sessions.
 
-## Current Session — 2026-10-14
+## Current Session — 2026-10-16
 
-- **Task:** Dev-OS v4.5.0 upgrade, scanner restoration, AttendPro M0
-- **Branch:** `main`, ahead of `origin/main` by 6 commits, nothing pushed
+- **Task:** M1 design reconciliation complete and delivered. UI/UX workflow stages 1, 2 and 3 delivered, awaiting the owner's colour decision before stage 4.
+- **Branch:** `main`, seven commits ahead of `origin/main`, nothing pushed
 - **Mode:** interactive, Orchestrator locked
+- **State:** M1 documents written but uncommitted; all pass `humanize-check.sh`. M0 is committed (`c4ee602`).
 
-Completed:
+Completed (2026-10-16):
 
-- Upgraded Dev-OS 4.3.0 to 4.5.0 with `npx @olives/devos update -p opencode`. `doctor`
-  reports every check green. The release adds the `pm`, `tech-writer`, `sre` and
-  `tech-lead` agents, new slash commands, and hard rules 22 and 23. Commit `fd79702`.
-- Restored four scanners (`db-check.sh`, `ui-taste-check.sh`, `install-hooks.sh`,
-  `env-check.sh`) from HEAD. The 4.5.0 package calls raw `python3`, which on this host is
-  the Microsoft Store stub that exits 49 and prints nothing, so the scanners would have
-  reported clean without inspecting anything.
-- Committed the cross-harness configs `.cursor/`, `.codex/`, `.cursorrules`,
-  `.windsurfrules`, `ANTIGRAVITY.md`, `CLAUDE.md` and `GEMINI.md`. Commit `c3e98e1`.
-- Persisted AttendPro PRD v1.0 to `docs/ATTENDPRO_PRD.md`. Commit `f87ce1d`.
-- Ran M0 and wrote three artefacts under `docs/attendpro/`: the repository reality check,
-  the forensic reconciliation, and the open-decision register (O1 to O14).
-- Rebaselined `docs/TASK_BOARD.md` with the AttendPro M0 → M9 plan; the older board is
-  marked superseded.
+- Reconciled the full M1 design set to the 2026-10-16 decision review: DECISION-REGISTER, M1-ARCHITECTURE, M1-DATA-MODEL (19 models, 9 migrations), M1-API-CONTRACTS, M1-ATTENDANCE-LIFECYCLE, M1-SECURITY-AND-TEST-STRATEGY, M1-NAVIGATION-AND-SCREENS, M1-KIOSK-SECURITY (QR+PIN).
+- Produced missing M1 deliverables: M1-ROLE-PERMISSION-MATRIX, M1-RETENTION-POLICY, M1-REPOSITORY-RECONCILIATION, M1-MILESTONES-AND-DEPENDENCIES, M1-REVIEW-PACKAGE.
+- Humanize-clean across all `docs/attendpro/*.md`. 
+- Updated TASK_BOARD.md to reflect M1 pending owner review. 
+- Second owner review (2026-10-16) recorded as `O19`–`O24`: design system baseline, kiosk-only punching, correction backstop, SUPERADMIN home, popover placement, no gamification.
+- UI workflow stage 3 produced `M1-VISUAL-DESIGN-SYSTEM.md` and `previews/design-comparison.html`, comparing Operations Console against Paper and Brass with measured contrast, plus two new defects (F8 badge contrast on dark, F9 three status specifications).
+
+Pending:
+
+- Owner review of the M1 package (`docs/attendpro/M1-REVIEW-PACKAGE.md`). Open items R1–R9, O13, O14.
+- Owner review of the Stage 3 mockups and the final colour decision, which gates Stage 4.
+- Owner answer on the staff attendance streak and the Profile badge grid (Stage 3 §9).
 
 Verified:
 
-- `db-check.sh` fails closed and names the three tables (`users`, `shifts`,
-  `attendances`) that migration `20261005000000_init` creates without RLS.
-- Backend `tsc --noEmit` exits 0. Root `tsc --noEmit` reports 43 errors across 7 frontend
-  files, and neither package has a `typecheck` script.
-- All seven Phase 1 findings from PRD §22 reproduce. Five further findings (N1 to N5) were
-  added. Backend tests write to the development database, so test isolation is an open
-  blocker.
-- The nested `backend/.git` (branch `design/linear-migration`, HEAD `7ab73eb`, no remote)
-  is inspected and preserved untouched.
+- `git rev-list --left-right --count origin/main...main` = `0 7`
+- M1 documents untracked (`??`), `DESIGN.md` and `DECISION-REGISTER.md` modified.
+- Frontend/backend state unchanged by this pass. 
 
-Scope note: the material below this section describes an earlier generation of this
-project, the MongoDB to Prisma migration and the M0–M10 UI/RBAC build. The current baseline
-is AttendPro. Its M0 is complete and the plan sits at the owner approval gate, ahead of
-M1 (architecture).
+---
 
 ## Historical Snapshot
 
