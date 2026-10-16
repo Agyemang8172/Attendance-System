@@ -89,6 +89,11 @@ Post-M4 audit (2026-10-16, two review agents — one over M0–M3 records, one t
 - **Architecture gaps needing owner decisions:** RLS wrapper (`set_config('app.business_id')`) absent from application code despite fail-closed migration policies; `authenticate_lookup` SQL function unused by login; `db-guard.sh` has no invocation point.
 - **Cosmetic:** `✓` glyphs in `docs/attendpro/previews/design-comparison.html` fail ui-taste.
 
+### [ QUEUED ] — M6 automatic clock-out job
+
+- **Owner direction (2026-10-16):** hold for now; on resume, M6 proceeds **through the orchestrator** — plan approved first, then phase agents in sequence, an independent review agent, the docs agent, gates green, owner sees the review summary, commit through `.agents/scripts/commit.sh`. No push without instruction.
+- **Scope reminder:** shift-aware automatic clock-out, flagged (not fabricated) closures per the attendance lifecycle, the `job`-role service token route (`/api/jobs/auto-clock-out/run`, `/api/jobs/status`), and the correction-decision endpoint if the owner folds it into M6.
+
 ### [ QUEUED ] — AttendPro milestones
 
 | Milestone | Scope | Gate | DependsOn |

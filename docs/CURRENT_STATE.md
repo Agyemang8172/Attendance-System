@@ -4,7 +4,7 @@
 
 ## Current Session — 2026-10-16
 
-- **Task:** M5 implementation complete on top of M4. Kiosk pairing and device lifecycle, QR identification with location assessment, PIN verification with lockouts, the atomic punch, correction submission, and the full M3/M4 audit hardening list are implemented on the backend. Building and verifying through the orchestrator's phase-by-phase agents.
+- **Task:** M5 committed (`63318bf`). Programme **paused at the owner's instruction** awaiting the go-ahead for M6 (automatic clock-out job). When M6 starts, the owner has directed: run it the same orchestrated way — phase agents, review agent, docs agent, then the gated commit.
 - **Branch:** `main`, eleven commits ahead of `origin/main`, nothing pushed
 - **Mode:** interactive, Orchestrator locked
 - **State:** M3 committed (`d31a5a0`), M4 committed (`f2db8e4`). M5 is written, reviewed (verdict: safe after fixes — both blocking findings applied), and verified (`tsc` 0 errors, prisma valid, db-check, env parity, ui-taste, humanize all pass), uncommitted. `docs/attendpro/*.md` and the testing guide pass `humanize-check.sh`.
