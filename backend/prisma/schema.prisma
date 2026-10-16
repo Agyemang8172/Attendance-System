@@ -9,67 +9,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id              String       @id @default(uuid())
-  employeeCode    String       @unique @map("employee_code")
-  firstName       String       @map("first_name")
-  lastName        String       @map("last_name")
-  email           String       @unique
-  password        String       // hashed password
-  phoneNumber     String?      @map("phone_number")
-  role            Role         @default(STAFF)
-  department      String?
-  jobTitle        String?      @map("job_title")
-  isActive        Boolean      @default(true) @map("is_active")
-  profileImageUrl String?      @map("profile_image_url")
-  mustChangePassword Boolean   @default(true) @map("must_change_password")
-  shiftId         String?      @map("shift_id")
-  createdAt       DateTime     @default(now()) @map("created_at")
-  updatedAt       DateTime     @updatedAt @map("updated_at")
-  attendances     Attendance[]
-  shift           Shift?       @relation(fields: [shiftId], references: [id])
-
-  @@index([email])
-  @@index([employeeCode])
-  @@index([department])
-  @@index([isActive])
-  @@map("users")
-}
-
-model Shift {
-  id        String   @id @default(uuid())
-  name      String
-  startTime String   @map("start_time")
-  endTime   String   @map("end_time")
-  createdAt DateTime @default(now()) @map("created_at")
-  users     User[]
-
-  @@map("shifts")
-}
-
-model Attendance {
-  id           String           @id @default(uuid())
-  date         DateTime         @default(now())
-  clockIn      DateTime         @default(now()) @map("clock_in")
-  clockOut     DateTime?        @map("clock_out")
-  status       AttendanceStatus @default(PRESENT)
-  sessionStatus SessionStatus   @default(OPEN) @map("session_status")
-  hoursWorked  Float            @default(0) @map("hours_worked")
-  checkInIp    String?          @map("check_in_ip")
-  checkInLat   Float?           @map("check_in_lat")
-  checkInLng   Float?           @map("check_in_lng")
-  remarks      String?
-  userId       String           @map("user_id")
-  createdAt    DateTime         @default(now()) @map("created_at")
-  updatedAt    DateTime         @updatedAt @map("updated_at")
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([date])
-  @@index([sessionStatus])
-  @@index([userId, date])
-  @@map("attendances")
-}
+// ── Enums ────────────────────────────────────────────────────────────────────
 
 enum Role {
   SUPERADMIN
@@ -77,15 +17,724 @@ enum Role {
   STAFF
 }
 
+/// PRD §12 vocabulary, standardised. Replaces PRESENT/HALF_DAY/ON_LEAVE.
 enum AttendanceStatus {
-  PRESENT
-  ABSENT
+  EARLY
+  ON_TIME
   LATE
-  HALF_DAY
-  ON_LEAVE
+  OPEN_SESSION
+  CLOCK_OUT_MISSING
+  AUTO_CLOSED
+  ABSENT
+  REQUIRES_REVIEW
 }
 
 enum SessionStatus {
   OPEN
   CLOSED
+}
+
+/// How a session reached CLOSED. Keeps auto and verified closures apart (PRD §13).
+/// ABSENT_NO_SHOW marks the absence row the day-close job writes (§8).
+enum ClosureReason {
+  VERIFIED_CLOCK_OUT
+  AUTO_CLOCK_OUT
+  HR_ASSISTED
+  CORRECTION
+  ABSENT_NO_SHOW
+}
+
+/// Device lifecycle (O3, kiosk §2 and §9). EXPIRED is a token that passed its 90-day
+/// maximum age and must re-pair; REVOKED is an administrator action.
+enum KioskState {
+  PENDING_PAIRING
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+/// State machine from M1-KIOSK-SECURITY.md §4.2.
+enum VerificationState {
+  QR_ACCEPTED
+  PIN_PENDING
+  VERIFIED
+  LOCKED
+  EXPIRED
+  CONSUMED
+}
+
+enum AttendanceAction {
+  CLOCK_IN
+  CLOCK_OUT
+}
+
+enum AttemptOutcome {
+  SUCCESS
+  REJECTED
+}
+
+/// Location assessment per attempt (O4, kiosk §6.2). Poor accuracy is UNKNOWN, never
+/// OUTSIDE.
+enum LocationResult {
+  INSIDE
+  OUTSIDE
+  UNKNOWN
+}
+
+enum HelpRequestStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum CorrectionStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+/// Same-day fixes are approved by HR; older fixes follow a stricter review (O17).
+enum CorrectionReviewTier {
+  SAME_DAY
+  ESCALATED
+}
+
+enum AuditActorType {
+  USER
+  KIOSK
+  SYSTEM
+}
+
+/// A dated exception on a calendar: a public or company holiday, or a special working
+/// day that falls on a non-working weekday (O16).
+enum CalendarExceptionKind {
+  HOLIDAY
+  WORKING_OVERRIDE
+}
+
+// ── Core tenancy ─────────────────────────────────────────────────────────────
+
+model Business {
+  id                      String   @id @default(uuid())
+  name                    String
+  slug                    String   @unique
+  timezone                String   @default("UTC") // IANA name, for example Africa/Accra
+  isActive                Boolean  @default(true) @map("is_active")
+  logoUrl                 String?  @map("logo_url")
+  brandColor              String?  @map("brand_color")
+  supportEmail            String?  @map("support_email")
+  supportPhone            String?  @map("support_phone")
+  /// Legacy fixed window kept until the per-category fields below replace it (O10).
+  retentionYears          Int      @default(7) @map("retention_years")
+  /// Retention is off until the owner enables it per business (O10).
+  retentionEnabled        Boolean  @default(false) @map("retention_enabled")
+  attendanceRetentionDays Int?     @map("attendance_retention_days")
+  auditRetentionDays      Int?     @map("audit_retention_days")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  users               User[]
+  shifts              Shift[]
+  assignments         ShiftAssignment[]
+  attendances         Attendance[]
+  sites               Site[]
+  policies            WorkplacePolicy[]
+  policyVersions      PolicyVersion[]
+  kiosks              KioskTerminal[]
+  qrCredentials       QrCredential[]
+  sessions            VerificationSession[]
+  attempts            AttendanceAttempt[]
+  helpRequests        AttendanceHelpRequest[]
+  corrections         AttendanceCorrection[]
+  correctionRevisions AttendanceCorrectionRevision[]
+  workCalendars       WorkCalendar[]
+  calendarExceptions  CalendarException[]
+  emailRecoveryCodes  EmailRecoveryCode[]
+  auditLogs           AuditLog[]
+
+  @@index([isActive])
+  @@map("businesses")
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  businessId         String   @map("business_id")
+  employeeCode       String   @map("employee_code")
+  firstName          String   @map("first_name")
+  lastName           String   @map("last_name")
+  email              String   @unique // login is by email alone
+  password           String
+  phoneNumber        String?  @map("phone_number") // contact only; no OTP (O2)
+  role               Role     @default(STAFF)
+  department         String?
+  jobTitle           String?  @map("job_title")
+  isActive           Boolean  @default(true) @map("is_active")
+  profileImageUrl    String?  @map("profile_image_url")
+  mustChangePassword Boolean  @default(true) @map("must_change_password")
+
+  /// Kiosk PIN (O2, kiosk §5.1). A keyed hash of the PIN joined to a per-record salt;
+  /// never a bare hash. HR resets it through an audited action (O7).
+  pinHash            String?  @map("pin_hash")
+  pinSalt            String?  @map("pin_salt")
+  pinUpdatedAt       DateTime? @map("pin_updated_at") @db.Timestamptz(3)
+  pinFailedCount     Int      @default(0) @map("pin_failed_count")
+  pinLockedUntil     DateTime? @map("pin_locked_until") @db.Timestamptz(3)
+  pinLastFailedAt    DateTime? @map("pin_last_failed_at") @db.Timestamptz(3)
+  mustChangePin      Boolean  @default(false) @map("must_change_pin")
+
+  /// Session revocation (O12). Deactivation and forced logout increment it, so every
+  /// outstanding token fails the next request check.
+  tokenVersion       Int      @default(0) @map("token_version")
+
+  /// Current assignment pointer, maintained alongside ShiftAssignment. Deprecated as
+  /// the evaluation source; kept because the existing API and validators read it.
+  shiftId            String?  @map("shift_id")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business             Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  shift                Shift?               @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  attendances          Attendance[]
+  assignments          ShiftAssignment[]
+  qrCredentials        QrCredential[]
+  verificationSessions VerificationSession[]
+  attempts             AttendanceAttempt[]
+  emailRecoveryCodes   EmailRecoveryCode[]
+  helpRequests         AttendanceHelpRequest[] @relation("HelpRequester")
+  assistedRequests     AttendanceHelpRequest[] @relation("HelpAssignee")
+  corrections          AttendanceCorrection[]  @relation("CorrectionRequester")
+  reviewedCorrections  AttendanceCorrection[]  @relation("CorrectionReviewer")
+  correctionRevisions  AttendanceCorrectionRevision[] @relation("CorrectionRevisionActor")
+  auditLogs            AuditLog[]
+  kiosksRegistered     KioskTerminal[]      @relation("KioskRegistrar")
+  kiosksRevoked        KioskTerminal[]      @relation("KioskRevoker")
+
+  @@unique([businessId, employeeCode])
+  @@index([businessId])
+  @@index([businessId, isActive])
+  @@index([businessId, department])
+  @@index([businessId, shiftId])
+  @@map("users")
+}
+
+// ── Shifts and scheduling ────────────────────────────────────────────────────
+
+model Shift {
+  id             String   @id @default(uuid())
+  businessId     String   @map("business_id")
+  name           String
+  /// Minute-of-day, 0..1439, in the business timezone.
+  startMinute    Int      @map("start_minute")
+  endMinute      Int      @map("end_minute")
+  crossesMidnight Boolean @default(false) @map("crosses_midnight")
+  isActive       Boolean  @default(true) @map("is_active")
+  /// Deprecated text columns kept until an approved destructive migration removes them.
+  startTime      String?  @map("start_time")
+  endTime        String?  @map("end_time")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business      Business          @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  users         User[]
+  assignments   ShiftAssignment[]
+  attendances   Attendance[]
+  policies      WorkplacePolicy[]
+
+  @@unique([businessId, name])
+  @@index([businessId, isActive])
+  @@map("shifts")
+}
+
+/// Dated assignment history. Evaluating a punch resolves the assignment effective at the
+/// clock instant, which preserves historical context (PRD §11, §12).
+model ShiftAssignment {
+  id             String   @id @default(uuid())
+  businessId     String   @map("business_id")
+  userId         String   @map("user_id")
+  shiftId        String   @map("shift_id")
+  effectiveFrom  DateTime @map("effective_from") @db.Timestamptz(3)
+  effectiveTo    DateTime? @map("effective_to") @db.Timestamptz(3) // null = current
+  assignedByUserId String? @map("assigned_by_user_id")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, userId, effectiveFrom])
+  @@index([businessId, shiftId])
+  // Partial unique: at most one open-ended assignment per user.
+  // CREATE UNIQUE INDEX shift_assignments_current_uq ON shift_assignments(user_id)
+  //   WHERE effective_to IS NULL;
+  @@map("shift_assignments")
+}
+
+// ── Attendance ───────────────────────────────────────────────────────────────
+
+model Attendance {
+  id            String           @id @default(uuid())
+  businessId    String           @map("business_id")
+  userId        String           @map("user_id")
+  /// Business-local calendar date the record belongs to (PRD §12, range queries).
+  date          DateTime         @map("date") @db.Date
+  clockIn       DateTime         @default(now()) @map("clock_in") @db.Timestamptz(3)
+  clockOut      DateTime?        @map("clock_out") @db.Timestamptz(3)
+  status        AttendanceStatus @default(OPEN_SESSION)
+  sessionStatus SessionStatus    @default(OPEN) @map("session_status")
+  closureReason ClosureReason?   @map("closure_reason")
+  hoursWorked   Float            @default(0) @map("hours_worked")
+  requiresReviewReason String?   @map("requires_review_reason")
+  alertDismissedAt DateTime?      @map("alert_dismissed_at") @db.Timestamptz(3)
+  remarks       String?
+
+  // Location and network metadata
+  checkInIp     String? @map("check_in_ip")
+  checkInLat    Float?  @map("check_in_lat")
+  checkInLng    Float?  @map("check_in_lng")
+
+  // Source references
+  createdByKioskId          String? @map("created_by_kiosk_id")
+  sourceVerificationSessionId String? @unique @map("source_verification_session_id")
+
+  // Historical snapshots: the shift and policy used at evaluation time (PRD §12).
+  shiftId                  String? @map("shift_id")
+  shiftNameSnapshot        String? @map("shift_name_snapshot")
+  shiftStartMinuteSnapshot Int?    @map("shift_start_minute_snapshot")
+  shiftEndMinuteSnapshot   Int?    @map("shift_end_minute_snapshot")
+  shiftCrossesMidnightSnapshot Boolean? @map("shift_crosses_midnight_snapshot")
+  timezoneSnapshot         String? @map("timezone_snapshot")
+  graceEarlyMinutesSnapshot Int?   @map("grace_early_minutes_snapshot")
+  graceLateMinutesSnapshot  Int?   @map("grace_late_minutes_snapshot")
+  policyVersionId          String? @map("policy_version_id")
+  policySnapshot           Json?   @map("policy_snapshot")
+
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  // No cascade on attendance. Deleting a user, shift, kiosk or session must not erase
+  // history (PRD §15, §17).
+  business       Business           @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  user           User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  shift          Shift?             @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  policyVersion  PolicyVersion?     @relation(fields: [policyVersionId], references: [id], onDelete: SetNull)
+  createdByKiosk KioskTerminal?     @relation(fields: [createdByKioskId], references: [id], onDelete: SetNull)
+  corrections    AttendanceCorrection[]
+
+  @@index([businessId, date])
+  @@index([businessId, userId, date])
+  @@index([businessId, shiftId, date])
+  @@index([businessId, status])
+  @@index([businessId, sessionStatus])
+  @@index([userId, sessionStatus])
+  // Partial unique: one open session per employee (PRD §17, M0 finding F3).
+  // CREATE UNIQUE INDEX attendances_open_per_user_uq ON attendances(user_id)
+  //   WHERE session_status = 'OPEN';
+  @@map("attendances")
+}
+
+// ── Sites and location ───────────────────────────────────────────────────────
+
+/// A place of work with a geo-fence centre and radius (O4). The radius is an example
+/// value, not a fixed rule: outside the fence is flagged, never blocked.
+model Site {
+  id           String   @id @default(uuid())
+  businessId   String   @map("business_id")
+  name         String
+  latitude     Float
+  longitude    Float
+  radiusMeters Int      @default(150) @map("radius_meters")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  kiosks   KioskTerminal[]
+  attempts AttendanceAttempt[]
+
+  @@unique([businessId, name])
+  @@index([businessId, isActive])
+  @@map("sites")
+}
+
+// ── Kiosk, QR and verification ───────────────────────────────────────────────
+
+model KioskTerminal {
+  id                   String     @id @default(uuid())
+  businessId           String     @map("business_id")
+  siteId               String?    @map("site_id")
+  label                String
+  /// Non-secret identifier shown in the dashboard (kiosk §2).
+  publicId             String     @unique @map("public_id")
+  /// One-time pairing code, stored as a keyed hash only (kiosk §2.1).
+  pairingCodeHash      String?    @map("pairing_code_hash")
+  pairingCodeExpiresAt DateTime?  @map("pairing_code_expires_at") @db.Timestamptz(3)
+  pairedAt             DateTime?  @map("paired_at") @db.Timestamptz(3)
+  /// Keyed hash of the current device token; the plaintext is never stored (kiosk §2.3).
+  tokenHash            String?    @map("token_hash")
+  tokenVersion         Int        @default(0) @map("token_version")
+  tokenIssuedAt        DateTime?  @map("token_issued_at") @db.Timestamptz(3)
+  tokenExpiresAt       DateTime?  @map("token_expires_at") @db.Timestamptz(3)
+  lastSeenAt           DateTime?  @map("last_seen_at") @db.Timestamptz(3)
+  state                KioskState @default(PENDING_PAIRING)
+  registeredByUserId   String?    @map("registered_by_user_id")
+  revokedByUserId      String?    @map("revoked_by_user_id")
+  registeredAt         DateTime   @default(now()) @map("registered_at") @db.Timestamptz(3)
+  revokedAt            DateTime?  @map("revoked_at") @db.Timestamptz(3)
+  createdAt            DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business     Business       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  site         Site?          @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  registeredBy User?          @relation("KioskRegistrar", fields: [registeredByUserId], references: [id], onDelete: SetNull)
+  revokedBy    User?          @relation("KioskRevoker", fields: [revokedByUserId], references: [id], onDelete: SetNull)
+  attendances  Attendance[]
+  sessions     VerificationSession[]
+  attempts     AttendanceAttempt[]
+
+  @@index([businessId, state])
+  @@index([businessId, siteId])
+  @@index([tokenHash])
+  @@map("kiosk_terminals")
+}
+
+model QrCredential {
+  id               String    @id @default(uuid())
+  businessId       String    @map("business_id")
+  employeeId       String    @map("employee_id")
+  /// Keyed hash of the opaque token, keyed with QR_SECRET_KEY (kiosk §3.2).
+  tokenHash        String    @unique @map("token_hash")
+  schemaVersion    Int       @default(1) @map("schema_version")
+  issuedByUserId   String?   @map("issued_by_user_id")
+  issuedAt         DateTime  @default(now()) @map("issued_at") @db.Timestamptz(3)
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedByUserId  String?   @map("revoked_by_user_id")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  employee User     @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, employeeId])
+  // Partial unique: one active credential per employee (kiosk §3.3).
+  // CREATE UNIQUE INDEX qr_credentials_active_uq ON qr_credentials(employee_id)
+  //   WHERE revoked_at IS NULL;
+  @@map("qr_credentials")
+}
+
+model VerificationSession {
+  id               String            @id @default(uuid())
+  businessId       String            @map("business_id")
+  employeeId       String            @map("employee_id")
+  kioskId          String            @map("kiosk_id")
+  /// Hashed session handle returned to the kiosk (kiosk §4.3).
+  sessionIdHash    String            @unique @map("session_id_hash")
+  state            VerificationState @default(QR_ACCEPTED)
+  /// Per-session PIN attempts; the session moves to LOCKED at the limit (kiosk §5.2).
+  pinAttemptCount  Int               @default(0) @map("pin_attempt_count")
+  lockedAt         DateTime?         @map("locked_at") @db.Timestamptz(3)
+  expiresAt        DateTime          @map("expires_at") @db.Timestamptz(3)
+  verifiedAt       DateTime?         @map("verified_at") @db.Timestamptz(3)
+  consumedAt       DateTime?         @map("consumed_at") @db.Timestamptz(3)
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business  Business      @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  employee  User          @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  kiosk     KioskTerminal @relation(fields: [kioskId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, employeeId])
+  @@index([kioskId])
+  @@index([state, expiresAt])
+  @@map("verification_sessions")
+}
+
+/// A log of every kiosk step, successful or rejected (kiosk §6.1, O7, O21). Append-only:
+/// see §10. The row carries the location assessment for the attempt.
+model AttendanceAttempt {
+  id                    String            @id @default(uuid())
+  businessId            String            @map("business_id")
+  employeeId            String?           @map("employee_id")
+  kioskId               String?           @map("kiosk_id")
+  siteId                String?           @map("site_id")
+  verificationSessionId String?           @map("verification_session_id")
+  /// CLOCK_IN or CLOCK_OUT when the attempt reached a punch; null before that.
+  action                AttendanceAction? @map("action")
+  /// IDENTIFY, VERIFY, PIN, TOKEN: the step the attempt was logged at.
+  step                  String?
+  outcome               AttemptOutcome
+  reason                String?
+
+  // Location assessment (kiosk §6.1). Recorded for every attempt, flagged not blocked.
+  locationResult        LocationResult?   @map("location_result")
+  latitude              Float?
+  longitude             Float?
+  accuracyMeters        Float?            @map("accuracy_meters")
+  distanceMeters        Float?            @map("distance_meters")
+  capturedAt            DateTime?         @map("captured_at") @db.Timestamptz(3)
+  receivedAt            DateTime?         @map("received_at") @db.Timestamptz(3)
+
+  ip                    String?
+  userAgent             String?           @map("user_agent")
+  createdAt             DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  business Business       @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  employee User?          @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  kiosk    KioskTerminal? @relation(fields: [kioskId], references: [id], onDelete: SetNull)
+  site     Site?          @relation(fields: [siteId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@index([businessId, employeeId, createdAt])
+  @@index([kioskId, createdAt])
+  @@index([businessId, siteId, createdAt])
+  @@map("attendance_attempts")
+}
+
+// ── Help requests and corrections ────────────────────────────────────────────
+
+model AttendanceHelpRequest {
+  id               String            @id @default(uuid())
+  businessId       String            @map("business_id")
+  requesterId      String            @map("requester_id")
+  category         String            // pin, kiosk, profile, access, other
+  subject          String
+  body             String
+  status           HelpRequestStatus @default(OPEN)
+  assignedToId     String?           @map("assigned_to_id")
+  resolutionNote   String?           @map("resolution_note")
+  resolvedAt       DateTime?         @map("resolved_at") @db.Timestamptz(3)
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business  Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  requester User     @relation("HelpRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  assignee  User?    @relation("HelpAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, status])
+  @@index([requesterId])
+  @@map("attendance_help_requests")
+}
+
+model AttendanceCorrection {
+  id               String           @id @default(uuid())
+  businessId       String           @map("business_id")
+  attendanceId     String           @map("attendance_id")
+  requestedById    String           @map("requested_by_id")
+  reason           String
+  /// When the employee raised the request (O17). Distinct from the decision time.
+  requestedAt      DateTime         @default(now()) @map("requested_at") @db.Timestamptz(3)
+  /// Same-day fixes are approved by HR; older fixes follow a stricter review (O17).
+  reviewTier       CorrectionReviewTier @map("review_tier")
+  proposedClockIn  DateTime?        @map("proposed_clock_in") @db.Timestamptz(3)
+  proposedClockOut DateTime?        @map("proposed_clock_out") @db.Timestamptz(3)
+  /// Original values captured at submission so an approval cannot erase them (PRD §14).
+  originalValues   Json             @map("original_values")
+  approvedValues   Json?            @map("approved_values")
+  status           CorrectionStatus @default(SUBMITTED)
+  reviewedById     String?          @map("reviewed_by_id")
+  decidedAt        DateTime?        @map("decided_at") @db.Timestamptz(3)
+  decisionNote     String?          @map("decision_note")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business   Business   @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Restrict)
+  requestedBy User      @relation("CorrectionRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedBy  User?     @relation("CorrectionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  revisions  AttendanceCorrectionRevision[]
+
+  @@index([businessId, status])
+  @@index([businessId, reviewTier])
+  @@index([attendanceId])
+  @@index([requestedById])
+  @@map("attendance_corrections")
+}
+
+/// One row per proposal, decision and applied change on a correction (O17, §9).
+/// Append-only: no `updatedAt` and no update or delete path (§10). `valuesBefore` and
+/// `valuesAfter` hold the attendance fields at that step.
+model AttendanceCorrectionRevision {
+  id           String   @id @default(uuid())
+  businessId   String   @map("business_id")
+  correctionId String   @map("correction_id")
+  revisionNo   Int      @map("revision_no")
+  /// PROPOSED, DECIDED or APPLIED. **Provisional name** for the step discriminator.
+  action       String
+  valuesBefore Json?    @map("values_before")
+  valuesAfter  Json?    @map("values_after")
+  actorId      String   @map("actor_id")
+  reason       String?
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  business   Business             @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  correction AttendanceCorrection @relation(fields: [correctionId], references: [id], onDelete: Restrict)
+  actor      User                 @relation("CorrectionRevisionActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@unique([correctionId, revisionNo])
+  @@index([correctionId, revisionNo])
+  @@index([businessId, createdAt])
+  @@map("attendance_correction_revisions")
+}
+
+// ── Policy and versions ──────────────────────────────────────────────────────
+
+model WorkplacePolicy {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  /// null = the business default; set = a shift-specific override (PRD §12).
+  shiftId    String?  @map("shift_id")
+  name       String
+  isDefault  Boolean  @default(false) @map("is_default")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  shift    Shift?          @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  versions PolicyVersion[]
+
+  @@unique([businessId, name])
+  // Partial unique: one default policy per business,
+  // CREATE UNIQUE INDEX workplace_policies_default_uq ON workplace_policies(business_id)
+  //   WHERE shift_id IS NULL;
+  @@map("workplace_policies")
+}
+
+model PolicyVersion {
+  id                       String   @id @default(uuid())
+  businessId               String   @map("business_id")
+  policyId                 String   @map("policy_id")
+  versionNumber            Int      @map("version_number")
+  effectiveFrom            DateTime @map("effective_from") @db.Timestamptz(3)
+  effectiveTo              DateTime? @map("effective_to") @db.Timestamptz(3)
+  graceEarlyMinutes        Int      @default(0) @map("grace_early_minutes")
+  graceLateMinutes         Int      @default(0) @map("grace_late_minutes")
+  earlyThresholdMinutes    Int      @default(0) @map("early_threshold_minutes")
+  autoClockOutEnabled      Boolean  @default(false) @map("auto_clock_out_enabled")
+  autoClockOutOffsetMinutes Int?    @map("auto_clock_out_offset_minutes")
+  /// Auto clock-out buffer past shift end, in minutes (O8, default two hours).
+  autoClockOutBufferMinutes Int     @default(120) @map("auto_clock_out_buffer_minutes")
+  /// Maximum open session with no shift, in minutes (O8, default 14 hours).
+  autoClockOutMaxOpenMinutes Int    @default(840) @map("auto_clock_out_max_open_minutes")
+  /// Days an employee may correct their own record (O17, default seven).
+  correctionWindowDays     Int      @default(7) @map("correction_window_days")
+  /// Geo-fence radius used when a site does not override it (O4, example 150 m).
+  geoFenceRadiusMeters     Int      @default(150) @map("geo_fence_radius_meters")
+  /// Accuracy above this is UNKNOWN, never OUTSIDE (O4, R1, example 50 m).
+  locationAccuracyThresholdMeters Int @default(50) @map("location_accuracy_threshold_meters")
+  /// A capture older than this is stale and gives UNKNOWN (O4, R1, example 60 s).
+  gpsFreshnessSeconds      Int      @default(60) @map("gps_freshness_seconds")
+  /// Whether the business observes public holidays (O16).
+  observePublicHolidays    Boolean  @default(false) @map("observe_public_holidays")
+  createdByUserId          String?  @map("created_by_user_id")
+  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  business Business        @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  policy   WorkplacePolicy @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  attendances Attendance[]
+
+  @@unique([policyId, versionNumber])
+  @@index([businessId, policyId, effectiveFrom])
+  @@map("policy_versions")
+}
+
+// ── Work calendar ────────────────────────────────────────────────────────────
+
+/// A business working week (O16, O22). The schema allows more than one calendar per
+/// business; one row carries `isDefault`. The flags are the working-week weekdays.
+model WorkCalendar {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  name       String
+  /// Working-week weekday flags. The defaults describe a Monday-to-Friday week.
+  monday     Boolean  @default(true)
+  tuesday    Boolean  @default(true)
+  wednesday  Boolean  @default(true)
+  thursday   Boolean  @default(true)
+  friday     Boolean  @default(true)
+  saturday   Boolean  @default(false)
+  sunday     Boolean  @default(false)
+  timezone   String   @default("UTC") // IANA name, for example Africa/Accra
+  isDefault  Boolean  @default(false) @map("is_default")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  business   Business            @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  exceptions CalendarException[]
+
+  @@unique([businessId, name])
+  @@index([businessId, isDefault])
+  // Partial unique: one default calendar per business (O22).
+  // CREATE UNIQUE INDEX work_calendars_default_uq ON work_calendars(business_id)
+  //   WHERE is_default;
+  @@map("work_calendars")
+}
+
+/// A dated exception to a calendar (O16). Covers a public or company holiday and a
+/// special working day that falls on a normally non-working weekday.
+model CalendarException {
+  id         String                @id @default(uuid())
+  businessId String                @map("business_id")
+  calendarId String                @map("calendar_id")
+  date       DateTime              @map("date") @db.Date
+  kind       CalendarExceptionKind
+  name       String
+  createdAt  DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  business Business     @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  calendar WorkCalendar @relation(fields: [calendarId], references: [id], onDelete: Restrict)
+
+  @@unique([calendarId, date])
+  @@index([businessId, date])
+  @@index([businessId, calendarId])
+  @@map("calendar_exceptions")
+}
+
+// ── Account recovery ─────────────────────────────────────────────────────────
+
+/// A single-use email recovery code (O6). Account recovery only, never a kiosk clock-in.
+/// Stored as a keyed hash with a per-record salt; the plaintext is never stored.
+model EmailRecoveryCode {
+  id           String    @id @default(uuid())
+  businessId   String    @map("business_id")
+  userId       String    @map("user_id")
+  codeHash     String    @map("code_hash")
+  salt         String
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt       DateTime? @map("used_at") @db.Timestamptz(3)
+  attemptCount Int       @default(0) @map("attempt_count")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([businessId, userId, createdAt])
+  @@index([userId, expiresAt])
+  @@map("email_recovery_codes")
+}
+
+// ── Audit ────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id            String         @id @default(uuid())
+  businessId    String         @map("business_id")
+  actorType     AuditActorType @map("actor_type")
+  actorUserId   String?        @map("actor_user_id")
+  actorKioskId  String?        @map("actor_kiosk_id")
+  action        String
+  entityType    String         @map("entity_type")
+  entityId      String?        @map("entity_id")
+  beforeValues  Json?          @map("before_values")
+  afterValues   Json?          @map("after_values")
+  reason        String?
+  correlationId String?        @map("correlation_id")
+  ip            String?
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
+  actor    User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([businessId, createdAt])
+  @@index([businessId, entityType, entityId])
+  @@index([businessId, action])
+  @@map("audit_logs")
 }

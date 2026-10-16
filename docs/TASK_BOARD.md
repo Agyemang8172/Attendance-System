@@ -8,7 +8,7 @@
 
 ## AttendPro — Active Board (2026-10-14)
 
-The programme is AttendPro. M0 (investigation) is committed (`c4ee602`). The M1 design set of fourteen documents is written but uncommitted; M1 is **pending owner review and is not approved**. M2 is not authorized and must not begin. Nothing has been pushed to `origin/main`; `main` is seven commits ahead. 
+The programme is AttendPro. M0 (investigation) is committed (`c4ee602`), and the M1 design set is committed (`b403a66`). M1 is **approved** (owner, 2026-10-16). M2 (implementation foundation) is **in progress**: the 19-model Prisma schema is in place, nine forward migrations with Row Level Security are written, and the test-database guard is built. Nothing has been pushed to `origin/main`.
 
 M0 artefacts (committed):
 
@@ -17,27 +17,30 @@ M0 artefacts (committed):
 - `docs/attendpro/M0-FORENSIC-RECONCILIATION.md` — re-verification of every §22 finding
 - `docs/attendpro/DECISION-REGISTER.md` — O1 to O22 confirmed or noted
 
-M1 review package (uncommitted):
+M1 design set (committed `b403a66`):
 
 - `docs/attendpro/M1-*.md` including `M1-REVIEW-PACKAGE.md` (deliverables 1–17 complete)
 - All pass `humanize-check.sh` clean
 
-### [ HUMAN_CHECKPOINT ] — M1 design approval
+### [ IN PROGRESS ] — M2 implementation foundation
 
-- **Assignee:** Owner
-- **DependsOn:** none
-- **State:** M1 artefacts delivered; UI workflow stages 1 and 2 delivered; awaiting the literal word "approve"
-- **On approval:** M2 (implementation foundation) opens; nothing is implemented before then
-- **Open decisions:** R1–R9, O13, O14 in `DECISION-REGISTER.md` §C
-- **UI workflow:** stage 1 (`M1-UI-AUDIT.md`) and stage 2 (`M1-ROLE-EXPERIENCES.md`) delivered 2026-10-16. Stage 3 (`M1-VISUAL-DESIGN-SYSTEM.md`, mockups in `docs/attendpro/previews/design-comparison.html`) delivered 2026-10-16 with a recommendation to adopt Paper and Brass. Stage 4 (screen designs) is blocked until the Owner reviews the mockups and settles the final colour values, which `O19` left open. Second-review decisions are recorded as `O19`–`O24`.
+- **Assignee:** Implementer agent, orchestrated
+- **DependsOn:** M1 (approved)
+- **State:** schema, migrations and the test-database guard are built; two owner inputs still block completion
+- **Delivered:**
+  - `backend/prisma/schema.prisma` expanded to the 19 models of `M1-DATA-MODEL.md`, validated and generated
+  - nine forward migrations `20261015120000`–`20261015200000` with Row Level Security, tenant policies, append-only grants, triggers and the hardened login function
+  - `backend/scripts/db-guard.sh` enforcing the `_test` suffix and the expected host (O14)
+- **Blocked on owner input:** `DATABASE_URL` is empty, so the chain cannot be run against a test database (O14); the repository reconciliation needs a `git log --oneline -20` from each repository (O13)
+- **Known deferred work:** the current backend routes still compile against the old vocabulary; `tsc` reports two errors (`PRESENT` status at `controllers/attendanceController.ts:43`, missing tenant relation at `controllers/userController.ts:246`) for M3 to rewire
 
 ### [ QUEUED ] — AttendPro milestones
 
 | Milestone | Scope | Gate | DependsOn |
 |-----------|-------|------|-----------|
 | M0 | Investigation and reality check | committed | none |
-| M1 | Architecture and UI design (full set delivered) | design review (pending) | M0 |
-| M2 | Foundation: tenant model, schema/migrations with RLS, isolated test database, repository reconciliation | tests + migration review | M1 (approved) |
+| M1 | Architecture and UI design (full set delivered) | approved (owner, 2026-10-16) | M0 |
+| M2 | Foundation: tenant model, schema/migrations with RLS, isolated test database, repository reconciliation | tests + migration review (in progress) | M1 (approved) |
 | M3 | Shifts, policies, status rule engine, timing policy (effective-dated) | QA + security | M2 |
 | M4 | SUPERADMIN: employees, shift assignment, calendars/sites/kiosks, policies | QA + security | M3 |
 | M5 | Kiosk: pairing, QR+PIN, location assessment, atomic punch, tenant isolation | security gate | M4 |

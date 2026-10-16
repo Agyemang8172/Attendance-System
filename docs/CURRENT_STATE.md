@@ -4,31 +4,38 @@
 
 ## Current Session — 2026-10-16
 
-- **Task:** M1 design reconciliation complete and delivered. UI/UX workflow stages 1, 2 and 3 delivered, awaiting the owner's colour decision before stage 4.
-- **Branch:** `main`, seven commits ahead of `origin/main`, nothing pushed
+- **Task:** M2 implementation foundation in progress. M1 is approved and committed; the M2 schema, migrations and test-database guard are built.
+- **Branch:** `main`, eight commits ahead of `origin/main`, nothing pushed
 - **Mode:** interactive, Orchestrator locked
-- **State:** M1 documents written but uncommitted; all pass `humanize-check.sh`. M0 is committed (`c4ee602`).
+- **State:** M1 design set committed (`b403a66`). M2 code is written but uncommitted; `docs/attendpro/*.md` still pass `humanize-check.sh`.
 
-Completed (2026-10-16):
+Completed (2026-10-16, M1):
 
 - Reconciled the full M1 design set to the 2026-10-16 decision review: DECISION-REGISTER, M1-ARCHITECTURE, M1-DATA-MODEL (19 models, 9 migrations), M1-API-CONTRACTS, M1-ATTENDANCE-LIFECYCLE, M1-SECURITY-AND-TEST-STRATEGY, M1-NAVIGATION-AND-SCREENS, M1-KIOSK-SECURITY (QR+PIN).
-- Produced missing M1 deliverables: M1-ROLE-PERMISSION-MATRIX, M1-RETENTION-POLICY, M1-REPOSITORY-RECONCILIATION, M1-MILESTONES-AND-DEPENDENCIES, M1-REVIEW-PACKAGE.
-- Humanize-clean across all `docs/attendpro/*.md`. 
-- Updated TASK_BOARD.md to reflect M1 pending owner review. 
-- Second owner review (2026-10-16) recorded as `O19`–`O24`: design system baseline, kiosk-only punching, correction backstop, SUPERADMIN home, popover placement, no gamification.
-- UI workflow stage 3 produced `M1-VISUAL-DESIGN-SYSTEM.md` and `previews/design-comparison.html`, comparing Operations Console against Paper and Brass with measured contrast, plus two new defects (F8 badge contrast on dark, F9 three status specifications).
+- Produced the missing M1 deliverables: M1-ROLE-PERMISSION-MATRIX, M1-RETENTION-POLICY, M1-REPOSITORY-RECONCILIATION, M1-MILESTONES-AND-DEPENDENCIES, M1-REVIEW-PACKAGE.
+- Second owner review recorded as `O19`–`O24`: design system baseline, kiosk-only punching, correction backstop, SUPERADMIN home, popover placement, no gamification.
+- UI workflow stages 1–6 delivered, including `M1-VISUAL-DESIGN-SYSTEM.md` and `previews/design-comparison.html`.
+- Owner approved M1 on 2026-10-16; the design set is committed as `b403a66`.
+
+Completed (2026-10-16, M2 so far):
+
+- `backend/prisma/schema.prisma` expanded to the 19 models of `M1-DATA-MODEL.md` §2; `prisma validate` passes and the client generates.
+- Nine forward migrations written (`20261015120000` to `20261015200000`): tenancy and RLS, identity and recovery, shift scheduling and policies, attendance evaluation and enum conversion, kiosk and verification, sites and location, work calendar, help and corrections, audit log with grants, append-only triggers and the hardened login function.
+- `backend/scripts/db-guard.sh` enforces the `_test` database suffix and the expected host (O14).
+- Fixes applied during review: removed five duplicate indexes from migration 4, rebuilt the cascading `attendances_user_id_fkey` as `RESTRICT`, converted the legacy `users` and `shifts` instants to `timestamptz`, and added the missing FK-support indexes.
 
 Pending:
 
-- Owner review of the M1 package (`docs/attendpro/M1-REVIEW-PACKAGE.md`). Open items R1–R9, O13, O14.
-- Owner review of the Stage 3 mockups and the final colour decision, which gates Stage 4.
-- Owner answer on the staff attendance streak and the Profile badge grid (Stage 3 §9).
+- Owner input O14: `backend/.env` has an empty `DATABASE_URL`, so the migration chain cannot run against a test database yet.
+- Owner input O13: the repository reconciliation needs `git log --oneline -20` from each repository.
+- Open decisions R1–R9, and the two `tsc` errors for M3 to rewire (`controllers/attendanceController.ts:43`, `controllers/userController.ts:246`).
 
 Verified:
 
-- `git rev-list --left-right --count origin/main...main` = `0 7`
-- M1 documents untracked (`??`), `DESIGN.md` and `DECISION-REGISTER.md` modified.
-- Frontend/backend state unchanged by this pass. 
+- `npx prisma validate` — schema valid; `npx prisma generate` — client built.
+- `bash .agents/scripts/db-check.sh` — the only failures are the three known historical `init` tables without RLS (M1-DATA-MODEL §4.2/§7.5, an owner decision); every new migration passes.
+- `npx tsc --noEmit` (backend) — two errors, both expected M3 rewiring points.
+- Frontend state unchanged by this pass. `DESIGN.md`, `docs/attendpro/*` all pass `humanize-check.sh`.
 
 ---
 
