@@ -4,10 +4,10 @@
 
 ## Current Session — 2026-10-16
 
-- **Task:** M4 implementation complete on top of M3. Employee management (`/api/hr`), audited kiosk PIN reset, sites with geo-fence, work calendars with exceptions, and QR credential issue/revoke are implemented on the backend. M3 is committed.
-- **Branch:** `main`, nine commits ahead of `origin/main`, nothing pushed
+- **Task:** M5 implementation complete on top of M4. Kiosk pairing and device lifecycle, QR identification with location assessment, PIN verification with lockouts, the atomic punch, correction submission, and the full M3/M4 audit hardening list are implemented on the backend. Building and verifying through the orchestrator's phase-by-phase agents.
+- **Branch:** `main`, eleven commits ahead of `origin/main`, nothing pushed
 - **Mode:** interactive, Orchestrator locked
-- **State:** M3 code is written and compiles cleanly (`tsc --noEmit` = 0 errors), uncommitted. `docs/attendpro/*.md` still pass `humanize-check.sh`.
+- **State:** M3 committed (`d31a5a0`), M4 committed (`f2db8e4`). M5 is written, reviewed (verdict: safe after fixes — both blocking findings applied), and verified (`tsc` 0 errors, prisma valid, db-check, env parity, ui-taste, humanize all pass), uncommitted. `docs/attendpro/*.md` and the testing guide pass `humanize-check.sh`.
 
 Completed (2026-10-16, M3):
 
@@ -27,9 +27,16 @@ Verification:
 - `bash .agents/scripts/db-check.sh` — all 10 migrations safe, RLS-protected, indexed.
 - `bash .agents/scripts/humanize-check.sh` — plan doc clean.
 
-Pending:
+Completed (2026-10-16, M5):
 
-- M4 code is written and verified, uncommitted, awaiting the owner's commit decision.
+- Phase 0 audit hardening: status engine rewritten with wrap-around classification and a same-evening clock-out guard; `evaluateClockOutStatus` wired into the punch path; merged-geometry shift validation on PATCH; UTC date basis; shift-scoped policy lookup in clock-in; catch blocks always answer, error bodies redacted; shared `callerBusinessId` in `utils/tenant.ts`; policy-default race fixed; PIN reset now expires open kiosk sessions; preview glyph issue fixed.
+- Phase 1 device lifecycle: `KIOSK_PAIRING_KEY`/`KIOSK_TOKEN_KEY` keyed hashing with constant-time compares; device-token middleware (`req.kiosk`); pairing codes (single live code, 10-minute expiry, shown once); 30-day token with on-use renewal and the 90-day hard age returning the terminal to pairing; devices list; revocation bumping `tokenVersion`. In-memory fixed-window limiter factory (`NODE_ENV=test`-aware).
+- Phases 2–3 identify and PIN: `assessLocation` (haversine, INSIDE/OUTSIDE+nearMiss/UNKNOWN, thresholds provisional pending R1); badge match on the keyed hash with inactive/unknown/cross-business distinguished per the safe-error table; 2-minute hashed-handle sessions; PIN verify with 5 attempts / 15-minute lock (provisional per R5), constant-time compare, no attempts-left disclosure; cancel; evidence `attendance_attempts` rows on every failure.
+- Phase 4 atomic punch: clock-in/out moved to kiosk-token scope per contract §12; session lock+consume inside the punch transaction with version guards; dated `ShiftAssignment` resolution with pointer fallback; snapshot columns filled from the schema (shift, policy, timezone — O15 noted); `attendance.recorded`, flagged punches raise `requiresReviewReason`. Correction submission self-scoped with policy window and SAME_DAY/ESCALATED tier. Read aliases kept.
+- Phase 5 config: `KIOSK_PAIRING_KEY` and `KIOSK_TOKEN_KEY` documented in root `.env.example`.
+- Phase 6 verification: review agent pass (safe after fixes; both majors applied — catch hardening finished on the legacy attendance handlers, and the §11 audit trail now also lands in the `audit_logs` table via a new `writeAudit` helper at every kiosk event site); docs agent added Scenarios P–U and the superseded-note for the staff-token punch.
+
+M5 verification: `tsc --noEmit` zero errors; `prisma validate` valid; `db-check.sh`, env parity, ui-taste, humanize all pass.
 - Owner input O14: `backend/.env` has an empty `DATABASE_URL`, so the migration chain cannot run against a test database yet (no database migrated anywhere).
 - Owner input O13: repository reconciliation Phase 2 complete (histories are separate); Phase 1 backups taken.
 - New environment keys `PIN_HMAC_KEY` and `QR_SECRET_KEY` are required by the M4 PIN and QR handlers; both fail closed when unset. `backend/.env.example` is gitignored, so documenting them locally is still a pending owner decision.

@@ -1,17 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../config/prismaClient.js";
 import { auditLog } from "../utils/logger.js";
-
-/**
- * Load the caller's business_id so every policy query is scoped to one tenant.
- */
-const callerBusinessId = async (userId: string): Promise<string | null> => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { businessId: true },
-  });
-  return user?.businessId ?? null;
-};
+import { callerBusinessId } from "../utils/tenant.js";
 
 const policySelect = {
   id: true,
@@ -74,11 +64,10 @@ export const listPolicies = async (req: Request, res: Response): Promise<void> =
     res.status(200).json({ success: true, data: policies });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -137,10 +126,13 @@ export const createPolicy = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // First policy for the business is the default.
-    const existingCount = await prisma.workplacePolicy.count({ where: { businessId } });
-
     const result = await prisma.$transaction(async (tx) => {
+      // First policy for the business is the default. The count runs inside
+      // the transaction so two simultaneous creations cannot both see zero
+      // and stamp themselves default — the partial unique index turns the
+      // loser into a P2002, which the catch block names precisely.
+      const existingCount = await tx.workplacePolicy.count({ where: { businessId } });
+
       const policy = await tx.workplacePolicy.create({
         data: {
           businessId,
@@ -184,19 +176,23 @@ export const createPolicy = async (req: Request, res: Response): Promise<void> =
     res.status(201).json({ success: true, data: { policy: result.policy, version: result.version } });
   } catch (error) {
     if (error instanceof Error) {
-      const err = error as Error & { code?: string };
+      const err = error as Error & { code?: string; meta?: { target?: string[] } };
       if (err.code === "P2002") {
+        // The name unique and the partial default index both surface as P2002;
+        // name the constraint the caller actually collided with.
+        const target = err.meta?.target?.join(",") ?? "";
         res.status(409).json({
           success: false,
-          message: "A policy with that name already exists in this business.",
+          message: target.includes("is_default")
+            ? "Another policy is already the default for this business."
+            : "A policy with that name already exists in this business.",
         });
         return;
       }
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -324,11 +320,10 @@ export const createPolicyVersion = async (
     res.status(201).json({ success: true, data: { policy: policyId, version } });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };

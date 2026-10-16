@@ -29,6 +29,10 @@ export const authLogger = logger.child({ domain: "auth" });
 export const attendanceLogger = logger.child({ domain: "attendance" });
 export const userLogger = logger.child({ domain: "user" });
 export const dbLogger = logger.child({ domain: "database" });
+// Device (kiosk) lane; the pairing, token, and revocation events below.
+export const kioskLogger = logger.child({ domain: "kiosk" });
+// Employee verification lane (identify → PIN → session); events §11 event table.
+export const verifyLogger = logger.child({ domain: "verify" });
 
 // ── Request Correlation ID Middleware ────────────────────────────────────────
 
@@ -332,6 +336,167 @@ export const auditLog = {
     userLogger.warn(
       { adminId, credentialId, businessId, event: "qr_revoked" },
       "QR credential revoked"
+    );
+  },
+
+  // ── Kiosk device lifecycle (kiosk spec §11; no code or token on any row) ────
+
+  /** A one-time pairing code was issued. Records the expiry, never the code. */
+  kioskPairingIssued: (
+    adminId: string,
+    kioskId: string,
+    businessId: string,
+    expiresAt: Date
+  ) => {
+    kioskLogger.info(
+      {
+        adminId,
+        kioskId,
+        businessId,
+        expiresAt,
+        event: "kiosk_pairing_issued",
+      },
+      "Kiosk pairing code issued"
+    );
+  },
+
+  /** A shop phone redeemed a pairing code and became a paired kiosk. */
+  kioskPaired: (kioskId: string, businessId: string, ip?: string) => {
+    kioskLogger.info(
+      { kioskId, businessId, ip, event: "kiosk_paired" },
+      "Kiosk device paired"
+    );
+  },
+
+  /** A kiosk token was rotated inside its 90-day maximum age. */
+  kioskTokenRenewed: (kioskId: string, businessId: string) => {
+    kioskLogger.info(
+      { kioskId, businessId, event: "kiosk_token_renewed" },
+      "Kiosk token renewed"
+    );
+  },
+
+  /** A token passed the 90-day maximum age and the terminal went back to pairing. */
+  kioskExpired: (kioskId: string, businessId: string) => {
+    kioskLogger.warn(
+      { kioskId, businessId, event: "kiosk_expired" },
+      "Kiosk token passed maximum age"
+    );
+  },
+
+  /** An administrator revoked a device. The reason is free text, never a token. */
+  kioskRevoked: (
+    adminId: string,
+    kioskId: string,
+    businessId: string,
+    reason?: string
+  ) => {
+    kioskLogger.warn(
+      { adminId, kioskId, businessId, reason, event: "kiosk_revoked" },
+      "Kiosk device revoked"
+    );
+  },
+
+  /** A badge presentation resolved to nothing usable (kiosk §11, no badge value). */
+  identifyFailed: (kioskId: string, reason: string, ip?: string) => {
+    kioskLogger.warn(
+      { kioskId, reason, ip, event: "qr_identify_failed" },
+      "Badge identification failed"
+    );
+  },
+
+  // ── Kiosk verification events (kiosk spec §11; no PIN or badge value on any
+  // row — the session id recorded is the opaque handle the kiosk already
+  // holds, which expires in minutes) ────────────────────────────────────────
+
+  /** A QR scan opened a short-lived verification session. */
+  verifySessionStarted: (
+    kioskId: string,
+    businessId: string,
+    employeeId: string,
+    sessionId: string
+  ) => {
+    verifyLogger.info(
+      { kioskId, businessId, employeeId, sessionId, event: "verify_session_started" },
+      "Verification session started"
+    );
+  },
+
+  /** A PIN matched and the session reached VERIFIED (§4.2). */
+  verifySucceeded: (sessionId: string, employeeId: string, kioskId: string) => {
+    verifyLogger.info(
+      { sessionId, employeeId, kioskId, event: "verify_succeeded" },
+      "PIN verification succeeded"
+    );
+  },
+
+  /** A wrong PIN on a live session; the count is the session's own counter. */
+  pinVerifyFailed: (
+    sessionId: string,
+    employeeId: string,
+    attemptCount: number
+  ) => {
+    verifyLogger.warn(
+      { sessionId, employeeId, attemptCount, event: "pin_verify_failed" },
+      "PIN verification failed"
+    );
+  },
+
+  /** Attempts exhausted: the session went LOCKED and the employee's PIN locked. */
+  pinLocked: (
+    sessionId: string,
+    employeeId: string,
+    lockedUntil: Date
+  ) => {
+    verifyLogger.warn(
+      { sessionId, employeeId, lockedUntil, event: "pin_locked" },
+      "PIN attempts exhausted, temporary lock applied"
+    );
+  },
+
+  /** The kiosk (or the kiosk's expiry logic) abandoned a session. */
+  verifyCancelled: (
+    sessionId: string,
+    employeeId: string,
+    kioskId: string
+  ) => {
+    verifyLogger.info(
+      { sessionId, employeeId, kioskId, event: "verify_cancelled" },
+      "Verification session cancelled"
+    );
+  },
+
+  // ── Attendance punch and correction events (kiosk spec §11; the punch row
+  // carries action and locationResult, never a badge value or a token) ───────
+
+  /** A kiosk punch committed (kiosk §11 `attendance.recorded`). */
+  attendanceRecorded: (
+    kioskId: string,
+    employeeId: string,
+    businessId: string,
+    action: string,
+    attendanceId: string,
+    locationResult: string
+  ) => {
+    attendanceLogger.info(
+      {
+        kioskId,
+        employeeId,
+        businessId,
+        action,
+        attendanceId,
+        locationResult,
+        event: "attendance_recorded",
+      },
+      "Kiosk punch recorded"
+    );
+  },
+
+  /** A correction request entered review (contracts §8, O17). */
+  correctionSubmitted: (userId: string, correctionId: string, businessId: string) => {
+    attendanceLogger.info(
+      { userId, correctionId, businessId, event: "correction_submitted" },
+      "Correction submitted for review"
     );
   },
 };

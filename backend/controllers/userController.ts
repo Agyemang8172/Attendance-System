@@ -775,6 +775,15 @@ export const resetPin = async (req: Request, res: Response) => {
         select: { id: true, pinUpdatedAt: true },
       });
 
+      // A new PIN must also close the door the old one was holding open:
+      // any kiosk verification session still waiting to be consumed expires
+      // immediately, so a badge scanned before the reset cannot be finished
+      // by someone who did not receive the new PIN.
+      await tx.verificationSession.updateMany({
+        where: { employeeId: target.id, consumedAt: null },
+        data: { state: "EXPIRED" },
+      });
+
       await tx.auditLog.create({
         data: {
           businessId: callerBusiness.businessId,
@@ -797,11 +806,10 @@ export const resetPin = async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };

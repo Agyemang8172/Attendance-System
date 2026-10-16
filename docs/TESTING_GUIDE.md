@@ -137,6 +137,13 @@ that step, which makes them the faster path for feature testing.
 
 ### Scenario E: Attendance Clock In / Clock Out (STAFF)
 
+> **Superseded by M5.** The punch endpoints no longer accept a staff session
+> token. `POST /api/attendance/clock-in` and `/api/attendance/clock-out` now
+> require a kiosk device token and a verified QR + PIN session (Scenarios
+> P–S below). The dashboard button still sends the staff token, so the call
+> now answers `401` instead of recording a punch. Read this scenario as
+> historical UI context; punch testing happens at the kiosk now.
+
 - [ ] 1. Sign in as `staff@test.attendpro.com`, open the staff `/dashboard`.
 - [ ] 2. Click **Clock In**. Verify an open session is recorded and the button
       state changes to allow Clock Out.
@@ -459,6 +466,313 @@ Ids in the steps are placeholders, not literal text. `page` defaults to 1 and
       versions must start after the version now in force.
 - [ ] 6. Negative: send `graceLateMinutes: 200`. Verify `400` — the allowed
       range is 0..120.
+
+The scenarios below cover the M5 kiosk. They follow the same API-walkthrough
+rules as Scenarios I–O. One new bearer type appears: a **kiosk device token**
+from Scenario P, sent as `Authorization: Bearer <kiosk-token>` plus the
+kiosk's own JSON body. Throughout, `<site-id>` is the site from Scenario K and
+`<qrPayload>` is Ama Mensah's badge value from Scenario M.
+
+> **Before the kiosk scenarios.** Two setup pieces sit outside the API.
+>
+> - The kiosk secrets in `backend/.env` (templates in `backend/.env.example`):
+>   `KIOSK_TOKEN_KEY`, `QR_SECRET_KEY`, `PIN_HMAC_KEY`, `KIOSK_PAIRING_KEY`.
+>   A kiosk route whose key is missing answers `500` on purpose.
+> - A PIN the tester actually knows. The audited reset (Scenario J) sets a
+>   random PIN and never reveals it — not in the response, not in the audit
+>   log. The employee is expected to receive it out of band, which no
+>   automated test can do. For local testing, write one directly into the
+>   database once and re-run this after every reset you test:
+>
+>   ```bash
+>   cd backend && node --env-file=.env -e "
+>   const { createHmac, randomBytes } = require('crypto');
+>   const { PrismaClient } = require('@prisma/client');
+>   const prisma = new PrismaClient();
+>   (async () => {
+>     const user = await prisma.user.findUnique({
+>       where: { email: 'ama.mensah@test.attendpro.com' },
+>     });
+>     if (!user) throw new Error('Ama Mensah not found — run Scenario I first');
+>     const pin = '135790';
+>     const pinSalt = randomBytes(16).toString('hex');
+>     const pinHash = createHmac('sha256', process.env.PIN_HMAC_KEY)
+>       .update(user.id + pin + pinSalt).digest('hex');
+>     await prisma.user.update({
+>       where: { id: user.id },
+>       data: { pinHash, pinSalt, pinFailedCount: 0, pinLockedUntil: null },
+>     });
+>     await prisma.$disconnect();
+>     console.log('PIN for Ama Mensah set to ' + pin);
+>   })();
+>   "
+>   ```
+>
+> Rate limits are live outside `NODE_ENV=test`: pairing redemption allows
+> about 10 wrong codes per 15 minutes per IP. Space the negative steps out or
+> restart the backend if you trip the limiter.
+
+### Scenario P: Pair a Kiosk Device (SUPERADMIN, M5)
+
+- [ ] 1. Sign in as `superadmin@test.attendpro.com` through the API and call
+      `POST /api/kiosk/pairing-codes` with:
+
+      ```json
+      { "label": "Front desk tablet" }
+      ```
+
+      Verify `201 { data: { kioskId, publicId, pairingCode, expiresAt } }`.
+      The `expiresAt` time sits about 10 minutes ahead. Copy the
+      `pairingCode` now.
+- [ ] 2. Issue a second code with the same label. Verify the response reuses
+      the same `kioskId` and `publicId` (there is still only one pending
+      terminal) but carries a fresh `pairingCode`. The first code is now
+      dead — this is the replace rule from Scenario M's badge reissue, applied
+      to pairing codes.
+- [ ] 3. Negative: call `POST /api/kiosk/pair` (no auth header) with
+      `{ "pairingCode": "NOT-A-CODE" }`. Verify `400` with the message
+      "Invalid or expired pairing code".
+- [ ] 4. Negative: call `POST /api/kiosk/pair` with the **replaced** code from
+      step 1. Verify the same `400` and the same message — a replaced code is
+      indistinguishable from a wrong one.
+- [ ] 5. Pair the device: call `POST /api/kiosk/pair` with the current code
+      from step 2. Verify `200 { data: { token, publicId, expiresAt } }`,
+      with `expiresAt` roughly 30 days out. Save the token as
+      `<kiosk-token>` — later scenarios use it.
+- [ ] 6. Negative: send step 5's body again. Verify the same generic `400` —
+      the code was cleared the moment it paired.
+- [ ] 7. Call `GET /api/kiosk/devices` as SUPERADMIN. Verify the device shows
+      `state` `ACTIVE` with `pairedAt` and `lastSeenAt` set, and that no
+      response field anywhere carries a pairing-code or token hash.
+- [ ] 8. Negative: sign in as `hr@test.attendpro.com` and call both
+      `POST /api/kiosk/pairing-codes` and `GET /api/kiosk/devices`. Verify
+      `403` on both — pairing is a SUPERADMIN action (device management, O3).
+- [ ] 9. Optional: expiry check. Issue a code and leave it unused past its
+      10 minutes, then try to pair with it. Verify the same generic `400`.
+      Skipping this is fine when the window is inconvenient — steps 3 and 4
+      already proved the message itself.
+
+### Scenario Q: Badge Identification at the Kiosk (kiosk token, M5)
+
+- [ ] 1. With `<kiosk-token>` as the bearer, call `POST /api/kiosk/identify`
+      with:
+
+      ```json
+      { "qrToken": "<qrPayload from Scenario M>" }
+      ```
+
+      Verify `201 { data: { sessionId, employeeDisplayName, permittedAction,
+      locationResult } }` and that `employeeDisplayName` is "Ama Mensah".
+      Read the full body: there is **no employee id**, no badge value, and no
+      PIN field. `permittedAction` is `CLOCK_IN` while she has no open
+      attendance row.
+- [ ] 2. Location fields. If the kiosk was paired with a `siteId` (the
+      Scenario K site), re-run step 1 with location fields added:
+
+      ```json
+      {
+        "qrToken": "<qrPayload>",
+        "latitude": 5.6037,
+        "longitude": -0.187,
+        "accuracyMeters": 10,
+        "capturedAt": "2026-10-16T09:00:00.000Z"
+      }
+      ```
+
+      Verify `locationResult` is `INSIDE` (the coordinates sit on the site).
+      Without location fields, or when no site is paired, verify it returns
+      `UNKNOWN` — flagged for review, never a block.
+- [ ] 3. Negative: call identify with
+      `{ "qrToken": "not-a-real-badge-token" }`. Verify `404` with the message
+      "Badge not recognised. See HR."
+- [ ] 4. Revoked badge: revoke Ama's credential (Scenario M step 4), then
+      identify again. Verify `403` with the message "This badge is no longer
+      valid. See HR." — a different refusal than the unknown one. Issue a
+      fresh credential afterwards so the rest of the scenarios keep working.
+- [ ] 5. Inactive employee: deactivate Ama Mensah (as in Scenario D), then
+      identify with her **active** badge. Verify `403` with the message
+      "This account is not active. See HR." Reactivate her afterwards.
+- [ ] 6. Badge of another business: the design makes this refusal share the
+      unknown-badge 404 body, so probing learns nothing. A second business is
+      rarely present in a local database; if yours has one, identify from
+      this kiosk with that business's badge and verify you get the same 404
+      body as step 3. If not, note the gap and move on.
+- [ ] 7. Evidence check: every refused call above wrote an
+      `attendance_attempts` row with `step` `IDENTIFY` and outcome `REJECTED`
+      (query the database as SUPERADMIN). Rows for unknown badges carry no
+      employee id.
+- [ ] 8. Negative: call identify without the kiosk token (or with a user
+      token). Verify `401` — a badge alone reaches nothing.
+
+### Scenario R: PIN Verify and the Atomic Punch (kiosk token, M5)
+
+- [ ] 1. Identify Ama (Scenario Q step 1) and copy the `sessionId`. The
+      session lives **2 minutes**, so keep moving.
+- [ ] 2. Call `POST /api/kiosk/verify-pin` with:
+
+      ```json
+      { "sessionId": "<sessionId>", "pin": "135790" }
+      ```
+
+      Verify `201 { data: { result: "VERIFIED", action, status } }`. The
+      `action` is recomputed by the server here, not carried over from the
+      identify response.
+- [ ] 3. Punch: call `POST /api/attendance/clock-in` with the kiosk token
+      as the bearer:
+
+      ```json
+      {
+        "verificationSessionId": "<sessionId>",
+        "latitude": 5.6037,
+        "longitude": -0.187,
+        "accuracyMeters": 10,
+        "capturedAt": "2026-10-16T09:05:00.000Z"
+      }
+      ```
+
+      Verify `201 { data: attendance }` with the row `OPEN` and Ama as the
+      employee. One badge scan plus one PIN turned into exactly one row.
+- [ ] 4. Negative: send step 3's body again. Verify `409` with the message
+      "Verification session was already used" — the session is single-use —
+      and that no second attendance row appeared.
+- [ ] 5. Negative: repeat step 3 with Ama's **staff** token as the bearer
+      instead of the kiosk token. Verify `401` — punch routes take device
+      tokens only (this is what supersedes the Scenario E walkthrough).
+- [ ] 6. Wrong PIN: identify again and call verify-pin with
+      `"pin": "123456"`. Verify `400` with the message "That PIN is not
+      correct. Try again." Repeat until the **fifth** call: every response,
+      including the lock-tripping one, has the same body — no count of
+      attempts left. The **sixth** call verifies `429` with the message
+      "Too many tries. Try again later or see HR."
+- [ ] 7. Employee lock: run a fresh identify and a verify-pin for Ama with
+      the correct PIN. Verify `429` with the message "Try again later or see
+      HR." — the lock after five failures holds across sessions for about
+      15 minutes, per employee, not per session. Re-run the setup snippet
+      from the note above to clear the lock before continuing.
+- [ ] 8. HR reset clears the lock: run Scenario J step 1 (the audited
+      `reset-pin`). Then identify again and send a deliberately **wrong**
+      PIN. Verify `400` (the lock is gone) rather than `429`. Also verify the
+      sessionId from before the reset no longer works — the reset expires
+      every open verification session for the employee.
+- [ ] 9. Nothing fabricated: across steps 4–8, compare Ama's attendance rows
+      before and after. Unknown badges and wrong PINs create **no** attendance
+      row. The evidence lives in `attendance_attempts` (`step` `VERIFY`,
+      outcome `REJECTED`, a reason string), never in `attendances`.
+- [ ] 10. Expiry: identify once more, wait out the 2 minutes, then verify-pin
+      with the correct PIN. Verify `400` with the message "Session expired.
+      Scan your badge again."
+
+### Scenario S: Clock-Out, Missing Closure, and the Night Shift (kiosk token, M5)
+
+- [ ] 1. With the open row from Scenario R: identify Ama (response should now
+      say `permittedAction` `CLOCK_OUT`), verify her PIN, and call
+      `POST /api/attendance/clock-out` with the same body shape as the
+      clock-in. Verify `200 { data: attendance }` with `clockOut` set,
+      `sessionStatus` `CLOSED`, `closureReason` `VERIFIED_CLOCK_OUT`, and a
+      positive `hoursWorked`.
+- [ ] 2. Identify again. Verify `permittedAction` is back to `CLOCK_IN`.
+- [ ] 3. Negative: identify, verify, and send the **clock-out** body while
+      she has no open row. Verify `400` with the message "You need to have an
+      active session open first" — then confirm that the same `sessionId`
+      can still be used for a real clock-in. A refusal does not burn the
+      session.
+- [ ] 4. `CLOCK_OUT_MISSING`: make sure Ama is assigned to the morning shift
+      (06:00–14:00, `shift-morning`). Clock her in during the morning, leave
+      the row open, and clock out after 14:00. Verify the row closes with
+      `status` `CLOCK_OUT_MISSING` — a session nobody closed inside the
+      shift window flags instead of quietly looking normal.
+- [ ] 5. Night shift: create the night shift of Scenario N if it does not
+      exist (18:00–06:00, `crossesMidnight: true`) and assign it to Ama. In
+      the evening, run identify → verify-pin → clock-in. After midnight, run
+      identify → verify-pin → clock-out. Verify the row's date belongs to the
+      day the shift **started** and `hoursWorked` covers the overnight span.
+      Also verify the cross-midnight rule: a clock-out on the opening evening
+      (before midnight, after 18:00) keeps the clock-in status, a clock-out
+      between 00:00 and 06:00 is the shift closing normally, and one after
+      06:00 flags `CLOCK_OUT_MISSING`. These steps need the right wall-clock
+      windows, so run them when the times fit.
+
+### Scenario T: Device Lifecycle (SUPERADMIN, M5)
+
+- [ ] 1. Call `GET /api/kiosk/devices` as SUPERADMIN. Verify the list shows
+      `publicId`, `label`, `siteId`, `state`, `pairedAt`, `lastSeenAt`,
+      `tokenExpiresAt`, and `revokedAt` — and never a token or pairing-code
+      hash (the dashboard sees states, not secrets).
+- [ ] 2. `lastSeenAt` tracking: make any kiosk-authenticated call (an
+      identify is enough), then re-list. Verify `lastSeenAt` moved to that
+      call's time.
+- [ ] 3. Renewal: call `POST /api/kiosk/token/renew` with the current
+      `<kiosk-token>` as the bearer. Verify `200 { data: { token, expiresAt }
+      }` with `expiresAt` about 30 days out. Save the new token. Then use the
+      **old** token on an identify. Verify `401` — each renewal rotates the
+      stored hash, so the previous token dies at once.
+- [ ] 4. The 90-day ceiling, simulated by inspection: re-list the devices and
+      verify that renewal moved `tokenExpiresAt` forward but did **not** move
+      `tokenIssuedAt` — the maximum age counts from the original issue, and
+      no amount of use restarts it. At 90 days or past it, the renew call
+      sends the terminal back to `PENDING_PAIRING` (token data cleared,
+      `tokenVersion` 0) and answers `401` with a "pair the device again"
+      message. Nobody should wait 90 days to test this; the inspection above
+      is the proof available locally.
+- [ ] 5. Revoke: call `POST /api/kiosk/devices/<id>/revoke` with:
+
+      ```json
+      { "reason": "QA revoke test" }
+      ```
+
+      Verify the success response. Then send any kiosk-authenticated request
+      with the stored token. Verify `401` immediately — revocation bumps the
+      token version on the row, and every call rechecks the row, so the
+      device fails on its next request rather than at day 30.
+- [ ] 6. Negative: call revoke on the same device again. Verify `409` with a
+      "Device is already revoked" message.
+- [ ] 7. Re-pairing: issue a new pairing code with the same label. Verify it
+      creates a **new** terminal row (a new `publicId`) instead of reusing
+      the revoked one; the old device stays `REVOKED` in the list. Pairing
+      the new row issues a fresh token on the new terminal.
+- [ ] 8. History check: attendance rows the revoked device created keep
+      their ids and values — revocation never deletes records.
+
+### Scenario U: Correction Submission (STAFF / HR self, M5)
+
+Corrections are self-scoped: an employee corrects **their own** rows. Sign in
+as Ama Mensah through the API using the temporary password Scenario I
+revealed (finish the forced password change if asked), so the correction
+belongs to her.
+
+- [ ] 1. Call `POST /api/attendance/corrections` with the id of today's
+      attendance row for Ama (from Scenario R/S):
+
+      ```json
+      {
+        "attendanceId": "<Ama's row for today>",
+        "reason": "The kiosk recorded 09:05 but I arrived at 08:40; the badge reader was slow."
+      }
+      ```
+
+      Verify `201 { data: { id, status: "SUBMITTED", reviewTier:
+      "SAME_DAY" } }` — the row's date is today, so the tier is `SAME_DAY`.
+- [ ] 2. Negative: send the same body again. Verify `409` with a message
+      about a correction already awaiting review — one open correction per
+      row.
+- [ ] 3. Escalated tier: pick one of Ama's older **finished** rows that is
+      still inside the window and submit. Verify `reviewTier` `ESCALATED` —
+      the tier follows the record's date, not your opinion of it. If your
+      database has no aged row inside the window, set one row's `date` a few
+      days back directly in the database (owner-run) and retry.
+- [ ] 4. Outside the window: move a row's `date` past the window (default
+      seven days from the default policy's `correctionWindowDays`, Scenario
+      O), then submit. Verify `409` with a message that names the window.
+- [ ] 5. Negative: submit against `staff@test.attendpro.com`'s attendance row
+      while signed in as Ama. Verify `404` — nobody corrects someone else's
+      record, and the refusal does not confirm the record exists.
+- [ ] 6. Negative: sign in as `superadmin@test.attendpro.com` and call the
+      same endpoint. Verify `403` — SUPERADMIN is not on this contract row.
+- [ ] 7. Negative: send an empty `reason` and again with over 2000
+      characters. Both verify `400`.
+- [ ] 8. Decision route: call `PATCH /api/hr/corrections/<id>/decision`.
+      Verify it is not a live route in M5 — the decision endpoint lands later
+      (M6 / HR area), so corrections stay `SUBMITTED` for now.
 
 ---
 

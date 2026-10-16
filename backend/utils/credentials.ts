@@ -1,4 +1,4 @@
-import { randomInt } from "crypto";
+import { randomBytes, randomInt } from "crypto";
 
 /**
  * D8 — credential generation.
@@ -43,4 +43,28 @@ export const generateEmployeeCode = async (
     if (!Number.isNaN(n)) next = n + 1;
   }
   return `EMP-${String(next).padStart(4, "0")}`;
+};
+
+/**
+ * Keypad-friendly alphabet for the pairing code (kiosk §2.1). Uncased
+ * characters only — no I/O or 0/1 that a shop operator cannot visually tell
+ * apart — and everything the operator sees is domestic-typable.
+ */
+const PAIRING_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+/**
+ * An 8-character one-time pairing code. 32^8 ≈ 40 bits: enough for a
+ * single-use code that expires in 10 minutes but not for anything long-lived.
+ * `randomBytes` % 32 is exactly uniform because 256 divides by 32.
+ */
+export const generatePairingCode = (): string => {
+  const bytes = randomBytes(8);
+  return Array.from(bytes, (b) => PAIRING_ALPHABET[b % PAIRING_ALPHABET.length]).join("");
+};
+
+/** The dashboard identifier (non-secret): "KT-" + 6 keypad-friendly characters. */
+export const generatePublicId = (): string => {
+  const bytes = randomBytes(6);
+  const tail = Array.from(bytes, (b) => PAIRING_ALPHABET[b % PAIRING_ALPHABET.length]).join("");
+  return `KT-${tail}`;
 };

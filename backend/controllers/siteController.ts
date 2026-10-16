@@ -1,17 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../config/prismaClient.js";
 import { auditLog } from "../utils/logger.js";
-
-/**
- * Load the caller's business_id so every site query is scoped to one tenant.
- */
-const callerBusinessId = async (userId: string): Promise<string | null> => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { businessId: true },
-  });
-  return user?.businessId ?? null;
-};
+import { callerBusinessId } from "../utils/tenant.js";
 
 const siteSelect = {
   id: true,
@@ -63,11 +53,10 @@ export const listSites = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({ success: true, data: sites, meta: { page, limit, total } });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -132,11 +121,10 @@ export const createSite = async (req: Request, res: Response): Promise<void> => 
         });
         return;
       }
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -201,11 +189,10 @@ export const updateSite = async (req: Request, res: Response): Promise<void> => 
         });
         return;
       }
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -249,11 +236,10 @@ export const deactivateSite = async (req: Request, res: Response): Promise<void>
     res.status(200).json({ success: true, message: "Site deactivated", data: site });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };

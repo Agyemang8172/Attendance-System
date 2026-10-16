@@ -148,18 +148,44 @@ export const getUsersQuerySchema = {
   }),
 };
 
-export const clockInSchema = {
+/**
+ * Kiosk punch bodies (contracts §8): the single-use verification session
+ * handle plus the location fields. The location rules mirror
+ * `kioskIdentifySchema` (optional but validated when present, R1 provisional
+ * bounds living in backend/utils/location.ts). The default-policy direction —
+ * clock-in vs clock-out — is the route itself; the server recomputes the
+ * permitted action from the open-session state and never trusts the client.
+ */
+const kioskPunchLocationFields = {
+  latitude: z.number().min(-90, "Latitude out of range").max(90, "Latitude out of range").optional(),
+  longitude: z
+    .number()
+    .min(-180, "Longitude out of range")
+    .max(180, "Longitude out of range")
+    .optional(),
+  accuracyMeters: z
+    .number()
+    .min(1, "Accuracy must be at least 1 meter")
+    .max(500, "Accuracy must be at most 500 meters")
+    .optional(),
+  capturedAt: z.string().datetime("capturedAt must be an ISO datetime").optional(),
+};
+
+export const kioskClockInSchema = {
   body: z.object({
-    checkInIp: z.string().ip().optional(),
-    checkInLat: z.number().min(-90).max(90).optional(),
-    checkInLng: z.number().min(-180).max(180).optional(),
-    remarks: z.string().max(500).optional(),
+    // The opaque session handle issued by identify; the ceiling mirrors the
+    // other session-handle fields.
+    verificationSessionId:
+      z.string().min(1, "Verification session ID is required").max(64, "Verification session ID is too long"),
+    ...kioskPunchLocationFields,
   }),
 };
 
-export const clockOutSchema = {
+export const kioskClockOutSchema = {
   body: z.object({
-    remarks: z.string().max(500).optional(),
+    verificationSessionId:
+      z.string().min(1, "Verification session ID is required").max(64, "Verification session ID is too long"),
+    ...kioskPunchLocationFields,
   }),
 };
 
@@ -219,10 +245,21 @@ export const createShiftSchema = {
       crossesMidnight: z.boolean().optional(),
     })
     .refine(
-      (data) => data.crossesMidnight || data.endMinute > data.startMinute,
+      (data) => {
+        // The flag must describe the geometry, not contradict it: an end
+        // before the start is a cross-midnight shift and nothing else, an end
+        // after the start is an ordinary day shift. start == end is the
+        // full-day edge (the shift spans the whole clock), so only the
+        // cross-midnight flag makes it representable.
+        const flag = data.crossesMidnight ?? false;
+        if (data.endMinute < data.startMinute) return flag === true;
+        if (data.endMinute > data.startMinute) return flag === false;
+        return flag === true;
+      },
       {
-        message: "End minute must be after start minute unless the shift crosses midnight",
-        path: ["endMinute"],
+        message:
+          "crossesMidnight must be true when the shift ends at or before it starts, and false when it ends after it starts",
+        path: ["crossesMidnight"],
       }
     ),
 };
@@ -427,5 +464,126 @@ export const qrCredentialIdSchema = {
 export const employeeIdSchema = {
   params: z.object({
     id: z.string().uuid("Invalid employee ID format"),
+  }),
+};
+
+// ── M5 — kiosk device lifecycle ──────────────────────────────────────────────
+
+export const createKioskPairingSchema = {
+  body: z.object({
+    label: z
+      .string()
+      .min(1, "Label is required")
+      .max(80, "Label must be at most 80 characters"),
+    siteId: z.string().uuid("Invalid site ID format").optional(),
+  }),
+};
+
+// A shop operator types this by hand: the ceiling is generous against a
+// typo-expanded paste, and the controller case-folds before hashing.
+export const kioskPairSchema = {
+  body: z.object({
+    pairingCode: z
+      .string()
+      .min(4, "Pairing code is required")
+      .max(16, "Pairing code must be at most 16 characters"),
+  }),
+};
+
+export const kioskDeviceListQuerySchema = {
+  query: z.object({
+    state: z.enum(["PENDING_PAIRING", "ACTIVE", "REVOKED", "EXPIRED"]).optional(),
+    siteId: z.string().uuid("Invalid site ID format").optional(),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(50),
+  }),
+};
+
+export const kioskDeviceIdSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid device ID format"),
+  }),
+};
+
+export const kioskRevokeDeviceSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid device ID format"),
+  }),
+  body: z.object({
+    reason: z
+      .string()
+      .min(1, "A reason is required")
+      .max(200, "Reason must be at most 200 characters")
+      .optional(),
+  }),
+};
+
+// ── M5 — kiosk verification (identify / verify-pin / cancel) ─────────────────
+
+/**
+ * Location fields are optional but validated when present (contracts §7).
+ * The 500 m accuracy ceiling and the 60 s staleness threshold mirror the
+ * provisional R1 defaults applied in backend/utils/location.ts, so R1's
+ * final numbers land there, not here.
+ */
+export const kioskIdentifySchema = {
+  body: z.object({
+    // The badge payload is an opaque base64url token plus a version byte in
+    // the QR itself; the kiosk sends the token only. Bounds are transport
+    // hygiene, not a format test — the real test is the database match.
+    qrToken: z
+      .string()
+      .min(8, "Badge token is required")
+      .max(200, "Badge token is too long"),
+    latitude: z.number().min(-90, "Latitude out of range").max(90, "Latitude out of range").optional(),
+    longitude: z
+      .number()
+      .min(-180, "Longitude out of range")
+      .max(180, "Longitude out of range")
+      .optional(),
+    accuracyMeters: z
+      .number()
+      .min(1, "Accuracy must be at least 1 meter")
+      .max(500, "Accuracy must be at most 500 meters")
+      .optional(),
+    capturedAt: z.string().datetime("capturedAt must be an ISO datetime").optional(),
+  }),
+};
+
+export const kioskVerifyPinSchema = {
+  body: z.object({
+    // The session handle is a 32-character base64url string; the ceiling just
+    // keeps this table out of pages of junk, and any wrong-length entry
+    // already hashes to nothing the database holds.
+    sessionId: z.string().min(1, "Session ID is required").max(64, "Session ID is too long"),
+    // R5 stays open, but six digits is the code's current reality (resetPin
+    // generates six), so the validator enforces six — the owner's final PIN
+    // policy updates this regex and the generator together.
+    pin: z.string().regex(/^\d{6}$/, "PIN must be exactly 6 digits"),
+  }),
+};
+
+export const kioskCancelSchema = {
+  body: z.object({
+    sessionId: z.string().min(1, "Session ID is required").max(64, "Session ID is too long"),
+  }),
+};
+
+// ── M5 — correction submission (contracts §8, O17) ───────────────────────────
+
+export const createCorrectionSchema = {
+  body: z.object({
+    attendanceId: z.string().uuid("Invalid attendance ID format"),
+    // A reason is the contract's one required field; the ceiling keeps a
+    // single request from ballooning a row.
+    reason: z
+      .string()
+      .min(1, "A reason is required")
+      .max(2000, "Reason must be at most 2000 characters"),
+    proposedClockIn: z.string().datetime("proposedClockIn must be an ISO datetime").optional(),
+    proposedClockOut: z.string().datetime("proposedClockOut must be an ISO datetime").optional(),
+    // R6-optional: a failed punch attempt id may be attached to the
+    // correction; the controller checks it against the caller's records.
+    attemptId: z.string().uuid("Invalid attempt ID format").optional(),
   }),
 };

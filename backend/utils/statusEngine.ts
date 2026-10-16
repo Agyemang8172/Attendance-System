@@ -15,8 +15,12 @@
  *  - LATE:   clock-in is after the late grace window
  *  - OPEN_SESSION: no shift or policy to evaluate against (open, not yet classified)
  *
- * A shift that crosses midnight (startMinute > endMinute) is evaluated against
- * the policy in force when it started (PRD §12, O15).
+ * Minute-of-day is circular: the day runs 0..1439 and then wraps back to 0.
+ * Every distance to the shift start is therefore measured with modular
+ * arithmetic, `(a - b + 1440) % 1440`, so a shift starting at 23:55 sees a
+ * 23:50 clock-in as five minutes before start rather than 23h50 after it.
+ * That is what lets one formula serve both daytime shifts and shifts that
+ * cross midnight (PRD §12, O15).
  */
 
 export type AttendanceStatus =
@@ -55,25 +59,25 @@ export const evaluateClockInStatus = (
   if (!shift || !policy) return "OPEN_SESSION";
 
   const minute = minuteOfDay(clockIn);
-  const { startMinute, crossesMidnight } = shift;
-  const earlyThreshold = policy.graceEarlyMinutes;
-  const lateGrace = policy.graceLateMinutes;
+  const { startMinute } = shift;
 
-  // A clock-in is early when it falls more than the early threshold before
-  // shift start. Being a few minutes early (within the threshold) is normal
-  // and classifies as on time once the grace window opens.
-  const earliestEarly = startMinute - earlyThreshold;
+  // Distance to the shift start in both directions, kept in 0..1439 by the
+  // wrap. A punch sitting on the timeline is always nearer to one of the two
+  // starts it could belong to (the one that just passed, or the one coming
+  // up); the nearer one is the shift this punch is about.
+  const minutesBeforeStart = (startMinute - minute + 1440) % 1440;
+  const minutesAfterStart = (minute - startMinute + 1440) % 1440;
 
-  if (crossesMidnight) {
-    // Shift spans midnight (e.g. 22:00-06:00). Evaluate relative to start.
-    if (minute < earliestEarly) return "EARLY";
-    if (minute <= startMinute + lateGrace) return "ON_TIME";
-    return "LATE";
+  if (minutesBeforeStart <= minutesAfterStart) {
+    // Pre-start side of the clock-in. Being within the early grace is normal
+    // and classifies as on time; anything earlier than the grace is EARLY.
+    // With a zero early grace any pre-start punch is EARLY.
+    if (minutesBeforeStart > policy.graceEarlyMinutes) return "EARLY";
+    return "ON_TIME";
   }
 
-  // Normal daytime shift: startMinute <= endMinute.
-  if (minute < earliestEarly) return "EARLY";
-  if (minute <= startMinute + lateGrace) return "ON_TIME";
+  // Post-start side of the clock-in: on time up to the late grace, late after.
+  if (minutesAfterStart <= policy.graceLateMinutes) return "ON_TIME";
   return "LATE";
 };
 
@@ -89,12 +93,18 @@ export const evaluateClockOutStatus = (
 ): AttendanceStatus => {
   if (!shift) return existingStatus;
   const minute = minuteOfDay(clockOut);
-  const { endMinute, crossesMidnight } = shift;
+  const { startMinute, endMinute, crossesMidnight } = shift;
 
   if (crossesMidnight) {
-    // After midnight, the shift end minute is smaller than start. A clock-out
-    // before endMinute (after midnight) is within the shift; otherwise it ran
-    // past the window.
+    // The shift opens in the evening and its end falls after midnight. A
+    // clock-out still on the opening evening (after the start minute) is an
+    // ordinary departure from the shift in progress, so the clock-in status
+    // stands — the missing-flag decision belongs to the next-morning side.
+    if (minute > startMinute) return existingStatus;
+
+    // Past midnight (minute <= startMinute): before the end minute the
+    // session is still inside the shift; beyond it nobody recorded the
+    // proper clock-out.
     if (minute <= endMinute) return existingStatus;
     return "CLOCK_OUT_MISSING";
   }

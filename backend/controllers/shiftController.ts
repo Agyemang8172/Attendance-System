@@ -1,22 +1,10 @@
 import { Request, Response } from "express";
 import prisma from "../config/prismaClient.js";
 import { auditLog } from "../utils/logger.js";
+import { callerBusinessId } from "../utils/tenant.js";
 
 const MINUTE_MIN = 0;
 const MINUTE_MAX = 1439;
-
-/**
- * Load the caller's business_id so every shift query is scoped to one tenant.
- * The schema makes business_id NOT NULL on every user after migration 1, so a
- * caller without a business is a configuration problem, not a normal case.
- */
-const callerBusinessId = async (userId: string): Promise<string | null> => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { businessId: true },
-  });
-  return user?.businessId ?? null;
-};
 
 const shiftSelect = {
   id: true,
@@ -60,11 +48,10 @@ export const listShifts = async (req: Request, res: Response): Promise<void> => 
     res.status(200).json({ success: true, data: shifts });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -116,11 +103,10 @@ export const createShift = async (req: Request, res: Response): Promise<void> =>
         });
         return;
       }
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -145,7 +131,7 @@ export const updateShift = async (req: Request, res: Response): Promise<void> =>
 
     const existing = await prisma.shift.findUnique({
       where: { id: shiftId },
-      select: { id: true, businessId: true },
+      select: { id: true, businessId: true, startMinute: true, endMinute: true, crossesMidnight: true },
     });
 
     if (!existing) {
@@ -173,6 +159,33 @@ export const updateShift = async (req: Request, res: Response): Promise<void> =>
     if (crossesMidnight !== undefined) data.crossesMidnight = crossesMidnight;
     if (isActive !== undefined) data.isActive = isActive;
 
+    // The geometry rule must hold on the merged shift, not on the patch
+    // alone: a PATCH that moves only the end minute can silently flip an
+    // ordinary shift into one that ends before it starts. Stored values are
+    // overridden by the payload fields, same rules as createShiftSchema.
+    const mergedStart =
+      startMinute !== undefined ? startMinute : existing.startMinute;
+    const mergedEnd =
+      endMinute !== undefined ? endMinute : existing.endMinute;
+    const mergedCrossesMidnight =
+      crossesMidnight !== undefined ? crossesMidnight : existing.crossesMidnight;
+
+    const geometryIsConsistent =
+      mergedEnd < mergedStart
+        ? mergedCrossesMidnight === true
+        : mergedEnd > mergedStart
+          ? mergedCrossesMidnight === false
+          : mergedCrossesMidnight === true; // start == end is the full-day edge
+
+    if (!geometryIsConsistent) {
+      res.status(400).json({
+        success: false,
+        message:
+          "crossesMidnight must be true when the shift ends at or before it starts, and false when it ends after it starts",
+      });
+      return;
+    }
+
     const shift = await prisma.shift.update({
       where: { id: shiftId },
       data,
@@ -191,11 +204,10 @@ export const updateShift = async (req: Request, res: Response): Promise<void> =>
         });
         return;
       }
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -245,11 +257,10 @@ export const deactivateShift = async (req: Request, res: Response): Promise<void
     res.status(200).json({ success: true, message: "Shift deactivated", data: shift });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };

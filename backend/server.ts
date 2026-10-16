@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
+import correctionRoutes from "./routes/correctionRoutes.js";
 import shiftRoutes from "./routes/shiftRoutes.js";
 import assignmentRoutes from "./routes/assignmentRoutes.js";
 import policyRoutes from "./routes/policyRoutes.js";
@@ -11,6 +12,8 @@ import hrRoutes from "./routes/hrRoutes.js";
 import siteRoutes from "./routes/siteRoutes.js";
 import calendarRoutes from "./routes/calendarRoutes.js";
 import qrRoutes from "./routes/qrRoutes.js";
+import kioskDeviceRoutes from "./routes/kioskDeviceRoutes.js";
+import kioskVerifyRoutes from "./routes/kioskVerifyRoutes.js";
 import securityHeaders from "./middleware/securityHeaders.js";
 import { logger, correlationIdMiddleware, requestLogger, logError } from "./utils/logger.js";
 import { setupSwagger } from "./docs/swagger.js";
@@ -133,6 +136,11 @@ if (process.env.NODE_ENV !== "test") {
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
+// Correction submission rides its exact path under /api/attendance (contracts
+// §8). Mounting the full prefix — not inside attendanceRoutes — keeps the POST
+// /corrections route away from the attendance router's /:id param route, so
+// neither can ever shadow the other.
+app.use("/api/attendance/corrections", correctionRoutes);
 app.use("/api/business/shifts", shiftRoutes);
 app.use("/api/business", assignmentRoutes);
 app.use("/api/business/policies", policyRoutes);
@@ -140,6 +148,15 @@ app.use("/api/hr", hrRoutes);
 app.use("/api/sites", siteRoutes);
 app.use("/api/business/calendars", calendarRoutes);
 app.use("/api/business", qrRoutes);
+
+// Kiosk device routes are mounted at their own prefix; no wider /api mount
+// exists today that could shadow them, so this joins the route group above.
+app.use("/api/kiosk", kioskDeviceRoutes);
+
+// Kiosk verification rides the same prefix (contracts §7): identify,
+// verify-pin and cancel all sit behind the device-token middleware, leaving
+// /pair the only public kiosk route.
+app.use("/api/kiosk", kioskVerifyRoutes);
 
 // Health check
 app.get("/api/health", async (_req, res) => {

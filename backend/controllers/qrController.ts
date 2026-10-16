@@ -2,17 +2,7 @@ import { createHmac, randomBytes } from "crypto";
 import { Request, Response } from "express";
 import prisma from "../config/prismaClient.js";
 import { auditLog, userLogger } from "../utils/logger.js";
-
-/**
- * Load the caller's business_id so every credential query is scoped to one tenant.
- */
-const callerBusinessId = async (userId: string): Promise<string | null> => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { businessId: true },
-  });
-  return user?.businessId ?? null;
-};
+import { callerBusinessId } from "../utils/tenant.js";
 
 /**
  * The badge token is opaque and only its keyed hash is stored. The hash uses
@@ -100,11 +90,10 @@ export const issueQrCredential = async (
     });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -153,11 +142,10 @@ export const revokeQrCredential = async (
     res.status(200).json({ success: true, message: "Credential revoked" });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({
-        success: false,
-        message: "Server error",
-        error: error.message,
-      });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      // A non-Error throw must still be answered, not hang the request.
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };

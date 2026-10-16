@@ -36,7 +36,7 @@ M1 design set (committed `b403a66`):
 
 - **Assignee:** Implementer agent, orchestrated
 - **DependsOn:** M2 (complete)
-- **State:** written and verified, uncommitted
+- **State:** committed (`d31a5a0`)
 - **Delivered:**
   - `backend/controllers/shiftController.ts` + `routes/shiftRoutes.ts` — shift CRUD (minute-of-day, name unique per business)
   - `backend/controllers/assignmentController.ts` + `routes/assignmentRoutes.ts` — shift assignments (transactional open/close/sync)
@@ -53,7 +53,7 @@ M1 design set (committed `b403a66`):
 
 - **Orchestration:** implemented in-session, then independently reviewed by a review agent (verdict: safe after fixes) and documented by a separate docs agent; both findings applied.
 - **DependsOn:** M3 (complete)
-- **State:** reviewed, fixes applied, all gates green
+- **State:** committed (`f2db8e4`, reviewed)
 - **Delivered:**
   - `backend/routes/hrRoutes.ts` — `/api/hr` reusing the `userController` list/create/update handlers rather than duplicating them; tenant scoping added inside those handlers
   - `userController.resetPin` — audited kiosk PIN reset (`HMAC-SHA-256` with `PIN_HMAC_KEY` and a per-record salt), lockout counters cleared, PIN never returned
@@ -62,11 +62,32 @@ M1 design set (committed `b403a66`):
   - `backend/controllers/qrController.ts` + `routes/qrRoutes.ts` — QR issue (token shown once, only a keyed hash stored) and revoke
   - validators and audit events for all of the above
 - **Verification:** `tsc --noEmit` = 0 errors; `prisma validate` valid; `db-check.sh` passed on 10 migrations; `humanize-check` clean. Review-agent fixes applied: per-tenant last-superadmin rule (also on delete), round-trip calendar-date check, STAFF-only PIN reset target, directory gate parity, IANA timezone validation, policy-derived site radius, distinct default-calendar conflict message. `docs/TESTING_GUIDE.md` gained Scenarios I–O from the docs agent.
-- **Deferred:** tenant-isolation regression tests (reviewer MINOR-5); kiosk session invalidation on PIN reset (reviewer MINOR-6, lands with M5).
+- **Deferred:** tenant-isolation regression tests (reviewer MINOR-5); kiosk session invalidation on PIN reset (reviewer MINOR-6 — delivered in M5 Phase 0).
+
+### [ COMPLETE ] — M5 kiosk pairing, QR+PIN, atomic punch
+
+- **Orchestration:** five agents ran sequentially — Phase 0 hardening, Phase 1 device lifecycle, Phases 2–3 identify+PIN, Phase 4 atomic punch, review-fix application — plus an independent review agent (verdict: safe after fixes; α both blocking findings applied) and a docs agent (Scenarios P–U in the testing guide).
+- **DependsOn:** M4 (committed) + the post-M4 audit findings
+- **State:** written, reviewed, all gates green, uncommitted
+- **Delivered:**
+  - Phase 0: wrap-around status engine + same-evening clock-out guard wired into the punch; merged-geometry shift validation; UTC date basis; shift-scoped policy lookup; catch blocks always answer with redacted bodies; `utils/tenant.ts` dedupe; policy-default race fixed; PIN reset expires open sessions; preview glyphs fixed
+  - Phase 1: pairing codes (single live, 10 min, shown once), device tokens (30-day, renewed on use, 90-day hard age), `kioskAuthMiddleware`, devices list/revoke, `utils/kioskKeys.ts`, `utils/rateLimit.ts`
+  - Phases 2–3: `utils/location.ts` (INSIDE/OUTSIDE/UNKNOWN, flagged not blocked, thresholds pending R1); `identify` / `verify-pin` / `cancel`; 2-minute hashed-handle sessions; 5 attempts / 15-minute lock (pending R5); evidence attempt rows on every failure
+  - Phase 4: kiosk-scoped atomic punch with session lock+consume inside the transaction, dated shift resolution, schema snapshot columns; correction submission with tier and window; read aliases kept
+  - Fixes: legacy catch hardening completed on `attendanceController`; §11 audit events now also persist to `audit_logs` table via `utils/auditWriter.ts` (paired/renewed/expired/revoked/rejected, session started/succeeded/failed/locked/expired/cancelled, attendance.recorded, attendance.location_flagged)
+- **Verification:** `tsc` 0 errors; `prisma validate` valid; db-check, env parity (10 vars), ui-taste, humanize all pass
+- **Deferred:** `attemptId` persistence on corrections (no schema column; R6); status engine still UTC (O15); `authenticate_lookup` login rewiring; RLS `app.business_id` app wrapper; limiter numbers are provisional pending R5
 
 ### [ QUEUED ] — M5 kiosk pairing and QR+PIN attention
 
-- **DependsOn:** M4
+- **DependsOn:** M4 (committed) plus the post-M4 audit findings, which the M5 plan Phase 0 absorbs.
+
+Post-M4 audit (2026-10-16, two review agents — one over M0–M3 records, one technical health):
+
+- **Green:** 19 models ↔ 9 migrations ↔ 19 RLS policies align with `M1-DATA-MODEL.md`; decisions O1/O2/O15/O22 verified in code; `tsc` 0 errors; `prisma validate` valid; env parity (8/8 documented), db-check, humanize all pass; all 10 routers wired with no shadowing; tree clean, 11 commits unpushed.
+- **Defects folded into M5 Phase 0:** cross-midnight status-engine math (wrap-around early grace, same-evening clock-out guard), `evaluateClockOutStatus` wired but never called, shift validators allow flag/geometry inconsistency, clock-in ignores shift-scoped policies, date-basis split (local vs UTC), catch blocks that hang on non-Error throws, `error.message` leaked in 500 bodies, `callerBusinessId` duplicated 6×, policy-default race in `createPolicy`.
+- **Architecture gaps needing owner decisions:** RLS wrapper (`set_config('app.business_id')`) absent from application code despite fail-closed migration policies; `authenticate_lookup` SQL function unused by login; `db-guard.sh` has no invocation point.
+- **Cosmetic:** `✓` glyphs in `docs/attendpro/previews/design-comparison.html` fail ui-taste.
 
 ### [ QUEUED ] — AttendPro milestones
 
@@ -76,8 +97,8 @@ M1 design set (committed `b403a66`):
 | M1 | Architecture and UI design (full set delivered) | approved (owner, 2026-10-16) | M0 |
 | M2 | Foundation: tenant model, schema/migrations with RLS, isolated test database, repository reconciliation | complete (committed `a74c72a`) | M1 (approved) |
 | M3 | Shifts, policies, status rule engine, timing policy (effective-dated) | complete (tsc clean, 0 errors) | M2 |
-| M4 | SUPERADMIN: employees, shift assignment, calendars/sites/kiosks, policies | complete (tsc clean, 0 errors, uncommitted) | M3 |
-| M5 | Kiosk: pairing, QR+PIN, location assessment, atomic punch, tenant isolation | security gate | M4 |
+| M4 | SUPERADMIN: employees, shift assignment, calendars/sites/kiosks, policies | committed (`f2db8e4`, reviewed) | M3 |
+| M5 | Kiosk: pairing, QR+PIN, location assessment, atomic punch, tenant isolation | complete (reviewed, tsc 0 errors, uncommitted) | M4 |
 | M6 | Automatic clock-out job, shift-aware, flagged | QA | M5 |
 | M7 | Help requests, corrections with audit trail (no self-approval), reports, audit, retention | QA + security | M6 |
 | M8 | Staff and HR portals, public landing page | QA | M7 |
