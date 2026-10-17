@@ -14,6 +14,7 @@ import calendarRoutes from "./routes/calendarRoutes.js";
 import qrRoutes from "./routes/qrRoutes.js";
 import kioskDeviceRoutes from "./routes/kioskDeviceRoutes.js";
 import kioskVerifyRoutes from "./routes/kioskVerifyRoutes.js";
+import jobRoutes from "./routes/jobRoutes.js";
 import securityHeaders from "./middleware/securityHeaders.js";
 import { logger, correlationIdMiddleware, requestLogger, logError } from "./utils/logger.js";
 import { setupSwagger } from "./docs/swagger.js";
@@ -157,6 +158,11 @@ app.use("/api/kiosk", kioskDeviceRoutes);
 // verify-pin and cancel all sit behind the device-token middleware, leaving
 // /pair the only public kiosk route.
 app.use("/api/kiosk", kioskVerifyRoutes);
+
+// Background jobs (contracts §9): the auto-clock-out trigger and its status
+// read. Mounted at its own prefix; the run route authenticates on the job
+// service token, not on any session middleware.
+app.use("/api/jobs", jobRoutes);
 
 // Health check
 app.get("/api/health", async (_req, res) => {

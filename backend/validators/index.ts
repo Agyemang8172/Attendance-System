@@ -587,3 +587,24 @@ export const createCorrectionSchema = {
     attemptId: z.string().uuid("Invalid attempt ID format").optional(),
   }),
 };
+
+// ── M6 — background jobs (contracts §9) ──────────────────────────────────────
+
+/**
+ * POST /auto-clock-out/run takes an optional businessId so the sweep can be
+ * aimed at one business; absent means every active business. The request
+ * carries nothing else — the caller's authority is the service token, not the
+ * body.
+ */
+export const jobRunSchema = {
+  body: z.object({
+    businessId: z.string().uuid("Invalid business ID format").optional(),
+  }),
+};
+
+/**
+ * GET /status has no request fields to validate (contracts §9: "none"), so
+ * the route wires no validate() middleware; this empty schema exists as the
+ * marker that the omission is deliberate.
+ */
+export const jobStatusSchema = z.object({});

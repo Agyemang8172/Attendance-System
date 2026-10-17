@@ -4,10 +4,10 @@
 
 ## Current Session — 2026-10-16
 
-- **Task:** M5 committed (`63318bf`). Programme **paused at the owner's instruction** awaiting the go-ahead for M6 (automatic clock-out job). When M6 starts, the owner has directed: run it the same orchestrated way — phase agents, review agent, docs agent, then the gated commit.
-- **Branch:** `main`, eleven commits ahead of `origin/main`, nothing pushed
+- **Task:** M6 (automatic clock-out job) built, reviewed, and verified through the orchestrator; uncommitted, ready for the owner's commit decision.
+- **Branch:** `main`, twelve commits ahead of `origin/main`, nothing pushed
 - **Mode:** interactive, Orchestrator locked
-- **State:** M3 committed (`d31a5a0`), M4 committed (`f2db8e4`). M5 is written, reviewed (verdict: safe after fixes — both blocking findings applied), and verified (`tsc` 0 errors, prisma valid, db-check, env parity, ui-taste, humanize all pass), uncommitted. `docs/attendpro/*.md` and the testing guide pass `humanize-check.sh`.
+- **State:** M5 committed (`63318bf`) plus the pause-record commit (`4fa1602`). M6 is written, reviewed (verdict: safe after fixes — the blocking re-flagging idempotence fix and the cheap hardening applied), and verified (`tsc` 0 errors, prisma valid, db-check, env parity, ui-taste, humanize all pass), uncommitted. `docs/attendpro/*.md` and the testing guide pass `humanize-check.sh`.
 
 Completed (2026-10-16, M3):
 
@@ -37,6 +37,15 @@ Completed (2026-10-16, M5):
 - Phase 6 verification: review agent pass (safe after fixes; both majors applied — catch hardening finished on the legacy attendance handlers, and the §11 audit trail now also lands in the `audit_logs` table via a new `writeAudit` helper at every kiosk event site); docs agent added Scenarios P–U and the superseded-note for the staff-token punch.
 
 M5 verification: `tsc --noEmit` zero errors; `prisma validate` valid; `db-check.sh`, env parity, ui-taste, humanize all pass.
+
+Completed (2026-10-17, M6):
+
+- Phase 1: `backend/middleware/jobAuthMiddleware.ts` — `JOB_TOKEN` service-token guard (constant-time, fail-closed 401) plus `requireJobOrSuperadmin` for the status route; `backend/routes/jobRoutes.ts` mounted at `/api/jobs` (run: job token only, auth before validate, 5/min IP limiter); stubs filled by Phase 2; `JOB_TOKEN` documented in root `.env.example`.
+- Phases 2–3: `backend/utils/shiftWindow.ts` (pure snapshot math — end instant from the row's own `date`/minute snapshots, +1 day overnight; UTC applied, the row's `timezoneSnapshot` stored but not applied until O15); `backend/jobs/autoClockOut.ts` — one transaction holding `pg_try_advisory_xact_lock(hashtext('attendpro:auto-clock-out'))` (sentinel → 409), all-business sweep, per-row classification against the effective policy version (row's version → business default): enabled+overdue closes at shift end + offset (offset falls back to the 120-minute buffer), disabled leaves the row untouched, unresolvable window/policy flags `REQUIRES_REVIEW` (flagged once — repeat sightings are skipped in memory), every write guarded by `updateMany WHERE sessionStatus = OPEN` with a count check; hours arithmetic matches the punch path divisor exactly; audit rows `job.auto_clock_out_closed`/`job.auto_clock_out_flagged` with `actorType SYSTEM` via the extended `writeAudit`; `jobStatus` endpoint reads the latest SYSTEM batch (job lane sees all, SUPERADMIN lane own business).
+- Verification phase: independent review — verdict safe after fixes; blocking fix applied (flagged rows no longer re-written/re-audited every run); cheap fixes applied (auth-first on run, cache-miss correctness, `businessId` filter on policy lookup, runbook rate-limit note); the O8 "closes after a maximum" vs lifecycle §7.1 flag-only conflict registered as R10 in `docs/attendpro/DECISION-REGISTER.md` for an owner ruling; docs agent added Scenario V (arrange → run → verify → idempotence → genuine clock-out wins → disabled → unresolvable → 409 → authorization).
+- `docs/runbook-jobs.md` — plain-English trigger/status runbook for the owner's 15-minute scheduler (O8); no in-app timer by design.
+
+M6 verification: `tsc --noEmit` zero errors; `prisma validate` valid; `db-check.sh`, env parity (11 vars), ui-taste, humanize all pass.
 - Owner input O14: `backend/.env` has an empty `DATABASE_URL`, so the migration chain cannot run against a test database yet (no database migrated anywhere).
 - Owner input O13: repository reconciliation Phase 2 complete (histories are separate); Phase 1 backups taken.
 - New environment keys `PIN_HMAC_KEY` and `QR_SECRET_KEY` are required by the M4 PIN and QR handlers; both fail closed when unset. `backend/.env.example` is gitignored, so documenting them locally is still a pending owner decision.

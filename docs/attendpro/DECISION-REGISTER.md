@@ -80,6 +80,7 @@ recommendation are given; the owner decides.
 | R7 | Independent approval for HR's own corrections | (a) a second HR user, (b) SUPERADMIN, (c) an owner-designated approver list | (b) where only one HR exists; otherwise (a). Needs the owner |
 | R8 | Can attendance records and audit/security logs keep different retention periods | (a) yes, separate policies, (b) one period for all | (a): the categories differ and O10 already separates them |
 | R9 | Whether the current database and migration history can safely support the tenant and audit design | (a) forward-only migrations on the existing database, (b) rebuild on a fresh database | Confirm after the M0 evidence: forward-only is viable, with the bootstrap business row and RLS |
+| R10 | What happens to an open clock-in with no resolvable shift window. O8 says a session "with no shift it closes after a maximum (default 840 minutes)", but `M1-ATTENDANCE-LIFECYCLE.md` §7.1, §5.2, §9 and §10 consistently say such a row is flagged `REQUIRES_REVIEW`, not closed. M6 was built flag-only per the owner-approved M6 plan. | (a) keep the flag-only behavior, (b) close the session after the maximum duration | Needs an owner ruling. The `autoClockOutMaxOpenMinutes` column (default 840) already exists and is unused, so closure-by-maximum can be adopted later with no schema work. |
 
 ---
 

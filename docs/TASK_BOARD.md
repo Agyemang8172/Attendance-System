@@ -78,7 +78,7 @@ M1 design set (committed `b403a66`):
 - **Verification:** `tsc` 0 errors; `prisma validate` valid; db-check, env parity (10 vars), ui-taste, humanize all pass
 - **Deferred:** `attemptId` persistence on corrections (no schema column; R6); status engine still UTC (O15); `authenticate_lookup` login rewiring; RLS `app.business_id` app wrapper; limiter numbers are provisional pending R5
 
-### [ QUEUED ] — M5 kiosk pairing and QR+PIN attention
+### [ COMPLETE ] — M5 kiosk pairing and QR+PIN attention (committed `63318bf`)
 
 - **DependsOn:** M4 (committed) plus the post-M4 audit findings, which the M5 plan Phase 0 absorbs.
 
@@ -89,10 +89,21 @@ Post-M4 audit (2026-10-16, two review agents — one over M0–M3 records, one t
 - **Architecture gaps needing owner decisions:** RLS wrapper (`set_config('app.business_id')`) absent from application code despite fail-closed migration policies; `authenticate_lookup` SQL function unused by login; `db-guard.sh` has no invocation point.
 - **Cosmetic:** `✓` glyphs in `docs/attendpro/previews/design-comparison.html` fail ui-taste.
 
-### [ QUEUED ] — M6 automatic clock-out job
+### [ COMPLETE ] — M6 automatic clock-out job
 
-- **Owner direction (2026-10-16):** hold for now; on resume, M6 proceeds **through the orchestrator** — plan approved first, then phase agents in sequence, an independent review agent, the docs agent, gates green, owner sees the review summary, commit through `.agents/scripts/commit.sh`. No push without instruction.
-- **Scope reminder:** shift-aware automatic clock-out, flagged (not fabricated) closures per the attendance lifecycle, the `job`-role service token route (`/api/jobs/auto-clock-out/run`, `/api/jobs/status`), and the correction-decision endpoint if the owner folds it into M6.
+- **Orchestration:** four agents ran sequentially/in-parallel — Phase 1 job auth + routes, Phases 2–3 the sweep + status + runbook — plus an independent review agent (verdict: safe after fixes) and a docs agent (Scenario V in the testing guide); a fix agent applied all findings.
+- **DependsOn:** M5 (committed `63318bf`)
+- **State:** written, reviewed, all gates green, uncommitted
+- **Delivered:**
+  - `backend/middleware/jobAuthMiddleware.ts` — `JOB_TOKEN` service-token guard (constant-time compare, fail-closed 401); `requireJobOrSuperadmin` for the status lane
+  - `backend/jobs/autoClockOut.ts` + `backend/utils/shiftWindow.ts` — the idempotent sweep: one transaction holding `pg_try_advisory_xact_lock` (second run answers 409); per-row classification against the effective policy version; enabled+overdue rows close at shift end + offset (buffer fallback 120 minutes); disabled policies are left untouched; unresolvable windows/policies are flagged `REQUIRES_REVIEW` **once** (repeat sightings skipped); every write guarded by `updateMany WHERE sessionStatus = OPEN`; hours arithmetic identical to the punch path; UTC snapshot math, timezone application deferred to O15
+  - `backend/controllers/jobController.ts` + `backend/routes/jobRoutes.ts` — `POST /api/jobs/auto-clock-out/run` (job token, auth before validate, 5/min limiter) and `GET /api/jobs/status` (`{ lastRun, closed, flagged }`; job lane sees all, SUPERADMIN own business)
+  - `writeAudit` extended with an optional `actorType` override (SYSTEM for job rows); `job.auto_clock_out_closed`/`_flagged` audit rows
+  - `docs/runbook-jobs.md` — trigger/status walkthrough for the owner's 15-minute scheduler; no in-app timer
+  - Testing guide Scenario V: arrange → run → verify write → idempotence → genuine clock-out wins → disabled policy → unresolvable window → 409 concurrency → authorization
+- **Review findings applied:** flagged-path idempotence (blocking); auth-first on run; policy-cache miss correctness; `businessId` filter on the policy lookup; runbook rate-limit note; O8-vs-lifecycle conflict registered as **R10** in `DECISION-REGISTER.md` (needs an owner ruling)
+- **Verification:** `tsc` 0 errors; `prisma validate` valid; db-check, env parity (11 vars), ui-taste, humanize all pass
+- **Decision 1 note:** the HR correction-decision endpoint (R7) was NOT folded into M6 — it stays queued for its own plan.
 
 ### [ QUEUED ] — AttendPro milestones
 
@@ -103,8 +114,8 @@ Post-M4 audit (2026-10-16, two review agents — one over M0–M3 records, one t
 | M2 | Foundation: tenant model, schema/migrations with RLS, isolated test database, repository reconciliation | complete (committed `a74c72a`) | M1 (approved) |
 | M3 | Shifts, policies, status rule engine, timing policy (effective-dated) | complete (tsc clean, 0 errors) | M2 |
 | M4 | SUPERADMIN: employees, shift assignment, calendars/sites/kiosks, policies | committed (`f2db8e4`, reviewed) | M3 |
-| M5 | Kiosk: pairing, QR+PIN, location assessment, atomic punch, tenant isolation | complete (reviewed, tsc 0 errors, uncommitted) | M4 |
-| M6 | Automatic clock-out job, shift-aware, flagged | QA | M5 |
+| M5 | Kiosk: pairing, QR+PIN, location assessment, atomic punch, tenant isolation | committed (`63318bf`, reviewed) | M4 |
+| M6 | Automatic clock-out job, shift-aware, flagged | complete (reviewed, tsc 0 errors, uncommitted) | M5 |
 | M7 | Help requests, corrections with audit trail (no self-approval), reports, audit, retention | QA + security | M6 |
 | M8 | Staff and HR portals, public landing page | QA | M7 |
 | M9 | Full test suite, testing guide, CI, security review, close-out | release review | M8 |

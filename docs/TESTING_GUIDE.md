@@ -774,6 +774,227 @@ belongs to her.
       Verify it is not a live route in M5 — the decision endpoint lands later
       (M6 / HR area), so corrections stay `SUBMITTED` for now.
 
+### Scenario V: Automatic Clock-Out Job (M6)
+
+A background job sweeps the attendance table for open sessions whose scheduled
+shift end plus the policy's buffer has passed, closes them automatically, and
+flags anything it cannot resolve to HR instead of guessing a time. Two routes
+serve it (API contracts §9): the run sweep and the status read. The walkthrough
+reuses the kiosk punch from Scenarios Q and R; the scenario has no screen of
+its own.
+
+> **Before this scenario: the job token.** The run route refuses to serve
+> without `JOB_TOKEN` in the server environment; with the value unset it
+> answers `401` to every caller, a fail-closed rule.
+>
+> - The variable is documented in the root `.env.example`
+>   (`JOB_TOKEN=replace_with_a_long_random_secret`). The backend loads its
+>   own gitignored `backend/.env` at startup, so also put the line there,
+>   next to `JWT_SECRET`, and restart the backend. Generate a long random
+>   secret the same way you would for `JWT_SECRET`:
+>
+>   ```bash
+>   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+>   ```
+>
+> - Put the same value into your test shell so the curl steps can read it:
+>   `export JOB_TOKEN=<the value you generated>`.
+> - The token is a server secret, not a user token. It carries no employee
+>   identity and proves nothing about a person. Only the two `/api/jobs`
+>   routes accept it; sent as a bearer to any user or kiosk route it fails
+>   the normal token check with `401`.
+> - The run route accepts 5 calls per minute per IP. The job is meant to run
+>   every 15 minutes, driven by an external scheduler (decision O8), so a
+>   human tester never trips this unless hammering. A `429` means wait out
+>   the minute and continue.
+> - A punch needs Ama Mensah's badge (Scenario M) and her known PIN (the
+>   setup note before Scenario P). The date, policy, and snapshot edits
+>   below are owner-run database changes, the same approach Scenario U
+>   takes for aged rows.
+
+- [ ] 1. Turn automatic clock-out on. As SUPERADMIN, call
+       `GET /api/business/policies` (Scenario O) and check whether any
+       version in force has `autoClockOutEnabled` true. If none is live, call
+       `POST /api/business/policies/<id>/versions` with the Scenario O body,
+       keep `autoClockOutEnabled: true`, and set `effectiveFrom` to today.
+       Verify `201`. Note the offset the job will use: the version's
+       `autoClockOutOffsetMinutes` when it is set, otherwise
+       `autoClockOutBufferMinutes` (default 120).
+
+- [ ] 2. Open a fresh session for Ama Mensah. Pair the kiosk (Scenario P),
+       then run identify, verify-pin, and `POST /api/attendance/clock-in`
+       exactly as Scenarios Q and R walk them. Verify `201` and an OPEN
+       attendance row for her. The punch freezes what the job later reads:
+       the shift minute snapshots and the policy version id stamped on the
+       row at punch time.
+
+- [ ] 3. Make the session overdue. Eligibility holds once
+       `now >= (shift end of the row's date) + offset`, and the dependable
+       way to arrange that by hand is an owner-run database edit that moves
+       the row's `date` back a few days. Only `date` changes; the snapshot
+       columns stay as punched:
+
+       ```bash
+       cd backend && node --env-file=.env -e "
+       const { PrismaClient } = require('@prisma/client');
+       const prisma = new PrismaClient();
+       (async () => {
+         const user = await prisma.user.findUnique({
+           where: { email: 'ama.mensah@test.attendpro.com' },
+         });
+         if (!user) throw new Error('Ama Mensah not found — run Scenario I first');
+         const row = await prisma.attendance.findFirst({
+           where: { userId: user.id, sessionStatus: 'OPEN' },
+           orderBy: { clockIn: 'desc' },
+         });
+         if (!row) throw new Error('No open attendance row for Ama Mensah');
+         const date = new Date(Date.now() - 2 * 86400000);
+         await prisma.attendance.update({ where: { id: row.id }, data: { date } });
+         console.log('Attendance ' + row.id + ' moved to ' + date.toISOString().slice(0, 10));
+         await prisma.$disconnect();
+       })();
+       "
+       ```
+
+       On the morning shift the snapshots say 14:00 on that date, so with the
+       default buffer the job closes the row at 16:00 of that same date. An
+       alternative with no edit: a punch taken later than the shift end plus
+       the buffer is eligible straight away, no matter when you then run the
+       sweep.
+
+- [ ] 4. Run the sweep:
+
+       ```bash
+       curl -s -X POST http://localhost:8000/api/jobs/auto-clock-out/run \
+         -H "Authorization: Bearer $JOB_TOKEN" \
+         -H "Content-Type: application/json" -d '{}'
+       ```
+
+       Verify `200` with `success` true and
+       `data: { closed: 1, flagged: 0, businesses: 1 }` alongside a `message`
+       naming the job. The body may also be omitted entirely;
+       `{"businessId": "<uuid>"}` aims the pass at one business.
+       `businesses` counts the active businesses swept, one in a local
+       database.
+
+- [ ] 5. Read the status:
+
+       ```bash
+       curl -s http://localhost:8000/api/jobs/status \
+         -H "Authorization: Bearer $JOB_TOKEN"
+       ```
+
+       Verify `200` with `data: { lastRun, closed: 1, flagged: 0 }` and a
+       `lastRun` timestamp within the last minute. The counts are read back
+       out of the audit rows, so they describe the most recent pass.
+
+- [ ] 6. Verify the write in the database. Open the attendance row and check
+       `sessionStatus` `CLOSED`, `status` `AUTO_CLOSED`,
+       `closureReason` `AUTO_CLOCK_OUT`, a `clockOut` at 16:00 of the row's
+       date (shift end plus the 120-minute buffer), and `hoursWorked`
+       recomputed from the stored `clockIn`. The `audit_logs` table holds one
+       row with `actor_type` `SYSTEM`, action `job.auto_clock_out_closed`,
+       and the attendance id as the target.
+
+- [ ] 7. Check the console. The backend terminal prints exactly one summary
+       line per pass: `"Auto clock-out sweep finished"` with the `closed`,
+       `flagged`, and `businesses` counts and `event: "auto_clock_out_run"`.
+       No employee id or row id appears on that line; the per-row detail
+       lives in `audit_logs`.
+
+- [ ] 8. Idempotence. Run step 4's curl again straight away. Verify every
+       count is `0`, `GET /api/jobs/status` reports the new pass with
+       `closed: 0`, and the attendance row still carries the values from
+       step 6. The second pass matched nothing because the row is no longer
+       OPEN; nothing was written twice.
+
+- [ ] 9. A genuine clock-out wins. Punch a fresh open session for Ama
+       (identify, verify-pin, clock-in), move its `date` back with step 3's
+       edit, and then let her close it herself through the kiosk before you
+       run the job (identify, verify-pin,
+       `POST /api/attendance/clock-out`, Scenario S). A punch after the
+       shift end closes her row with `status` `CLOCK_OUT_MISSING` and
+       `closureReason` `VERIFIED_CLOCK_OUT` at her real time. Now run the
+       sweep. Verify `closed: 0` and that her row still carries her own
+       clock-out time, `CLOCK_OUT_MISSING`, and no `AUTO_CLOSED` anywhere.
+       The job only touches rows still OPEN.
+
+- [ ] 10. Disabled policy. An overdue OPEN row must be left alone once the
+       business turns the job off. Turn it off with an owner-run edit on the
+       version row the row stamps (publishing a version cannot flip an
+       already-live one immediately):
+
+       ```bash
+       cd backend && node --env-file=.env -e "
+       const { PrismaClient } = require('@prisma/client');
+       const prisma = new PrismaClient();
+       (async () => {
+         const row = await prisma.attendance.findFirst({
+           where: { sessionStatus: 'OPEN' },
+           orderBy: { clockIn: 'desc' },
+           select: { id: true, policyVersionId: true },
+         });
+         if (!row) throw new Error('No open attendance row found');
+         if (!row.policyVersionId) throw new Error('Row carries no policy version');
+         await prisma.policyVersion.update({
+           where: { id: row.policyVersionId },
+           data: { autoClockOutEnabled: false },
+         });
+         console.log('Auto clock-out disabled on version ' + row.policyVersionId);
+         await prisma.$disconnect();
+       })();
+       "
+       ```
+
+       Punch a fresh open session for Ama, move its `date` back, and run the
+       sweep. Verify `closed: 0` and `flagged: 0`, the row left exactly as it
+       stood: still OPEN with the `status` the clock-in graded, no review
+       flag, and no `audit_logs` row for it. The missing flag itself stays
+       where the lifecycle puts it (a session nobody closed reads
+       `CLOCK_OUT_MISSING` at close-out time); the job's silence is the
+       point. Run the snippet again with `autoClockOutEnabled: true` before
+       the next step.
+
+- [ ] 11. Unresolvable window. Punch a fresh open session, then edit that
+       row in the database so its shift window cannot be resolved: set its
+       `shiftEndMinuteSnapshot` to `null` (staging this case needs the edit
+       because every kiosk punch stamps the snapshots). Run the sweep.
+       Verify `flagged: 1` and `closed: 0`. The row now shows `status`
+       `REQUIRES_REVIEW`, a `requiresReviewReason` naming the missing
+       snapshot, and `sessionStatus` `OPEN` unchanged, so HR's close-out
+       still applies. `GET /api/jobs/status` reflects `flagged: 1` for the
+       latest pass.
+
+- [ ] 12. Concurrency. Fire two runs at once:
+
+       ```bash
+       curl -s -X POST http://localhost:8000/api/jobs/auto-clock-out/run \
+         -H "Authorization: Bearer $JOB_TOKEN" -d '{}' -o run1.json &
+       curl -s -X POST http://localhost:8000/api/jobs/auto-clock-out/run \
+         -H "Authorization: Bearer $JOB_TOKEN" -d '{}' -o run2.json &
+       wait
+       cat run1.json run2.json
+       ```
+
+       One caller gets `200` and the other `409` with
+       `{"success":false,"message":"Another run is already in progress"}`:
+       the sweep holds an advisory lock and a second caller is refused
+       rather than queued behind a duplicate pass. Timing caveat, stated
+       plainly: on a local database with one settled row the sweep can
+       finish in milliseconds, so some attempts answer two 200s. Fire the
+       pair a few times, or while step 11's staged row makes the pass last a
+       moment.
+
+- [ ] 13. Authorization. Send the run route no authorization header at all
+       and verify a generic `401` "Unauthorized" body, with nothing revealed
+       about the configuration. Send a SUPERADMIN session token instead of
+       `JOB_TOKEN` and verify `401` again: the run route takes the job token
+       only. On `GET /api/jobs/status` the three outcomes are: SUPERADMIN
+       session → `200` reporting their own business's numbers, HR session →
+       `403`, job token → `200` over every business. Last, send the job
+       token as the bearer anywhere else (for example `GET /api/audit`) and
+       verify `401`; the token opens the two job routes and nothing else.
+
 ---
 
 ## 4. Known Limitations & Notes

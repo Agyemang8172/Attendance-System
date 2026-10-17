@@ -492,6 +492,25 @@ export const auditLog = {
     );
   },
 
+  // ── Background-job events (M6; counts only — never an employee or record
+  // id, so the stdout lane cannot become an employee log) ───────────────────
+
+  /**
+   * One summary line per auto-clock-out sweep, after the run commits. The
+   * durable per-row detail lives in audit_logs; this is the at-a-glance
+   * "did the job run" signal.
+   */
+  jobRun: (counts: {
+    closed: number;
+    flagged: number;
+    businesses: number;
+  }) => {
+    attendanceLogger.info(
+      { ...counts, event: "auto_clock_out_run" },
+      "Auto clock-out sweep finished"
+    );
+  },
+
   /** A correction request entered review (contracts §8, O17). */
   correctionSubmitted: (userId: string, correctionId: string, businessId: string) => {
     attendanceLogger.info(

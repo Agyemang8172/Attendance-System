@@ -22,13 +22,23 @@ export type AuditEntry = {
   entityId?: string | null;
   userId?: string | null; // actor when a user
   kioskId?: string | null; // actor when the kiosk
+  /**
+   * M6: optional explicit actor override for background-job rows. The job
+   * writes no user or kiosk identity, so the derived actor below (kiosk →
+   * USER otherwise) would label every row USER; passing "SYSTEM" here is how
+   * the job lane marks itself (§7.2). Unset keeps the kiosk/user derivation.
+   */
+  actorType?: AuditActorTypeValue;
   reason?: string | null;
 };
 
+/** Mirrors the schema's AuditActorType enum without importing the whole client. */
+type AuditActorTypeValue = "USER" | "KIOSK" | "SYSTEM";
+
 // The actor is the kiosk whenever a kiosk id rides the entry; otherwise it is
-// a user action (SYSTEM is reserved and never derived here).
-const actorTypeFor = (entry: AuditEntry): "KIOSK" | "USER" =>
-  entry.kioskId ? "KIOSK" : "USER";
+// a user action (or SYSTEM when the caller overrides — the M6 job lane).
+const actorTypeFor = (entry: AuditEntry): AuditActorTypeValue =>
+  entry.actorType ?? (entry.kioskId ? "KIOSK" : "USER");
 
 /**
  * Persist one audit row. Transaction callers pass their `tx` so the audit row
