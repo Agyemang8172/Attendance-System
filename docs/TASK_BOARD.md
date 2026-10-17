@@ -116,7 +116,7 @@ Post-M4 audit (2026-10-16, two review agents — one over M0–M3 records, one t
 | M4 | SUPERADMIN: employees, shift assignment, calendars/sites/kiosks, policies | committed (`f2db8e4`, reviewed) | M3 |
 | M5 | Kiosk: pairing, QR+PIN, location assessment, atomic punch, tenant isolation | committed (`63318bf`, reviewed) | M4 |
 | M6 | Automatic clock-out job, shift-aware, flagged | complete (reviewed, tsc 0 errors, uncommitted) | M5 |
-| M7 | Help requests, corrections with audit trail (no self-approval), reports, audit, retention | QA + security | M6 |
+| M7 | Help requests, corrections with audit trail (no self-approval), reports, audit, retention | owner-called hold (open items R10/O14/R1/R5/R6 in progress first) | M6 |
 | M8 | Staff and HR portals, public landing page | QA | M7 |
 | M9 | Full test suite, testing guide, CI, security review, close-out | release review | M8 |
 

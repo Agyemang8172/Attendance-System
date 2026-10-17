@@ -5,6 +5,11 @@
 # test database. Two checks, in this order:
 #
 #   1. The database name in the connection URL must end in `_test`.
+#      Owner amendment (O14, ruled 2026-10-17): the designated hosted test
+#      database — whose provider fixes the database name at "postgres" — is
+#      accepted WITHOUT the suffix when its host matches TEST_DB_HOST. The
+#      host is then the whole promise; the suffix stays the rule everywhere
+#      else. Recorded in docs/attendpro/DECISION-REGISTER.md.
 #   2. Before any destructive reset, the configured host must match the
 #      expected test host in TEST_DB_HOST. The suffix check alone is not
 #      sufficient, so the connection is confirmed as well.
@@ -50,9 +55,22 @@ db_guard_assert_test() {
     case "$db" in
         *_test) echo "[ DB-GUARD ] OK: database '$db' is a test database." ;;
         *)
-            echo "[ DB-GUARD ] REFUSED: database '$db' does not end in '_test' (O14)." >&2
-            echo "             Tests and migrations never run against a non-test database." >&2
-            return 1
+            # No suffix: the only tolerated exception is the designated hosted
+            # test database (owner amendment, O14, 2026-10-17) — identified by
+            # its HOST matching TEST_DB_HOST, since that provider cannot
+            # rename its single database.
+            local authority host
+            authority="${url#*://}"
+            authority="${authority%%/*}"
+            host="${authority##*@}"
+            host="${host%%:*}"
+            if [ -n "${TEST_DB_HOST:-}" ] && [ "$host" = "$TEST_DB_HOST" ]; then
+                echo "[ DB-GUARD ] OK: database '$db' is the designated test database on host '$TEST_DB_HOST' (O14 owner amendment, 2026-10-17; the provider cannot carry a _test-suffixed name)."
+            else
+                echo "[ DB-GUARD ] REFUSED: database '$db' does not end in '_test' (O14)." >&2
+                echo "             Tests and migrations never run against a non-test database." >&2
+                return 1
+            fi
             ;;
     esac
 }

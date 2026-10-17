@@ -777,8 +777,11 @@ belongs to her.
 ### Scenario V: Automatic Clock-Out Job (M6)
 
 A background job sweeps the attendance table for open sessions whose scheduled
-shift end plus the policy's buffer has passed, closes them automatically, and
-flags anything it cannot resolve to HR instead of guessing a time. Two routes
+shift end plus the policy's buffer has passed and closes them automatically.
+Only rows whose policy record itself cannot be resolved are flagged to HR;
+since the owner's 2026-10-17 R10 ruling, an open session with automatic
+clock-out enabled but no resolvable shift window closes at the policy's
+maximum open duration instead of being flagged. Two routes
 serve it (API contracts §9): the run sweep and the status read. The walkthrough
 reuses the kiosk punch from Scenarios Q and R; the scenario has no screen of
 its own.
@@ -955,15 +958,107 @@ its own.
        point. Run the snippet again with `autoClockOutEnabled: true` before
        the next step.
 
-- [ ] 11. Unresolvable window. Punch a fresh open session, then edit that
-       row in the database so its shift window cannot be resolved: set its
-       `shiftEndMinuteSnapshot` to `null` (staging this case needs the edit
-       because every kiosk punch stamps the snapshots). Run the sweep.
-       Verify `flagged: 1` and `closed: 0`. The row now shows `status`
-       `REQUIRES_REVIEW`, a `requiresReviewReason` naming the missing
-       snapshot, and `sessionStatus` `OPEN` unchanged, so HR's close-out
-       still applies. `GET /api/jobs/status` reflects `flagged: 1` for the
+- [ ] 11. Unresolvable window — two cases (owner ruling R10, 2026-10-17).
+       A row whose shift window cannot be resolved CLOSES at the policy's
+       maximum open duration when its policy record resolves and automatic
+       clock-out is enabled, and is still flagged `REQUIRES_REVIEW` when no
+       usable policy record can be found.
+
+       Case (i). Punch a fresh open session, then edit that row in the
+       database so its shift window cannot be resolved: set
+       `shiftEndMinuteSnapshot` to `null` (staging needs the edit because
+       every kiosk punch stamps the snapshots) and move `clockIn` back about
+       three days, `date` along with it. Moving `date` alone would do
+       nothing here — with no end snapshot the job measures the session from
+       the stored `clockIn` — so `clockIn` itself must sit more than 14
+       hours in the past:
+
+       ```bash
+       cd backend && node --env-file=.env -e "
+       const { PrismaClient } = require('@prisma/client');
+       const prisma = new PrismaClient();
+       (async () => {
+         const user = await prisma.user.findUnique({
+           where: { email: 'ama.mensah@test.attendpro.com' },
+         });
+         if (!user) throw new Error('Ama Mensah not found — run Scenario I first');
+         const row = await prisma.attendance.findFirst({
+           where: { userId: user.id, sessionStatus: 'OPEN' },
+           orderBy: { clockIn: 'desc' },
+         });
+         if (!row) throw new Error('No open attendance row for Ama Mensah');
+         const clockIn = new Date(Date.now() - 3 * 86400000);
+         const date = new Date(Date.UTC(
+           clockIn.getUTCFullYear(),
+           clockIn.getUTCMonth(),
+           clockIn.getUTCDate()
+         ));
+         await prisma.attendance.update({
+           where: { id: row.id },
+           data: { clockIn, date, shiftEndMinuteSnapshot: null },
+         });
+         console.log('Attendance ' + row.id + ' moved back with no end snapshot');
+         await prisma.$disconnect();
+       })();
+       "
+       ```
+
+       Run the sweep (step 4's curl). Verify `closed: 1` and `flagged: 0`.
+       The row closes at the maximum rather than being flagged:
+       `sessionStatus` `CLOSED`, `status` `AUTO_CLOSED`,
+       `closureReason` `AUTO_CLOCK_OUT`, a `clockOut` exactly 14 hours
+       (the default `autoClockOutMaxOpenMinutes`; a version carrying a
+       different value closes at that value instead) after the stored
+       `clockIn`, and `hoursWorked` recomputed over that span. The
+       `audit_logs` table holds one row with `actor_type` `SYSTEM` and
+       action `job.auto_clock_out_closed`, whose reason names the maximum
+       minutes and explains there was no scheduled shift window.
+       `GET /api/jobs/status` reflects `closed: 1` for the
        latest pass.
+
+       Case (ii). No usable policy record: punch a fresh open session, then
+       stage the unresolvable-policy case with an owner-run edit. The row
+       loses its stamped `policyVersionId` and the business default loses
+       the `isDefault` flag the job's fallback lookup would otherwise read,
+       so no version is resolvable at all:
+
+       ```bash
+       cd backend && node --env-file=.env -e "
+       const { PrismaClient } = require('@prisma/client');
+       const prisma = new PrismaClient();
+       (async () => {
+         const row = await prisma.attendance.findFirst({
+           where: { sessionStatus: 'OPEN' },
+           orderBy: { clockIn: 'desc' },
+           select: { id: true, businessId: true },
+         });
+         if (!row) throw new Error('No open attendance row found');
+         await prisma.attendance.update({
+           where: { id: row.id },
+           data: { policyVersionId: null },
+         });
+         const policy = await prisma.workplacePolicy.findFirst({
+           where: { businessId: row.businessId, isDefault: true },
+         });
+         if (!policy) throw new Error('No default policy — case already staged');
+         await prisma.workplacePolicy.update({
+           where: { id: policy.id },
+           data: { isDefault: false },
+         });
+         console.log('Row ' + row.id + ' now has no usable policy record');
+         await prisma.$disconnect();
+       })();
+       "
+       ```
+
+       Run the sweep. Verify `flagged: 1` and `closed: 0`. The row shows
+       `status` `REQUIRES_REVIEW`, a `requiresReviewReason` naming the
+       missing policy version, and `sessionStatus` `OPEN` unchanged, so
+       HR's close-out still applies. `GET /api/jobs/status` reflects
+       `flagged: 1` for the latest pass. Afterwards put `isDefault` back to
+       `true` on the same policy row (run the edit again with
+       `isDefault: true`); the attendance row itself stays in review until
+       HR closes it.
 
 - [ ] 12. Concurrency. Fire two runs at once:
 

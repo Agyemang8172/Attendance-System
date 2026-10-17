@@ -8,8 +8,11 @@ import { hoursBetween, resolveShiftEndInstant } from "../utils/shiftWindow.js";
  *
  * One HTTP-triggered pass closes OPEN attendance sessions whose scheduled
  * shift end (frozen on the row's own snapshots) plus the policy's offset has
- * passed, and flags the ambiguous ones to HR instead of guessing a time. It
- * never overwrites a genuine clock-out: every UPDATE is filtered on
+ * passed. With automatic clock-out enabled but no resolvable shift window,
+ * the row closes at the policy's maximum open duration instead of being
+ * flagged (owner ruling R10, 2026-10-17 — O8/M1-ARCHITECTURE §4.2 wording);
+ * only rows whose policy record itself cannot be resolved are flagged to HR.
+ * It never overwrites a genuine clock-out: every UPDATE is filtered on
  * `sessionStatus = "OPEN"`, so a verified clock-out that landed mid-pass
  * makes that row's update match nothing.
  *
@@ -23,7 +26,7 @@ export const JOB_LOCKED = Symbol("auto-clock-out-lock-held");
 export type AutoClockOutCounts = {
   /** Sessions closed automatically this pass. */
   closed: number;
-  /** Sessions flagged to REQUIRES_REVIEW because the window or policy could not be resolved. */
+  /** Sessions flagged to REQUIRES_REVIEW because no usable policy record could be resolved. */
   flagged: number;
   /** How many businesses the pass swept. */
   businesses: number;
@@ -39,17 +42,18 @@ export const AUTO_CLOCK_OUT_JOB_ACTIONS = [
 ] as const;
 
 /**
- * Plain-English review reasons, shared by the attendance row and the audit
- * row so HR sees the same wording in both places.
+ * Plain-English review reason, shared by the attendance row and the audit
+ * row so HR sees the same wording in both places. It is the only flag this
+ * job still writes: since R10, a row with automatic clock-out enabled and
+ * no resolvable shift window closes at the policy maximum instead of being
+ * flagged, so the missing-shift-end-snapshot reason is gone.
  */
-const REVIEW_NO_SHIFT_WINDOW =
-  "Auto clock-out needs HR review: the shift end snapshot is missing or cannot be resolved";
 const REVIEW_NO_POLICY =
   "Auto clock-out needs HR review: the effective policy version could not be determined";
 
 /**
  * A flagged row is already with HR; re-writing it and re-auditing it every 15
- * minutes would spam audit_logs, so the flag branches never touch it again.
+ * minutes would spam audit_logs, so the flag branch never touches it again.
  */
 const ALREADY_FLAGGED = "REQUIRES_REVIEW" as const;
 
@@ -58,6 +62,7 @@ type PolicyVersionLite = {
   autoClockOutEnabled: boolean;
   autoClockOutOffsetMinutes: number | null;
   autoClockOutBufferMinutes: number;
+  autoClockOutMaxOpenMinutes: number;
 };
 
 /**
@@ -78,7 +83,8 @@ export const runAutoClockOut = async (
   businessId?: string
 ): Promise<AutoClockOutCounts | typeof JOB_LOCKED> => {
   // One wall-clock reading for the whole pass: eligibility (`now >= end +
-  // offset`) is judged against a single instant, not one per business.
+  // offset` for scheduled rows, `now >= clockIn + maxOpen` for R10's
+  // no-window rows) is judged against a single instant, not one per business.
   const now = new Date();
   const counts: AutoClockOutCounts = { closed: 0, flagged: 0, businesses: 0 };
 
@@ -139,6 +145,7 @@ export const runAutoClockOut = async (
                 autoClockOutEnabled: true,
                 autoClockOutOffsetMinutes: true,
                 autoClockOutBufferMinutes: true,
+                autoClockOutMaxOpenMinutes: true,
               },
             },
           },
@@ -171,6 +178,7 @@ export const runAutoClockOut = async (
                   autoClockOutEnabled: true,
                   autoClockOutOffsetMinutes: true,
                   autoClockOutBufferMinutes: true,
+                  autoClockOutMaxOpenMinutes: true,
                 },
               })) as PolicyVersionLite | null);
               versionsById.set(row.policyVersionId, version);
@@ -224,32 +232,64 @@ export const runAutoClockOut = async (
 
           const endInstant = resolveShiftEndInstant(row);
           if (!endInstant) {
-            // Already with HR (ALREADY_FLAGGED): skipping costs nothing — no
-            // update, no audit row.
-            if (row.status === ALREADY_FLAGGED) continue;
-            // No resolvable shift window (§7.1 condition 4): flag, never
-            // guess. Session stays OPEN so HR's own close-out still applies.
-            const written = await tx.attendance.updateMany({
+            // No resolvable shift window, with automatic clock-out enabled
+            // (reaching this branch at all means the version resolved and
+            // the feature is on): owner ruling R10 — the row CLOSES once it
+            // has been open for the version's autoClockOutMaxOpenMinutes
+            // (default 840 minutes, i.e. 14 hours). Until that ceiling the
+            // row simply waits: no write, no count, no flag — a fresh
+            // morning session is not flagged to HR on every pass anymore.
+            // The `ALREADY_FLAGGED` skip the old flag-only path carried is
+            // gone here on purpose: once past the maximum, the close write
+            // replaces whatever status the row carried, and a closed row
+            // leaves the OPEN-select and is never touched again.
+            const closeAt = new Date(
+              row.clockIn.getTime() +
+                version.autoClockOutMaxOpenMinutes * 60_000
+            );
+
+            if (now.getTime() < closeAt.getTime()) {
+              // Open for less than the maximum: still inside the policy's
+              // patience window. Leave the row OPEN as it stands.
+              continue;
+            }
+
+            // The schedule-derived end instant does not exist, so the whole
+            // session IS the max-open distance: clockOut sits exactly
+            // autoClockOutMaxOpenMinutes past clockIn and hoursWorked covers
+            // that same span — the same `hoursBetween` divisor the scheduled
+            // branch uses, so both closures write the same float shape. The
+            // write set matches the scheduled branch line for line, so the
+            // guard/count/audit rhythm for idempotence works identically
+            // (a row closed here is CLOSED and drops out of the SELECT; a
+            // row closed by someone else mid-pass makes the update match
+            // nothing).
+            const hoursWorked = hoursBetween(row.clockIn, closeAt);
+
+            const closed = await tx.attendance.updateMany({
               where: guard,
               data: {
-                status: "REQUIRES_REVIEW",
-                requiresReviewReason: REVIEW_NO_SHIFT_WINDOW,
+                clockOut: closeAt,
+                hoursWorked,
+                sessionStatus: "CLOSED" as const,
+                status: "AUTO_CLOSED" as const,
+                closureReason: "AUTO_CLOCK_OUT" as const,
               },
             });
-            if (written.count > 0) {
-              counts.flagged += 1;
-              await writeAudit(
-                {
-                  businessId: business.id,
-                  actorType: "SYSTEM",
-                  action: "job.auto_clock_out_flagged",
-                  entityType: "attendance",
-                  entityId: row.id,
-                  reason: REVIEW_NO_SHIFT_WINDOW,
-                },
-                tx
-              );
-            }
+            if (closed.count === 0) continue;
+
+            counts.closed += 1;
+            await writeAudit(
+              {
+                businessId: business.id,
+                actorType: "SYSTEM",
+                action: "job.auto_clock_out_closed",
+                entityType: "attendance",
+                entityId: row.id,
+                reason: `closed at the ${version.autoClockOutMaxOpenMinutes}-minute maximum: no scheduled shift window`,
+              },
+              tx
+            );
             continue;
           }
 

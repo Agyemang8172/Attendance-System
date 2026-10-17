@@ -4,7 +4,7 @@
 
 ## Current Session — 2026-10-16
 
-- **Task:** M6 (automatic clock-out job) built, reviewed, and verified through the orchestrator; uncommitted, ready for the owner's commit decision.
+- **Task:** O14 test database rehearsed (2026-10-17): all 10 migrations applied for the first time to the designated Prisma Postgres instance under the am-ended O14 guard; two real migration defects found and fixed (misordered shifts index, NOBYPASSRLS syntax); hosted-host role-layer delta recorded in the decision register. M7 held; working open items one at a time — R10 done, O14 done, R1/R5/R6 next, then M7 via the orchestrator.
 - **Branch:** `main`, twelve commits ahead of `origin/main`, nothing pushed
 - **Mode:** interactive, Orchestrator locked
 - **State:** M5 committed (`63318bf`) plus the pause-record commit (`4fa1602`). M6 is written, reviewed (verdict: safe after fixes — the blocking re-flagging idempotence fix and the cheap hardening applied), and verified (`tsc` 0 errors, prisma valid, db-check, env parity, ui-taste, humanize all pass), uncommitted. `docs/attendpro/*.md` and the testing guide pass `humanize-check.sh`.

@@ -2,8 +2,10 @@
 
 The auto clock-out job closes open attendance sessions after the scheduled shift end
 recorded on the row plus the policy's offset, and flags anything ambiguous to HR review
-instead of guessing a time. It never overwrites a real clock-out, so running it twice in
-a row changes nothing the second time.
+instead of guessing a time. Rows without a scheduled shift window are closed at the
+policy's maximum duration (default 14 hours) when automatic clock-out is on; rows
+without a usable policy record are flagged for review. It never overwrites a real
+clock-out, so running it twice in a row changes nothing the second time.
 
 The run itself is rate-limited to five runs per minute per IP, far above the intended
 one pass every 15 minutes, so the scheduler is never throttled but hammering is.

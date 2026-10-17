@@ -66,56 +66,75 @@ CREATE POLICY "audit_logs_insert" ON "audit_logs" FOR INSERT
 -- work); attendpro_app connects via DATABASE_URL_APP (the running API and jobs).
 -- Both statements are idempotent so a database where the roles already exist is fine.
 DO $$
+DECLARE
+  v_owner_exists boolean;
+  v_app_exists boolean;
 BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'attendpro_owner') THEN
-    CREATE ROLE attendpro_owner;
+  -- Idempotent role provisioning. Some managed Postgres hosts (e.g. Prisma
+  -- Postgres's restricted connection) forbid CREATE ROLE entirely; on such a
+  -- host the SQLSTATE 42501 is caught, recorded, and the grants below are
+  -- skipped: tenant enforcement stays with the API-level businessId filters
+  -- until the two-role split can be provisioned on a host that allows roles.
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'attendpro_owner') THEN
+    BEGIN
+      CREATE ROLE attendpro_owner;
+    EXCEPTION WHEN insufficient_privilege THEN
+      RAISE NOTICE 'role layer skipped: this host forbids CREATE ROLE (restricted managed connection)';
+    END;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'attendpro_app') THEN
+    BEGIN
+      CREATE ROLE attendpro_app;
+    EXCEPTION WHEN insufficient_privilege THEN
+      RAISE NOTICE 'role layer skipped: this host forbids CREATE ROLE (restricted managed connection)';
+    END;
+  END IF;
+
+  v_owner_exists := EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'attendpro_owner');
+  v_app_exists := EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'attendpro_app');
+
+  IF v_owner_exists AND v_app_exists THEN
+    -- attendpro_app is never given BYPASSRLS (§3.1, §3.5); assert the attribute
+    -- explicitly so role-attribute drift cannot weaken the tenant policy.
+    -- NOBYPASSRLS is one word: role options are single tokens and
+    -- "NO BYPASSRLS" is a syntax error.
+    ALTER ROLE attendpro_app NOBYPASSRLS;
+
+    -- The table grants need schema-level USAGE to be effective on a database
+    -- whose public schema no longer grants it to new roles.
+    GRANT USAGE ON SCHEMA public TO attendpro_app;
+
+    -- Append-only tables: SELECT and INSERT only, never UPDATE or DELETE (§10).
+    -- attendance_attempts was created by migration 5,
+    -- attendance_correction_revisions by migration 8, audit_logs above.
+    GRANT SELECT, INSERT ON audit_logs, attendance_correction_revisions, attendance_attempts
+      TO attendpro_app;
+    REVOKE UPDATE, DELETE ON audit_logs, attendance_correction_revisions, attendance_attempts
+      FROM attendpro_app;
+
+    -- The sixteen business-scoped tables the API mutates get full DML, each
+    -- scoped by RLS (§3.5 matrix; the owner role keeps everything as table owner).
+    GRANT SELECT, INSERT, UPDATE, DELETE ON
+      businesses,
+      users,
+      shifts,
+      attendances,
+      shift_assignments,
+      workplace_policies,
+      policy_versions,
+      sites,
+      kiosk_terminals,
+      qr_credentials,
+      verification_sessions,
+      attendance_help_requests,
+      attendance_corrections,
+      work_calendars,
+      calendar_exceptions,
+      email_recovery_codes
+      TO attendpro_app;
   END IF;
 END
 $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'attendpro_app') THEN
-    CREATE ROLE attendpro_app;
-  END IF;
-END
-$$;
-
--- attendpro_app is never given BYPASSRLS (§3.1, §3.5); assert the attribute explicitly
--- so a drift in role attributes cannot weaken the tenant policy.
-ALTER ROLE attendpro_app NO BYPASSRLS;
-
--- The table grants below need schema-level USAGE to be effective on a database whose
--- public schema no longer grants it to new roles.
-GRANT USAGE ON SCHEMA public TO attendpro_app;
-
--- Append-only tables: SELECT and INSERT only, never UPDATE or DELETE (§10). attendance_attempts
--- was created by migration 5, attendance_correction_revisions by migration 8, audit_logs here.
-GRANT SELECT, INSERT ON audit_logs, attendance_correction_revisions, attendance_attempts
-  TO attendpro_app;
-REVOKE UPDATE, DELETE ON audit_logs, attendance_correction_revisions, attendance_attempts
-  FROM attendpro_app;
-
--- The sixteen business-scoped tables the API mutates get full DML, each scoped by RLS
--- (§3.5 matrix; the owner role keeps everything as table owner).
-GRANT SELECT, INSERT, UPDATE, DELETE ON
-  businesses,
-  users,
-  shifts,
-  attendances,
-  shift_assignments,
-  workplace_policies,
-  policy_versions,
-  sites,
-  kiosk_terminals,
-  qr_credentials,
-  verification_sessions,
-  attendance_help_requests,
-  attendance_corrections,
-  work_calendars,
-  calendar_exceptions,
-  email_recovery_codes
-  TO attendpro_app;
 
 -- ── Layer 3: append-only trigger (§10) ────────────────────────────────────────
 -- A BEFORE trigger on each of the three history tables, so an owner-role statement that
@@ -158,5 +177,25 @@ AS $$
   LIMIT 1
 $$;
 
-REVOKE EXECUTE ON FUNCTION authenticate_lookup(text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION authenticate_lookup(text) TO attendpro_app;
+-- REVOKE ... FROM PUBLIC is skipped on hosts where the restricted connection
+-- cannot manage privileges at all (see the role layer above): the function
+-- keeps PUBLIC execute there, recorded as a known hosted-host delta; on a
+-- standard PostgreSQL the revoke applies as designed.
+DO $$
+BEGIN
+  BEGIN
+    REVOKE EXECUTE ON FUNCTION authenticate_lookup(text) FROM PUBLIC;
+  EXCEPTION WHEN insufficient_privilege THEN
+    RAISE NOTICE 'revoke skipped: this host forbids grant/revoke (restricted managed connection)';
+  END;
+END
+$$;
+DO $$
+BEGIN
+  -- Guarded the same way as the role layer: on a host that cannot carry the
+  -- attendpro_app role, the grant has nothing to target and is skipped.
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'attendpro_app') THEN
+    GRANT EXECUTE ON FUNCTION authenticate_lookup(text) TO attendpro_app;
+  END IF;
+END
+$$;

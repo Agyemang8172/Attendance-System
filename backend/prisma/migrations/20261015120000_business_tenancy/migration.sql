@@ -124,8 +124,10 @@ ALTER TABLE "shifts"
     ADD CONSTRAINT "shifts_business_id_name_key"
     UNIQUE ("business_id", "name");
 
-CREATE INDEX "shifts_business_id_is_active_idx" ON "shifts"("business_id", "is_active");
-
+-- CREATE INDEX "shifts_business_id_is_active_idx" is NOT here: init declares no
+-- shifts.is_active and this migration must not index a column a later file
+-- adds. The composite index is created by
+-- 20261015140000_shift_scheduling_and_policies right after the column itself.
 CREATE INDEX "attendances_business_id_date_idx" ON "attendances"("business_id", "date");
 CREATE INDEX "attendances_business_id_user_id_date_idx" ON "attendances"("business_id", "user_id", "date");
 CREATE INDEX "attendances_business_id_status_idx" ON "attendances"("business_id", "status");

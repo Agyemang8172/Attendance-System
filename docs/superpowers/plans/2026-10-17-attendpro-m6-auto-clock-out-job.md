@@ -78,7 +78,7 @@ What the job writes for each closed row (§7.2): `clock_out = shiftEndInstant + 
 | # | Item | Default if unanswered |
 |---|------|----------------------|
 | 1 | Fold the HR correction-decision endpoint (R7) into M6? | No — stays queued |
-| 2 | In-between close rows whose policy record is missing entirely (e.g. policy versions deleted)? | Treated as unresolvable → `REQUIRES_REVIEW`. Related open conflict needing an owner ruling: O8's "closes after a maximum (default 840 minutes)" for rows with no shift contradicts lifecycle §7.1/§5.2/§9/§10, which consistently flag those rows `REQUIRES_REVIEW` instead; M6 was built flag-only per this plan, and the unused `autoClockOutMaxOpenMinutes` column (default 840) stands ready if the owner later picks closure-by-maximum (logged as R10 in the decision register). |
+| 2 | In-between close rows whose policy record is missing entirely (e.g. policy versions deleted)? | Treated as unresolvable → `REQUIRES_REVIEW`. Related open conflict needing an owner ruling: O8's "closes after a maximum (default 840 minutes)" for rows with no shift contradicts lifecycle §7.1/§5.2/§9/§10, which consistently flag those rows `REQUIRES_REVIEW` instead; M6 was built flag-only per this plan, and the unused `autoClockOutMaxOpenMinutes` column (default 840) stands ready if the owner later picks closure-by-maximum (logged as R10 in the decision register). Owner ruled R10 (b) on 2026-10-17 — implemented; see DECISION-REGISTER. |
 | 3 | `autoClockOutOffsetMinutes` unset but buffer set (legacy rows)? | Offset falls back to `autoClockOutBufferMinutes` |
 
 ## Constraints

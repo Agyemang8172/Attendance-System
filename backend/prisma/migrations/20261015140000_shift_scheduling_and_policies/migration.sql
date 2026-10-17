@@ -86,6 +86,11 @@ ALTER TABLE "shifts" ADD COLUMN "end_minute" INTEGER;
 ALTER TABLE "shifts" ADD COLUMN "crosses_midnight" BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE "shifts" ADD COLUMN "is_active" BOOLEAN NOT NULL DEFAULT true;
 
+-- The business-scoped composite index that 20261015120000_business_tenancy had
+-- to defer: shifts.is_active exists from the line above, so the index it
+-- originally declared can finally be created (M1-DATA-MODEL.md 4.5).
+CREATE INDEX "shifts_business_id_is_active_idx" ON "shifts"("business_id", "is_active");
+
 -- Added here, though the 4.1 row for this file does not list it: init has no
 -- shifts.updated_at while Shift.updatedAt is @updatedAt and NOT NULL in
 -- schema.prisma, so every Prisma write to shifts would fail without it. The
