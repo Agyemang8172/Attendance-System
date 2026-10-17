@@ -31,8 +31,12 @@ export const userLogger = logger.child({ domain: "user" });
 export const dbLogger = logger.child({ domain: "database" });
 // Device (kiosk) lane; the pairing, token, and revocation events below.
 export const kioskLogger = logger.child({ domain: "kiosk" });
+// Business-settings lane (M7 Phase 3); the SUPERADMIN's own-business edits.
+export const businessLogger = logger.child({ domain: "business" });
 // Employee verification lane (identify → PIN → session); events §11 event table.
 export const verifyLogger = logger.child({ domain: "verify" });
+// Help-request lane (M7): staff submissions and HR status changes.
+export const helpLogger = logger.child({ domain: "help" });
 
 // ── Request Correlation ID Middleware ────────────────────────────────────────
 
@@ -516,6 +520,90 @@ export const auditLog = {
     attendanceLogger.info(
       { userId, correctionId, businessId, event: "correction_submitted" },
       "Correction submitted for review"
+    );
+  },
+
+  /**
+   * A reviewer decided a correction (contracts §4 `correction.decided` /
+   * `correction.decided.backstop`; O17 + the O21 backstop). The durable copy
+   * rides the `audit_logs` row the transaction writes through `writeAudit`;
+   * this stdout row is the live-troubleshooting mirror. `backstopCondition`
+   * is null on a plain second-reviewer decision and carries the O21 enum
+   * value (or the explicit-handoff condition) otherwise.
+   */
+  correctionDecided: (
+    actorId: string,
+    correctionId: string,
+    decision: string,
+    businessId: string,
+    detail: { attendanceId: string; backstopCondition: string | null }
+  ) => {
+    attendanceLogger.info(
+      {
+        actorId,
+        correctionId,
+        decision,
+        businessId,
+        attendanceId: detail.attendanceId,
+        backstopCondition: detail.backstopCondition,
+        event: "correction_decided",
+      },
+      "Correction decided"
+    );
+  },
+
+  // ── Help requests (M7; contracts §3/§4 name no event, so the names are
+  // crafted in the dotted style of the named ones like `correction.decided`:
+  // `help.request_submitted`, `help.request_resolved`) ───────────────────────
+
+  /** An employee filed a help request. Subject text is not logged — the row holds it. */
+  helpRequestSubmitted: (userId: string, requestId: string, businessId: string) => {
+    helpLogger.info(
+      { userId, requestId, businessId, event: "help_request_submitted" },
+      "Help request submitted"
+    );
+  },
+
+  /**
+   * HR (or the SUPERADMIN backstop) moved a help request. Always emitted per
+   * accepted PATCH, whatever the resulting status — `help.request_resolved`
+   * names the audit row for the RESOLVED case; the stdout lane just records
+   * the change with the resulting status.
+   */
+  helpRequestResolved: (
+    actorId: string,
+    requestId: string,
+    status: string,
+    noteRecorded: boolean,
+    businessId: string
+  ) => {
+    helpLogger.info(
+      {
+        actorId,
+        requestId,
+        status,
+        noteRecorded,
+        businessId,
+        event: "help_request_resolved",
+      },
+      "Help request status changed"
+    );
+  },
+
+  // ── Business settings (M7 Phase 3; contracts §5). The durable copy rides
+  // the `settings.updated` audit_logs row the transaction writes through
+  // `writeAudit`; this stdout row is the live mirror, in the same split as
+  // every other audited event (auditWriter.ts header). ─────────────────────
+
+  /**
+   * The SUPERADMIN changed their own business's settings (GET reads write
+   * nothing). `fields` names exactly the values that actually changed, so a
+   * no-op PATCH is visible as an empty list instead of a phantom edit.
+   */
+  settingsUpdated: (adminId: string, businessId: string, fields: string[]) => {
+    businessLogger.info(
+      { adminId, businessId, fields, event: "settings_updated" },
+      "Business settings updated"
     );
   },
 };

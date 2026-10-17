@@ -72,11 +72,11 @@ M1 design set (committed `b403a66`):
 - **Delivered:**
   - Phase 0: wrap-around status engine + same-evening clock-out guard wired into the punch; merged-geometry shift validation; UTC date basis; shift-scoped policy lookup; catch blocks always answer with redacted bodies; `utils/tenant.ts` dedupe; policy-default race fixed; PIN reset expires open sessions; preview glyphs fixed
   - Phase 1: pairing codes (single live, 10 min, shown once), device tokens (30-day, renewed on use, 90-day hard age), `kioskAuthMiddleware`, devices list/revoke, `utils/kioskKeys.ts`, `utils/rateLimit.ts`
-  - Phases 2–3: `utils/location.ts` (INSIDE/OUTSIDE/UNKNOWN, flagged not blocked, thresholds pending R1); `identify` / `verify-pin` / `cancel`; 2-minute hashed-handle sessions; 5 attempts / 15-minute lock (pending R5); evidence attempt rows on every failure
+  - Phases 2–3: `utils/location.ts` (INSIDE/OUTSIDE/UNKNOWN, flagged not blocked; thresholds final per R1, owner 2026-10-17); `identify` / `verify-pin` / `cancel`; 2-minute hashed-handle sessions; 10 attempts / 5-minute lock (final per R5, owner 2026-10-17); evidence attempt rows on every failure
   - Phase 4: kiosk-scoped atomic punch with session lock+consume inside the transaction, dated shift resolution, schema snapshot columns; correction submission with tier and window; read aliases kept
   - Fixes: legacy catch hardening completed on `attendanceController`; §11 audit events now also persist to `audit_logs` table via `utils/auditWriter.ts` (paired/renewed/expired/revoked/rejected, session started/succeeded/failed/locked/expired/cancelled, attendance.recorded, attendance.location_flagged)
 - **Verification:** `tsc` 0 errors; `prisma validate` valid; db-check, env parity (10 vars), ui-taste, humanize all pass
-- **Deferred:** `attemptId` persistence on corrections (no schema column; R6); status engine still UTC (O15); `authenticate_lookup` login rewiring; RLS `app.business_id` app wrapper; limiter numbers are provisional pending R5
+- **Deferred:** status engine still UTC (O15); `authenticate_lookup` login rewiring; RLS `app.business_id` app wrapper. The `attemptId` idea on corrections was dropped outright by the R6 ruling (owner, 2026-10-17), and the R5 ruling settled the PIN/lock values.
 
 ### [ COMPLETE ] — M5 kiosk pairing and QR+PIN attention (committed `63318bf`)
 
@@ -116,9 +116,23 @@ Post-M4 audit (2026-10-16, two review agents — one over M0–M3 records, one t
 | M4 | SUPERADMIN: employees, shift assignment, calendars/sites/kiosks, policies | committed (`f2db8e4`, reviewed) | M3 |
 | M5 | Kiosk: pairing, QR+PIN, location assessment, atomic punch, tenant isolation | committed (`63318bf`, reviewed) | M4 |
 | M6 | Automatic clock-out job, shift-aware, flagged | complete (reviewed, tsc 0 errors, uncommitted) | M5 |
-| M7 | Help requests, corrections with audit trail (no self-approval), reports, audit, retention | owner-called hold (open items R10/O14/R1/R5/R6 in progress first) | M6 |
+| M7 | Help requests, corrections with audit trail (no self-approval), reports, audit, retention | complete (reviewed, tsc 0 errors, uncommitted) | M6 |
 | M8 | Staff and HR portals, public landing page | QA | M7 |
 | M9 | Full test suite, testing guide, CI, security review, close-out | release review | M8 |
+
+### [ COMPLETE ] — M7 help requests, correction decisions, reports, audit trail, retention
+
+- **Orchestration:** four phase agents in sequence (Phase 0 help requests, Phase 1 the decision heart, Phase 2 reports + CSV, Phase 3 audit trail + retention) plus an independent review agent (verdict: safe after fixes — 1 must-fix, 2 majors, cheap hardening; all applied by a fix agent) and a docs agent (Scenarios W–Y, humanize clean). Two subagent-launch failures mid-run (network/spawn errors) were retried; phases otherwise clean. No migrations needed — the Phase-3 tables were already proven by the O14 rehearsal.
+- **DependsOn:** M6 (committed `6002e1c`) + the ruling set (`8526a98`)
+- **State:** written, reviewed, all gates green, uncommitted
+- **Delivered:**
+  - Help lane: staff submit/list/detail (category allowlist pin/kiosk/profile/access/other, subject 3–120, body ≤4000), HR queue + enforced ladder OPEN→IN_REVIEW→RESOLVED/CLOSED, same-generic 404/403, durable audits (`help.request_submitted`/`_resolved`/`_status_changed`), 5/15-min submission limiter
+  - Decision heart: `PATCH /api/hr/corrections/:id/decision` with the full 403 matrix in one commented table (no-self-approval absolute; ESCALATED = second active HR or SUPERADMIN backstop with condition + reason ≤500; half-sent never falls through); approval applies proposed values under an observed-values drift guard (409 "record changed"); `PROPOSED` revision rows now too; `correction.decided`(.backstop)/`correction.escalated` in `audit_logs`
+  - Reports: register (snapshot-aware names, 190-day cap), punctuality summary (absent = no-row, active STAFF only, per day/employee/shift), exceptions (review rows + OUTSIDE/UNKNOWN attempts), O9 CSV export — streamed, backpressure-aware, disconnect-detecting, injection-guard-then-escape, business-timezone times, one `report.exported` audit row on clean completion only
+  - Audit + retention: `GET /api/audit/corrections/:attendanceId` full trail (corrections + revisions + audits); `GET/PATCH /api/business/settings` — retention knobs with `retentionEnabled=true` refused per O10, ranges + `.strict()`, audited; no deletion job in M7
+  - `writeAudit` extended with optional beforeValues/afterValues (additive); contracts row 141 formalized with its 409
+- **Verification:** `tsc` 0 errors; `prisma validate` valid; db-check, env parity (11 vars), humanize clean (TESTING_GUIDE, contracts cell, state docs)
+- **Deferred:** calendar-aware absence (day-close job owner); per-decision-denial audit rows (deliberate); generic `GET /api/audit?action=` listing (docs reference one; not in contracts scope for M7)
 
 ### [ BLOCKED ] — carried risks
 

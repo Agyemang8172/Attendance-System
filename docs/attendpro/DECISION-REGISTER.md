@@ -59,7 +59,7 @@ These were open in the 2026-10-15 register and are now settled or deferred by th
 | — | Append-only protection (was O21) | **Confirmed** by O17 ("dedicated correction history and append-only audit log") and §5. Enforcement is in the design. |
 | — | Calendars per business (was O22) | **Confirmed**: one default working calendar per business in v1, schema allows more later. |
 | O19 | Kiosk scan surface | **Open (see R3).** |
-| O20 | PIN policy specifics | **Open (see R5).** |
+| O20 | PIN policy specifics | **Ruled by R5** (owner, 2026-10-17): four digits, 10 wrong attempts, 5-minute lockout. |
 | O21 | Correction window policy | **Settled by O17**: seven days; separate strict rule beyond same day. |
 | O22 | Site and geo-fence model | **Implicitly required by O4.** A `Site` (or `WorkSite`) entity with centre and radius is added to the data model. |
 
@@ -72,12 +72,12 @@ recommendation are given; the owner decides.
 
 | Ref | Open detail | Options | Recommendation |
 |-----|-------------|---------|----------------|
-| R1 | Acceptable GPS accuracy threshold and the definition of stale location | (a) fixed default (for example accuracy ≤ 50 m, captured within 60 s), (b) per-business configurable | (a) with a per-business override field, so the default is safe and the business can tighten it |
+| R1 | Acceptable GPS accuracy threshold and the definition of stale location | (a) fixed default (for example accuracy ≤ 50 m, captured within 60 s), (b) per-business configurable | **Ruled by the owner on 2026-10-17.** The documented defaults are final: a reading must report accuracy within 1..500 m (outside that range the location is UNKNOWN, never OUTSIDE), a capture older than 60 seconds is stale, and the near-miss band sits within 25 m past the site's radius. Location stays a review flag, never a block. The values live as named constants in `backend/utils/location.ts`. |
 | R2 | How staff retry or request review when location is unknown | (a) allow the punch, flag it, correct later, (b) block and route to HR, (c) prompt a retry then allow | (a): never block a genuine worker; flag and review, per O4 |
 | R3 | Scan surface: personal phone, kiosk phone, or both | (a) kiosk phone only, (b) employee personal phone only, (c) both | Determine with the owner. This choice changes the whole security model and cannot be assumed |
 | R4 | Effective-date behaviour for timing changes when a shift crosses midnight | (a) apply at the next midnight of the shift's start day, (b) apply at the next midnight of the shift's end day, (c) freeze running shifts until they close | (c): a shift already open is evaluated against the policy it started under |
-| R5 | PIN policy specifics: length, attempt limit, lockout duration, reset evidence | (a) 6 digits, 5 attempts, 15-minute lockout, audited HR reset, (b) owner-specified | (a), pending owner confirmation |
-| R6 | How a failed clock-in enters the correction workflow without becoming a false success | (a) the employee raises a correction referencing the failed attempt, (b) HR creates it from the failed-attempt log | (a) with the attempt id recorded on the request |
+| R5 | PIN policy specifics: length, attempt limit, lockout duration, reset evidence | (a) 6 digits, 5 attempts, 15-minute lockout, audited HR reset, (b) owner-specified | **Ruled (b) by the owner on 2026-10-17** with these final values: the badge PIN is **4 digits**, an account locks after **10** wrong attempts, and the lock lasts **5 minutes**. The audited HR reset is unchanged. Set in the verify-pin validator, the reset-pin generator, and the `PIN_MAX_ATTEMPTS` / `PIN_LOCK_MINUTES` constants. |
+| R6 | How a failed clock-in enters the correction workflow without becoming a false success | (a) the employee raises a correction referencing the failed attempt, (b) HR creates it from the failed-attempt log | **Ruled by the owner on 2026-10-17.** Corrections are text-only: a reason plus the proposed times. No attachments, and the optional `attemptId` field is dropped from the correction API entirely. A failed punch stays findable in `attendance_attempts`; the correction never references it. |
 | R7 | Independent approval for HR's own corrections | (a) a second HR user, (b) SUPERADMIN, (c) an owner-designated approver list | (b) where only one HR exists; otherwise (a). Needs the owner |
 | R8 | Can attendance records and audit/security logs keep different retention periods | (a) yes, separate policies, (b) one period for all | (a): the categories differ and O10 already separates them |
 | R9 | Whether the current database and migration history can safely support the tenant and audit design | (a) forward-only migrations on the existing database, (b) rebuild on a fresh database | Confirm after the M0 evidence: forward-only is viable, with the bootstrap business row and RLS |

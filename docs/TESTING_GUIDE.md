@@ -494,7 +494,7 @@ kiosk's own JSON body. Throughout, `<site-id>` is the site from Scenario K and
 >       where: { email: 'ama.mensah@test.attendpro.com' },
 >     });
 >     if (!user) throw new Error('Ama Mensah not found — run Scenario I first');
->     const pin = '135790';
+>     const pin = '1357';
 >     const pinSalt = randomBytes(16).toString('hex');
 >     const pinHash = createHmac('sha256', process.env.PIN_HMAC_KEY)
 >       .update(user.id + pin + pinSalt).digest('hex');
@@ -611,7 +611,7 @@ kiosk's own JSON body. Throughout, `<site-id>` is the site from Scenario K and
 - [ ] 2. Call `POST /api/kiosk/verify-pin` with:
 
       ```json
-      { "sessionId": "<sessionId>", "pin": "135790" }
+      { "sessionId": "<sessionId>", "pin": "1357" }
       ```
 
       Verify `201 { data: { result: "VERIFIED", action, status } }`. The
@@ -639,15 +639,15 @@ kiosk's own JSON body. Throughout, `<site-id>` is the site from Scenario K and
       instead of the kiosk token. Verify `401` — punch routes take device
       tokens only (this is what supersedes the Scenario E walkthrough).
 - [ ] 6. Wrong PIN: identify again and call verify-pin with
-      `"pin": "123456"`. Verify `400` with the message "That PIN is not
-      correct. Try again." Repeat until the **fifth** call: every response,
+      `"pin": "1234"`. Verify `400` with the message "That PIN is not
+      correct. Try again." Repeat until the **tenth** call: every response,
       including the lock-tripping one, has the same body — no count of
-      attempts left. The **sixth** call verifies `429` with the message
+      attempts left. The **eleventh** call verifies `429` with the message
       "Too many tries. Try again later or see HR."
 - [ ] 7. Employee lock: run a fresh identify and a verify-pin for Ama with
       the correct PIN. Verify `429` with the message "Try again later or see
-      HR." — the lock after five failures holds across sessions for about
-      15 minutes, per employee, not per session. Re-run the setup snippet
+      HR." — the lock after ten failures holds across sessions for about
+      5 minutes, per employee, not per session. Re-run the setup snippet
       from the note above to clear the lock before continuing.
 - [ ] 8. HR reset clears the lock: run Scenario J step 1 (the audited
       `reset-pin`). Then identify again and send a deliberately **wrong**
@@ -1090,6 +1090,373 @@ its own.
        token as the bearer anywhere else (for example `GET /api/audit`) and
        verify `401`; the token opens the two job routes and nothing else.
 
+The scenarios below cover the M7 features: help requests, correction decisions
+with the no-self-approval backstop, reports with the CSV export, and the audit
+trail. They follow the same API-walkthrough rules as Scenarios I–V. All four
+report routes, both help-request HR routes, the decision route, and the audit
+trail answer to an HR or SUPERADMIN token (`hr@test.attendpro.com` or
+`superadmin@test.attendpro.com`, password `devos123`); Scenario X's drift test
+reuses the `JOB_TOKEN` export from Scenario V's setup note.
+
+### Scenario W: Help Requests End to End (STAFF self + HR lane, M7)
+
+An employee who cannot fix their own access files a help request; HR answers it
+from the business-wide queue. The requester and the tenant are always taken
+from the signed-in caller, so no payload can file a ticket for someone else.
+
+> The staff submission route is throttled: five `POST` calls per account (and
+> its IP address) per 15 minutes. Do not rapid-fire the negative steps below —
+> the limiter answers `429` with "Too many requests, please try again later."
+> A backend restart clears the counter (limiters are skipped under
+> `NODE_ENV=test`).
+
+- [ ] 1. Sign in as `staff@test.attendpro.com` through the API and call
+       `POST /api/staff/help-requests` with:
+
+       ```json
+       {
+         "category": "pin",
+         "subject": "Front desk kiosk will not accept my PIN",
+         "body": "The reader beeps twice and goes back to the PIN prompt. I get locked out after ten tries."
+       }
+       ```
+
+       Verify `201 { success: true, message: "Help request submitted",
+       data: { id, status: "OPEN" } }`. `category` must be one of `pin`,
+       `kiosk`, `profile`, `access`, `other`. Copy the `id` — call it request A.
+- [ ] 2. Negative sizes: a 2-character `subject` returns `400 "Validation
+       failed"` with the errors array naming the 3-character minimum; a
+       121-character subject names the 120 cap; an empty `body` names the
+       required description (the cap is 4000). No row is written for any of
+       them.
+- [ ] 3. Call `GET /api/staff/help-requests`. Verify your own queue, newest
+       first, each row carrying `id`, `category`, `subject`, `body`, `status`,
+       `resolutionNote`, `resolvedAt`, `createdAt`, `updatedAt` and no
+       `requester` object. The `?status=OPEN` query narrows the list.
+- [ ] 4. Sign in as Ama Mensah (Scenario I's temporary password) and file her
+       own request (category `kiosk`). Copy its `id` — call it request B.
+- [ ] 5. Negative: as `staff@test.attendpro.com`, call
+       `GET /api/staff/help-requests/<request B id>`. Verify `403 { success:
+       false, message: "Access denied" }` — the ticket exists in the same
+       business, but it is not yours to read.
+- [ ] 6. Negative: call the same GET with a well-formed UUID that does not
+       exist (and again with an id from another business, if your database has
+       one). Verify both return the same generic `404 { success: false,
+       message: "Request not found" }`.
+- [ ] 7. Sign in as `hr@test.attendpro.com` and call
+       `GET /api/hr/help-requests`. Verify the whole business queue, newest
+       first, with a `requester` object (`id`, `firstName`, `lastName`,
+       `email`) on every row so HR can reach the person.
+- [ ] 8. Call `PATCH /api/hr/help-requests/<request A>` with
+       `{ "status": "IN_REVIEW" }` (optional `resolutionNote` rides along).
+       Verify `200 { success: true, message: "Help request updated", data }`
+       with `status` `IN_REVIEW` and `resolvedAt` `null`. In the database, the
+       `audit_logs` table holds an action `help.request_status_changed` row.
+- [ ] 9. Call the PATCH again with `{ "status": "RESOLVED",
+       "resolutionNote": "PIN reset done; the badge reader was also cleaned." }`.
+       Verify `200` with the note echoed and `resolvedAt` set — that column is
+       the row's only resolution timestamp (the deciding actor lives in the
+       audit row). The audit action this time is `help.request_resolved`.
+       Negative: send a 501-character note first. Verify `400` (the note cap
+       is 500).
+- [ ] 10. Negative: repeat the exact status that already sits on a row (for
+       example `RESOLVED` on request A). Verify `409 { success: false, message:
+      "The request is already in this status, RESOLVED" }` — the status value
+       is quoted verbatim in the message.
+- [ ] 11. Role walls: as `staff@test.attendpro.com`, call
+       `GET /api/hr/help-requests` and the PATCH. Verify both answer `403 with
+       the message "Access Denied"` (route gate). As
+       `hr@test.attendpro.com`, call `POST /api/staff/help-requests`. Verify
+       `403` — filing is a STAFF self lane.
+
+### Scenario X: Correction Decisions and the No-Self-Approval Matrix (HR / SUPERADMIN, M7)
+
+Submission rules were covered in Scenario U — this scenario picks the
+decision half up. `PATCH /api/hr/corrections/:id/decision` runs the whole
+approver matrix in one transaction: the decision, the rewritten attendance
+row, the append-only revision, and the audit rows commit together or not at
+all. No self-approval is absolute: the requester never decides their own
+correction, in any role, with no backstop escape.
+
+> Setup: pair the kiosk and punch open sessions for Ama Mensah exactly as
+> Scenarios Q and R walk them (her PIN setup note sits before Scenario P), and
+> sign her in with the temporary password from Scenario I. The database edits
+> below follow the owner-run pattern Scenario V uses.
+
+- [ ] 1. Punch a fresh open session for Ama, then as Ama call
+       `POST /api/attendance/corrections` with:
+
+       ```json
+       {
+         "attendanceId": "<Ama's open row from today>",
+         "reason": "The kiosk recorded 09:05 but I arrived at 08:40; the badge reader was slow.",
+         "proposedClockIn": "2026-10-17T08:40:00.000Z"
+       }
+       ```
+
+       Verify `201 { data: { id, status: "SUBMITTED", reviewTier: "SAME_DAY" }
+       }` — the row's date is today. Copy the correction `id`.
+- [ ] 2. No self-approval: sign back in as Ama and call
+       `PATCH /api/hr/corrections/<correction id>/decision` with
+       `{ "decision": "REJECTED" }`. Verify `403` with the message
+       "Access Denied" — STAFF never reaches the decision handler. The fully
+       worded refusal ("You cannot approve your own correction") exists for a
+       requester who sits in an HR or SUPERADMIN seat (an officer who
+       corrected their own row); with the standard fixtures nobody holds one,
+       so skip it unless you stage that case.
+- [ ] 3. HR approves the `SAME_DAY` correction: as
+       `hr@test.attendpro.com`, call the decision endpoint with:
+
+       ```json
+       {
+         "decision": "APPROVED",
+         "note": "Kiosk reader fault confirmed at the front desk; the earlier arrival is accepted."
+       }
+       ```
+
+       Verify `200 { success: true, message: "Correction approved",
+       data: { correction, attendance, escalation: null } }`. The
+       `attendance` object carries the proposed clock-in, a recomputed
+       `status`, and fresh `hoursWorked`. In the database verify the
+       `attendance_correction_revisions` row: `revisionNo` 1, action
+       `APPLIED`, `values_before` holding what the row said at submission and
+       `values_after` holding the applied values. The `audit_logs` table
+       holds an action `correction.decided` row whose `reason` is a JSON
+       string with the original, proposed, and approved values, the actor's
+       role, and the attendance id.
+- [ ] 4. Now to ESCALATED: punch a fresh open session for Ama, then move that
+       row's `date` back two days (only `date` changes; the snapshots stay as
+       punched):
+
+       ```bash
+       cd backend && node --env-file=.env -e "
+       const { PrismaClient } = require('@prisma/client');
+       const prisma = new PrismaClient();
+       (async () => {
+         const user = await prisma.user.findUnique({
+           where: { email: 'ama.mensah@test.attendpro.com' },
+         });
+         if (!user) throw new Error('Ama Mensah not found — run Scenario I first');
+         const row = await prisma.attendance.findFirst({
+           where: { userId: user.id, sessionStatus: 'OPEN' },
+           orderBy: { clockIn: 'desc' },
+         });
+         if (!row) throw new Error('No open attendance row for Ama Mensah');
+         const date = new Date(Date.now() - 2 * 86400000);
+         await prisma.attendance.update({ where: { id: row.id }, data: { date } });
+         console.log('Attendance ' + row.id + ' moved to ' + date.toISOString().slice(0, 10));
+         await prisma.$disconnect();
+       })();
+       "
+       ```
+
+       As Ama, submit a correction on that row with a `proposedClockIn`.
+       Verify `reviewTier` `ESCALATED` — the tier follows the record's date
+       at submission, not your opinion of it.
+- [ ] 5. Sole-HR refusal: as `hr@test.attendpro.com`, decide that correction
+       (any decision). Verify `403 { success: false, message: "Escalated
+       corrections need a second reviewer — a SUPERADMIN may act as
+       backstop" }`. The standard fixtures carry only one active HR officer,
+       so this is the refusal you should see; with a second active HR officer
+       on the business the same call would decide instead, as the second
+       reviewer.
+- [ ] 6. SUPERADMIN in no named lane: as `superadmin@test.attendpro.com`,
+       decide it with `{ "decision": "REJECTED" }` and no backstop fields.
+       Verify `403` with the message "An escalated correction needs the
+       SUPERADMIN backstop conditions, or a second HR reviewer".
+- [ ] 7. Half-sent backstop: send
+       `{ "decision": "REJECTED", "backstopCondition": "EXPLICIT_HANDOFF" }`
+       with no reason. Verify `403` with the message "The backstop needs both
+       a condition and a non-empty reason; without them a second HR reviewer
+       decides instead".
+- [ ] 8. HR cannot ride the backstop: as `hr@test.attendpro.com`, send both
+       backstop fields with a reason. Verify `403` with the message
+       "Only a SUPERADMIN may use the backstop conditions".
+- [ ] 9. The backstop decides: as `superadmin@test.attendpro.com`, call the
+       decision endpoint with:
+
+       ```json
+       {
+         "decision": "APPROVED",
+         "note": "Sole reviewer out since the morning; decided under the wait rule.",
+         "backstopCondition": "UNCLAIMED_24H",
+         "backstopReason": "The only HR officer has been away since the morning; the decision could not wait."
+       }
+       ```
+
+       Verify `200` with `data.escalation` `{ type: "SUPERADMIN_BACKSTOP",
+       condition: "UNCLAIMED_24H" }` and the correction object carrying
+       `status` `APPROVED`, `decidedAt`, `decisionNote`, and `reviewedById`.
+       The revision row's `reason` names the condition and its reason; the
+       `audit_logs` action for this one is `correction.decided.backstop`.
+       (A `CONFLICT_OF_INTEREST` or `EXPLICIT_HANDOFF` condition works the
+       same way; `EXPLICIT_HANDOFF` also writes an extra
+       `correction.escalated` audit row.)
+- [ ] 10. Already decided: send step 9's body again. Verify `409 { success:
+       false, message: "This correction has already been decided" }`. (A
+       withdrawn correction answers the same `409` with the message "This
+       correction was withdrawn by its requester".)
+- [ ] 11. Drift test. Punch a fresh open session for Ama and submit a
+       correction on it (same body shape as step 1). Then move that row's
+       `date` back two days with step 4's snippet (a copy aimed at the newest
+       open row), and close the whole overdue board from Scenario V: run
+       `POST /api/jobs/auto-clock-out/run` with the job token. The sweep
+       closes every overdue open row; verify `closed` counts at least your
+       new row and the attendance row now reads `sessionStatus` `CLOSED`,
+       `status` `AUTO_CLOSED`, with a written `clockOut`.
+- [ ] 12. Approve into the drift: as `hr@test.attendpro.com`, call the
+       decision endpoint on the drifted correction with
+       `{ "decision": "APPROVED", "note": "Trying to approve after the job closed the row." }`.
+       Verify `409 { success: false, message: "The record changed since this
+       correction was raised" }` — an approval may only move a row forward
+       from the values the correction was raised against. Confirm the
+       correction stays `SUBMITTED` and the attendance row still carries the
+       job's closure untouched.
+- [ ] 13. Close it out: a rejection does not run the reality recheck, so send
+       `{ "decision": "REJECTED", "note": "Row was closed by the job after the correction was filed." }`.
+       Verify `200 { success: true, message: "Correction rejected" }` with
+       `data` carrying the correction, attendance, and `escalation: null`.
+       The revision row this time is action `DECIDED` with no
+       `values_after`, because nothing was applied.
+
+### Scenario Y: Reports, CSV Export and the Audit Trail (HR / SUPERADMIN, M7)
+
+Four report reads answer to HR and SUPERADMIN; the CSV export is the one bulk
+egress and earns an audit row, the rest change nothing and leave the trail
+alone. The audit-trail read assembles one attendance row's whole correction
+story in a single view.
+
+- [ ] 1. Plant an exception. Two reliable ways: identify at the kiosk with
+       coordinates well outside the paired site (Scenario Q step 2's body,
+       but `latitude: 5.70, longitude: -0.45`), and verify `locationResult`
+       `OUTSIDE` — outside the fence is flagged, never blocked; or reuse the
+       `REQUIRES_REVIEW` row that Scenario V case (ii) left behind.
+- [ ] 2. Register: as `hr@test.attendpro.com`, call
+       `GET /api/reports/attendance-register?startDate=<start>&endDate=<end>&page=1&limit=10`
+       (`YYYY-MM-DD` values, a span of up to 190 days). Verify the paginated
+       rows, newest first by date then clock-in, each carrying `date`,
+       `clockIn`, `clockOut`, `hoursWorked`, `status`, `sessionStatus`,
+       `closureReason`, `requiresReviewReason`, an `employee` object with
+       `employeeCode` and names, and `shiftName` taken from the row's
+       historical snapshot. Re-call with `employeeId=<Ama's id>` and again
+       with `shiftId` and verify both narrow the set and the
+       `pagination.total` follows.
+- [ ] 3. Negative: send a range of 191 days, and then `endDate` before
+       `startDate`. Both return `400 "Invalid query parameters"` with the
+       `errors` array pointing at `endDate`.
+- [ ] 4. Punctuality summary: call
+       `GET /api/reports/punctuality-summary?startDate=<start>&endDate=<end>&groupBy=employee`,
+       and repeat with `groupBy=shift` and `groupBy=day`. Each row carries
+       `group` plus the buckets `early`, `onTime`, `late`, `openSession`,
+       `autoClosed`, `missing`, `absent`, `requiresReview`, and `total`. The
+       `absent` column needs a careful eye, because it is computed:
+       `employee` and `day` count calendar days in the range with no
+       attendance row for the person (so Ama shows an absence for every day
+       of the range she did not punch, active STAFF only); `shift` counts
+       only stored absent rows, so it stays `0` today.
+- [ ] 5. Exceptions: call `GET /api/reports/exceptions` for the same range.
+       Verify one combined list where `kind` is `ATTENDANCE` (review-flagged
+       rows, or an open session past its shift end) or `ATTEMPT` (punch
+       attempts whose `locationResult` was `OUTSIDE` or `UNKNOWN`), every row
+       with a plain `reason`. The OUTSIDE identify from step 1 must appear
+       here.
+- [ ] 6. CSV export: call the export the same way the JSON register is
+       called, plus `format=csv`:
+
+       ```bash
+       curl -s -o register.csv \
+         "http://localhost:8000/api/reports/attendance-register/export?startDate=<start>&endDate=<end>&format=csv" \
+         -H "Authorization: Bearer $HR_TOKEN"
+       ```
+
+       Open `register.csv` as text and verify:
+       - the header is exactly `staff id,name,date,shift,clock-in,clock-out,
+         total hours,status,source,flags`;
+       - rows print oldest first (a register reads chronologically — the
+         opposite of the JSON register);
+       - `clock-in` and `clock-out` read in the business timezone (check the
+         `timezone` value on the settings read in step 11 and compare one
+         row against the same instant in the JSON register's `clockIn`);
+       - `status` carries the class the row graded; `source` reads `KIOSK`
+         for a kiosk punch, `CORRECTION` for a row a correction closed,
+         `AUTO_JOB` for an auto-closed one; `flags` repeats the review
+         reason and is blank when there is none;
+       - an empty clock-out prints an empty cell.
+       In the database, the finished export wrote exactly one `report.exported`
+       audit row whose `reason` names the range and the row count.
+- [ ] 7. Negative: send `format=xlsx`. Verify `400` with the plain message
+       "format must be csv" — the surface exports one format.
+- [ ] 8. The apostrophe guard. The escape rule prefixes any cell beginning
+       `=`, `+`, `-`, or `@` with an apostrophe, so a spreadsheet cannot
+       execute it as a formula. Rename an existing staff member's first name
+       to start with a hyphen (owner-run; run the snippet once to set it and
+       once more after the export to restore):
+
+       ```bash
+       cd backend && node --env-file=.env -e "
+       const { PrismaClient } = require('@prisma/client');
+       const prisma = new PrismaClient();
+       (async () => {
+         const user = await prisma.user.findUnique({
+           where: { email: 'staff@test.attendpro.com' },
+           select: { id: true, firstName: true },
+         });
+         if (!user) throw new Error('Fixture account not found');
+         const next = user.firstName.startsWith('-')
+           ? user.firstName.slice(1)
+           : '-' + user.firstName;
+         await prisma.user.update({
+           where: { id: user.id },
+           data: { firstName: next },
+         });
+         console.log('firstName is now ' + next + ' (was ' + user.firstName + ')');
+         await prisma.$disconnect();
+       })();
+       "
+       ```
+
+       Re-export the CSV and find that row's `name` cell. Verify it reads
+       `'-Jordan Reed` (or wherever the hyphen sat) — the guard must arrive
+       before the CSV escaping, so the apostrophe is the first character.
+       Run the snippet again to restore the real name. The audit trail never
+       records the rename.
+- [ ] 9. Role wall: as `staff@test.attendpro.com`, call the register endpoint.
+       Verify `403` with the message "Access Denied".
+- [ ] 10. Audit trail: as `hr@test.attendpro.com`, call
+       `GET /api/audit/corrections/<the attendance id Ama corrected in
+       Scenario X>`. Verify `200 { data: [ corrections ] }`, corrections
+       newest first, each holding the correction (with `originalValues`,
+       `approvedValues`, `requestedBy`, `reviewedBy`, and the embedded
+       `attendance` row), plus `attendanceCorrectionRevisions` in
+       `revisionNo` order and `audits` oldest first — the decision rows
+       `correction.decided` and `correction.decided.backstop` from Scenario X
+       (and `correction.escalated`, when a handoff condition was used).
+- [ ] 11. Trail refusals: send a non-UUID path value. Verify `400 "Invalid
+       parameters"`. Send a well-formed UUID for an unknown (or
+       cross-business) attendance row. Verify the same generic
+       `404 { success: false, message: "Attendance record not found" }`.
+- [ ] 12. Retention settings, read: as `superadmin@test.attendpro.com`, call
+       `GET /api/business/settings`. Verify `data` with the branding group,
+       `retentionYears` (default 7), `retentionEnabled: false` — deletion is
+       stored-but-off everywhere in v1 — and both day windows
+       (`attendanceRetentionDays`, `auditRetentionDays`) `null` until set.
+       As `hr@test.attendpro.com`, the GET answers `403` (SUPERADMIN only).
+- [ ] 13. Retention settings, the blocked flip: as SUPERADMIN, PATCH the
+       settings with `{ "retentionEnabled": true }`. Verify `400 "Validation
+       failed"` with the errors array naming `retentionEnabled` and the
+       message "retentionEnabled must stay false — enabling deletion waits
+       for the Ghana-specific legal advice O10 requires". No values move.
+- [ ] 14. The other knobs update: PATCH with
+       `{ "attendanceRetentionDays": 1095 }`. Verify
+       `200 { success: true, message: "Business settings updated", data }`
+       echoing the new value, and a `settings.updated` audit row whose
+       `reason` JSON carries `fields`, `before`, and `after`. Then PATCH the
+       exact same body again: verify `200` still, and the new audit row says
+       in its reason that no effective change happened. Negative: misspell
+       the key (`"retentionYear": 5`) — verify `400` with an
+       unrecognized-key error (unknown keys are refused, never dropped), and
+       send `"timezone": "Not/AZone"` — `400` naming the IANA check.
+
 ---
 
 ## 4. Known Limitations & Notes
@@ -1097,7 +1464,9 @@ its own.
 - **Rate limiting:** failed logins are throttled per IP (10 attempts / 15
   minutes). Rapid wrong-password attempts will start returning 429. Wait out
   the window or restart the backend (the limiter is skipped under
-  `NODE_ENV=test`).
+  `NODE_ENV=test`). Filing help requests has its own cap: five submissions per
+  account and IP address per 15 minutes (`POST /api/staff/help-requests`,
+  Scenario W).
 - **Forced password change:** an HR or SUPERADMIN resetting a password resets
   that account's `mustChangePassword` flag, so the next login of that user
   must set a new password before any app route opens.

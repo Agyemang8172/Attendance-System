@@ -13,6 +13,13 @@ import { logger } from "./logger.js";
  *
  * No entry here ever carries secret material: PIN, device token, pairing
  * code, or QR value exist only as one-way hashes in their own lanes.
+ *
+ * The `beforeValues`/`afterValues` entry fields map onto the AuditLog
+ * columns of the same names (both nullable, so unset and null behave the
+ * same: the column stores SQL NULL). They are an escape hatch for callers
+ * who want the snapshot JSON in its own column; every established event
+ * keeps carrying its detail in `reason`, which REMAINS the row's
+ * human-readable summary — the columns never replace it.
  */
 
 export type AuditEntry = {
@@ -30,6 +37,16 @@ export type AuditEntry = {
    */
   actorType?: AuditActorTypeValue;
   reason?: string | null;
+  /**
+   * Optional state snapshots for the AuditLog `before_values` / `after_values`
+   * columns (both nullable, default SQL NULL). `Prisma.InputJsonValue`, not
+   * `unknown`, because the create payload has to satisfy the column's input
+   * type; callers cast their snapshot object the same way the correction
+   * revisions already do. Unset in every call site that predates M7 —
+   * adding the capability never changed an existing row's shape.
+   */
+  beforeValues?: Prisma.InputJsonValue | null;
+  afterValues?: Prisma.InputJsonValue | null;
 };
 
 /** Mirrors the schema's AuditActorType enum without importing the whole client. */
@@ -61,6 +78,16 @@ export const writeAudit = async (
         entityType: entry.entityType,
         entityId: entry.entityId ?? null,
         reason: entry.reason ?? null,
+        // Default NULL: the fields are only named when the caller passed a
+        // snapshot, so every pre-existing entry keeps its old shape.
+        // (`Prisma.DbNull` is how a JSON column stores an explicit SQL NULL;
+        // a bare `null` is not part of the column's input type.)
+        ...(entry.beforeValues !== undefined
+          ? { beforeValues: entry.beforeValues ?? Prisma.DbNull }
+          : {}),
+        ...(entry.afterValues !== undefined
+          ? { afterValues: entry.afterValues ?? Prisma.DbNull }
+          : {}),
       },
     });
   } catch (error) {

@@ -12,17 +12,16 @@
  *             trust. Poor accuracy is UNKNOWN, never OUTSIDE (§6.2): a coarse
  *             fix is not evidence that the employee is away from the site.
  *
- * This is a flag, never a block. The thresholds are provisional pending R1
- * (the owner still owes the final accuracy and staleness numbers), so they are
- * the plan's documented defaults — accuracy 1..500 m, capture at most 60 s
- * old, near-miss margin 25 m — kept as named constants so R1 lands in one
+ * This is a flag, never a block. The thresholds are final per owner ruling R1
+ * (2026-10-17): accuracy 1..500 m, capture at most 60 s old, near-miss margin
+ * 25 m — kept as named constants, so any future re-tune still lands in one
  * place.
  */
 
-/** R1 provisional default: a position captured more than this ago is stale. */
+/** R1 final (owner ruling, 2026-10-17): a position captured more than this ago is stale. */
 export const LOCATION_STALENESS_MS = 60 * 1000;
 
-/** R1 provisional default: outside this window, accuracy stops being plausible. */
+/** R1 final (owner ruling, 2026-10-17): outside this window, accuracy stops being plausible. */
 export const LOCATION_ACCURACY_MAX_METERS = 500;
 
 /** Near-miss margin: OUTSIDE just past the radius, GPS jitter is ordinary. */

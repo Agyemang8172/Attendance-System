@@ -692,7 +692,8 @@ export const changePassword = async (req: Request, res: Response) => {
 /**
  * An audited HR reset of a staff member's kiosk PIN (O2, O7).
  *
- * The PIN is six random digits from `crypto.randomInt`. It is stored as
+ * The PIN is four random digits from `crypto.randomInt` (final per owner
+ * ruling R5, 2026-10-17). It is stored as
  * `HMAC-SHA-256(key = PIN_HMAC_KEY, message = employeeId || pin || salt)`
  * with a per-record salt (kiosk §5.1), never a bare hash. The response never
  * carries the old or the new PIN; the employee learns it out of band.
@@ -753,7 +754,9 @@ export const resetPin = async (req: Request, res: Response) => {
       return;
     }
 
-    const pin = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    // Four digits, final per owner ruling R5 (2026-10-17) — the same length
+    // the kiosk verify-pin validator enforces.
+    const pin = String(randomInt(0, 10_000)).padStart(4, "0");
     const pinSalt = randomBytes(16).toString("hex");
     const pinHash = createHmac("sha256", pinHmacKey)
       .update(`${target.id}${pin}${pinSalt}`)

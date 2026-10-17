@@ -15,6 +15,10 @@ import qrRoutes from "./routes/qrRoutes.js";
 import kioskDeviceRoutes from "./routes/kioskDeviceRoutes.js";
 import kioskVerifyRoutes from "./routes/kioskVerifyRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
+import staffHelpRoutes from "./routes/staffHelpRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import businessRoutes from "./routes/businessRoutes.js";
+import auditRoutes from "./routes/auditRoutes.js";
 import securityHeaders from "./middleware/securityHeaders.js";
 import { logger, correlationIdMiddleware, requestLogger, logError } from "./utils/logger.js";
 import { setupSwagger } from "./docs/swagger.js";
@@ -163,6 +167,25 @@ app.use("/api/kiosk", kioskVerifyRoutes);
 // read. Mounted at its own prefix; the run route authenticates on the job
 // service token, not on any session middleware.
 app.use("/api/jobs", jobRoutes);
+
+// Staff self-service lane (contracts §3): help requests only for now. Its
+// own prefix keeps these staff routes out of the wider attendance router.
+app.use("/api/staff", staffHelpRoutes);
+
+// Reports (contracts §10, O9): register, punctuality summary, exceptions and
+// the streamed CSV export. Its own prefix keeps the four GET rows away from
+// every other router's params.
+app.use("/api/reports", reportRoutes);
+
+// Business settings (contracts §5 rows 1-2, M7 Phase 3): the settings read
+// and write. Mounted at the shared /api/business prefix like the assignment
+// and QR routers; this file defines only the /settings subpaths, so there is
+// no shadowing in either direction.
+app.use("/api/business", businessRoutes);
+
+// Audit (contracts §11, M7 Phase 3): the correction trail read. Own prefix
+// because no router owns /api/audit today.
+app.use("/api/audit", auditRoutes);
 
 // Health check
 app.get("/api/health", async (_req, res) => {

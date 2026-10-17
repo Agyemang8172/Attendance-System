@@ -45,15 +45,18 @@ const pinCandidateHash = (
     .update(`${employeeId}${pin}${pinSalt}`)
     .digest("hex");
 
-// ── Provisional R5 constants ────────────────────────────────────────────────
-// R5 is still an open owner item; the attempt limit and lock window are the
-// spec's own recommendation (kiosk §13 item 3: six digits, five attempts,
-// 15-minute lockout). Named constants so R5 lands in one place.
+// ── Final R5 constants (owner ruling R5, 2026-10-17) ─────────────────────────
+// R5 is settled: the attempt limit and lock window below are the owner's
+// final values — ten wrong attempts, a 5-minute lockout (the 4-digit PIN
+// length itself lives in the validator and the reset generator). The lock
+// timestamp arithmetic stays in code on top of the generic DB columns;
+// nothing is stored as a number of minutes. Named constants so R5 lands in
+// one place.
 
 /** Wrong PINs tolerated per session before it locks (kiosk §5.2, R5). */
-const PIN_MAX_ATTEMPTS = 5;
+const PIN_MAX_ATTEMPTS = 10;
 /** How long a tripped lock holds, per employee and per session (R5). */
-const PIN_LOCK_MINUTES = 15;
+const PIN_LOCK_MINUTES = 5;
 
 /** Session lifetime: a candidate identity lives two minutes (kiosk §4.3). */
 const SESSION_TTL_MS = 2 * 60 * 1000;
@@ -391,7 +394,7 @@ export const verifyPin = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Fail closed: an unkeyed PIN hash would be a bare digest anyone can
-    // precompute over 1,000,000 six-digit codes (kiosk §10).
+    // precompute over 10,000 four-digit codes (kiosk §10).
     if (!process.env.PIN_HMAC_KEY) {
       verifyLogger.error(
         { kioskId: kiosk.kioskId, event: "verify_missing_pin_key" },

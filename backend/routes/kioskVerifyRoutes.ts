@@ -19,7 +19,7 @@ const router = express.Router();
 
 /**
  * Limits from the kiosk limiter table (kiosk §7); the numeric entries are
- * provisional pending R5, which owes the final PIN policy:
+ * final per owner ruling R5 (2026-10-17), which fixed the PIN policy:
  *
  * - identify takes the "kiosk identify" row, keyed `identify:<kioskId>` —
  *   stopping one device spraying QR lookups;
