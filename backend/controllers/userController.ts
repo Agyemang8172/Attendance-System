@@ -536,11 +536,13 @@ export const deleteUser = async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (error instanceof Error) {
-      res.status(500).json({
-        message: "Delete failed",
-        error: error.message,
-      });
+      // The body stays out of the response — the tenant must never see an
+      // internal phrase; it goes to the log instead (hardened convention).
+      userLogger.error({ err: error.message }, "Deactivation failed");
     }
+    // Both arms keep a body: a non-Error throw must still be answered, not
+    // hang the request, and no `error.message` rides along.
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 

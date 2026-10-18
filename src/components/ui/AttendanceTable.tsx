@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
-import StatBadge from './StatBadge'
+import { KeyboardEvent as ReactKeyboardEvent } from 'react'
+import StatBadge from './StatBadge.tsx'
+import type { AttendanceRecord } from '../../types'
 import {
   FaArrowUp,
   FaArrowDown,
@@ -10,7 +12,7 @@ import {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const formatDate = (dateStr) => {
+const formatDate = (dateStr: string): string => {
   if (!dateStr) return '--'
   return new Date(dateStr).toLocaleDateString('en-GB', {
     day: '2-digit',
@@ -19,7 +21,7 @@ const formatDate = (dateStr) => {
   })
 }
 
-const formatTime = (dateStr) => {
+const formatTime = (dateStr: string): string => {
   if (!dateStr) return '--'
   return new Date(dateStr).toLocaleTimeString([], {
     hour: '2-digit',
@@ -27,37 +29,42 @@ const formatTime = (dateStr) => {
   })
 }
 
-const formatHours = (hours) => {
+const formatHours = (hours: number | null): string => {
   if (hours == null || hours === 0) return '--'
   return `${Number(hours).toFixed(2)} hrs`
 }
 
-const getEmployeeName = (record) => {
+const getEmployeeName = (record: AttendanceRecord): string => {
   if (!record.user) return 'Former Employee'
   return `${record.user.firstName} ${record.user.lastName}`
 }
 
-const getDepartment = (record) => {
+const getDepartment = (record: AttendanceRecord): string => {
   return record.user?.department || '--'
 }
 
-const isLate = (record) => {
+const isLate = (record: AttendanceRecord): boolean => {
   if (!record?.clockIn) return false
   const d = new Date(record.clockIn)
   return d.getHours() > 6 || (d.getHours() === 6 && d.getMinutes() >= 30)
 }
 
 // Late rows sort above Open above Closed — the exception-first default.
-const STATUS_RANK = { LATE: 3, OPEN: 2, CLOSED: 1 }
+const STATUS_RANK: Record<string, number> = { LATE: 3, OPEN: 2, CLOSED: 1 }
 
-const getSortValue = (record, key) => {
+const getSortValue = (record: AttendanceRecord, key: string): number => {
   switch (key) {
-    case 'employee':
-      return record.user
+    case 'employee': {
+      const name = record.user
         ? `${record.user.firstName} ${record.user.lastName}`.toLowerCase()
         : '~~former'
-    case 'department':
-      return (record.user?.department || '').toLowerCase()
+      // Convert string to a sortable number using char codes
+      return name.split('').reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0)
+    }
+    case 'department': {
+      const dept = (record.user?.department || '').toLowerCase()
+      return dept.split('').reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 0)
+    }
     case 'date':
       return record.date ? new Date(record.date).getTime() : 0
     case 'clockIn':
@@ -80,7 +87,7 @@ const getSortValue = (record, key) => {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-const TH = ({ col, sort, onSort }) => {
+const TH = ({ col, sort, onSort }: { col: { key: string; label: string }; sort: { key: string; dir: "asc" | "desc" }; onSort: () => void }) => {
   const active = sort.key === col.key
   const ariaSort = active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'
   const Icon = !active ? FaArrowsUpDown : sort.dir === 'asc' ? FaArrowUp : FaArrowDown
@@ -109,7 +116,7 @@ const TH = ({ col, sort, onSort }) => {
   )
 }
 
-const TD = ({ children, muted = false, mono = false }) => (
+const TD = ({ children, muted = false, mono = false }: { children: React.ReactNode; muted?: boolean; mono?: boolean }) => (
   <td
     className={[
       'px-4 py-3 text-body-sm whitespace-nowrap',
@@ -121,7 +128,7 @@ const TD = ({ children, muted = false, mono = false }) => (
   </td>
 )
 
-const EmptyState = ({ colSpan }) => (
+const EmptyState = ({ colSpan }: { colSpan: number }) => (
   <tr>
     <td colSpan={colSpan}>
       <div className="relative flex flex-col items-center justify-center py-14 text-center">
@@ -155,12 +162,20 @@ const EmptyState = ({ colSpan }) => (
 
 const PAGE_SIZE = 12
 
+interface AttendanceTableProps {
+  records?: AttendanceRecord[]
+  showEmployee?: boolean
+  exceptionsFirst?: boolean
+  onRowClick?: (record: AttendanceRecord) => void
+}
+
 const AttendanceTable = ({
   records = [],
   showEmployee = false,
   exceptionsFirst = false,
-}) => {
-  const [sort, setSort] = useState(() => ({
+  onRowClick,
+}: AttendanceTableProps) => {
+  const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' }>(() => ({
     key: exceptionsFirst ? 'status' : 'date',
     dir: 'desc',
   }))
@@ -192,7 +207,7 @@ const AttendanceTable = ({
       if (av < bv) return sort.dir === 'asc' ? -1 : 1
       if (av > bv) return sort.dir === 'asc' ? 1 : -1
       // Stable tiebreak: newest first.
-      return new Date(b.date) - new Date(a.date)
+      return new Date(b.date as string).getTime() - new Date(a.date as string).getTime()
     })
     return rows
   }, [records, sort])
@@ -204,7 +219,7 @@ const AttendanceTable = ({
   const safePage = Math.min(page, totalPages)
   const pageRows = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
-  const handleSort = (key) => {
+  const handleSort = (key: string) => {
     setPage(1)
     setSort((prev) => {
       if (prev.key === key) {
@@ -245,7 +260,7 @@ const AttendanceTable = ({
             ) : (
               pageRows.map((record, index) => (
                 <tr
-                  key={record.id || record._id || index}
+                  key={record.id || index}
                   className={[
                     'border-b border-hairline last:border-b-0 transition-colors duration-150',
                     index % 2 === 1
@@ -254,7 +269,12 @@ const AttendanceTable = ({
                     exceptionsFirst && isLate(record)
                       ? 'border-l-[3px] border-l-warning'
                       : '',
+                    onRowClick ? 'cursor-pointer' : '',
                   ].join(' ')}
+                  onClick={() => onRowClick?.(record)}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={onRowClick ? (e: ReactKeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRowClick(record); }} : undefined}
+                  aria-label={onRowClick ? `View details for ${formatDate(record.date)}` : undefined}
                 >
                   {showEmployee && (
                     <>
@@ -266,9 +286,9 @@ const AttendanceTable = ({
                   )}
 
                   <TD mono>{formatDate(record.date)}</TD>
-                  <TD mono muted={!record.clockIn}>{formatTime(record.clockIn)}</TD>
+                  <TD mono muted={!record.clockIn}>{formatTime(record.clockIn || '')}</TD>
                   <TD mono muted={!record.clockOut}>
-                    {formatTime(record.clockOut)}
+                    {formatTime(record.clockOut || '')}
                   </TD>
                   <TD mono muted={!record.hoursWorked}>
                     {formatHours(record.hoursWorked)}

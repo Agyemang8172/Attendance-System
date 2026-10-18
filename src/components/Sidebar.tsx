@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { logout, getCurrentUser } from '../utils/auth'
+import { logout, getToken, getCurrentUser } from '../utils/auth'
+import api from '../api/axios'
 import type { Role } from '../types'
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import {
@@ -12,6 +13,22 @@ import {
   FaUser,
   FaUsers,
   FaUsersGear,
+  FaClipboardList,
+  FaCalendar,
+  FaLifeRing,
+  FaPenToSquare,
+  FaShield,
+  FaKey,
+  FaChartBar,
+  FaDatabase,
+  FaGears,
+  FaLocationDot,
+  FaDesktop,
+  FaFileLines,
+  FaClockRotateLeft,
+  FaBell,
+  FaArrowsRotate,
+  FaPenToSquare as FaEdit,
 } from 'react-icons/fa6'
 
 interface NavItem {
@@ -27,23 +44,18 @@ interface SidebarProps {
 }
 
 const allNavItems: NavItem[] = [
+  // Staff portal
   {
-    label: 'Dashboard',
+    label: 'Overview',
     path: '/dashboard',
     icon: <FaHouse />,
     roles: ['STAFF'],
   },
   {
-    label: 'HR Dashboard',
-    path: '/hr-dashboard',
-    icon: <FaUsers />,
-    roles: ['HR', 'SUPERADMIN'],
-  },
-  {
-    label: 'My Profile',
-    path: '/profile',
-    icon: <FaUser />,
-    roles: ['STAFF', 'HR', 'SUPERADMIN'],
+    label: 'My Attendance',
+    path: '/staff/attendance',
+    icon: <FaClipboardList />,
+    roles: ['STAFF'],
   },
   {
     label: 'My Schedule',
@@ -52,16 +64,146 @@ const allNavItems: NavItem[] = [
     roles: ['STAFF'],
   },
   {
-    label: 'Settings',
-    path: '/settings',
-    icon: <FaGear />,
-    roles: ['STAFF', 'HR', 'SUPERADMIN'],
+    label: 'Off-Days',
+    path: '/staff/off-days',
+    icon: <FaCalendar />,
+    roles: ['STAFF'],
+  },
+  {
+    label: 'Help Requests',
+    path: '/staff/help-requests',
+    icon: <FaLifeRing />,
+    roles: ['STAFF'],
+  },
+  {
+    label: 'Corrections',
+    path: '/staff/corrections',
+    icon: <FaPenToSquare />,
+    roles: ['STAFF'],
+  },
+
+  // HR portal
+  {
+    label: 'HR Dashboard',
+    path: '/hr-dashboard',
+    icon: <FaUsers />,
+    roles: ['HR', 'SUPERADMIN'],
+  },
+  {
+    label: 'Attendance',
+    path: '/hr-attendance',
+    icon: <FaClipboardList />,
+    roles: ['HR', 'SUPERADMIN'],
+  },
+  {
+    label: 'Exceptions',
+    path: '/hr-exceptions',
+    icon: <FaBell />,
+    roles: ['HR', 'SUPERADMIN'],
   },
   {
     label: 'Manage Staff',
     path: '/manage-staff',
     icon: <FaUsersGear />,
     roles: ['SUPERADMIN', 'HR'],
+  },
+  {
+    label: 'Help Requests',
+    path: '/hr-help-requests',
+    icon: <FaLifeRing />,
+    roles: ['HR', 'SUPERADMIN'],
+  },
+  {
+    label: 'Corrections',
+    path: '/hr-corrections',
+    icon: <FaPenToSquare />,
+    roles: ['HR', 'SUPERADMIN'],
+  },
+  {
+    label: 'Reports',
+    path: '/hr-reports',
+    icon: <FaChartBar />,
+    roles: ['HR', 'SUPERADMIN'],
+  },
+  {
+    label: 'Audit History',
+    path: '/hr-audit',
+    icon: <FaClockRotateLeft />,
+    roles: ['HR', 'SUPERADMIN'],
+  },
+
+  // SUPERADMIN area (PRD §9)
+  {
+    label: 'Overview',
+    path: '/superadmin-dashboard',
+    icon: <FaShield />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Attendance',
+    path: '/admin-attendance',
+    icon: <FaClipboardList />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Shift Management',
+    path: '/shift-management',
+    icon: <FaArrowsRotate />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Scheduling',
+    path: '/scheduling',
+    icon: <FaCalendarDays />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Attendance Policies',
+    path: '/policies',
+    icon: <FaGears />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Calendar Settings',
+    path: '/calendar-settings',
+    icon: <FaCalendar />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Sites',
+    path: '/sites',
+    icon: <FaLocationDot />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Devices',
+    path: '/devices',
+    icon: <FaDesktop />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Help & Corrections',
+    path: '/admin-help-corrections',
+    icon: <FaBell />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Reports',
+    path: '/reports',
+    icon: <FaChartBar />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Audit Log',
+    path: '/audit-log',
+    icon: <FaClockRotateLeft />,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    label: 'Business Settings',
+    path: '/settings',
+    icon: <FaGear />,
+    roles: ['SUPERADMIN'],
   },
 ]
 
@@ -85,14 +227,25 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     item.roles.includes(currentUser?.role as Role)
   )
 
-  const initials = [currentUser?.firstName, currentUser?.lastName]
-    .filter(Boolean)
+  const initials = [
+    currentUser?.firstName,
+    currentUser?.lastName,
+  ]
+    .filter((n): n is string => Boolean(n))
     .map((n) => n[0].toUpperCase())
     .join('')
 
   const closeMenu = () => setMenuOpen(false)
 
   const handleLogOut = () => {
+    const token = getToken()
+    void Promise.resolve(
+      api.post(
+        '/auth/logout',
+        {},
+        token ? { headers: { Authorization: `Bearer ${token}` } } : undefined
+      )
+    ).catch(() => {})
     logout()
     closeMenu()
     navigate('/login')
@@ -104,8 +257,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     onClose()
   }
 
-  // Focus the first menu item when the menu opens, and return focus to the
-  // trigger when it closes — the two anchors of keyboard navigation.
   useEffect(() => {
     if (menuOpen) {
       itemRefs.current[0]?.focus()
@@ -114,7 +265,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     }
   }, [menuOpen])
 
-  // Close on Escape and on any click outside the button/menu pair.
   useEffect(() => {
     if (!menuOpen) return
 
@@ -135,7 +285,6 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     }
   }, [menuOpen])
 
-  // Arrow Up/Down cycles focus through the three menu items.
   const onMenuKeyDown = (e: ReactKeyboardEvent) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
     e.preventDefault()
@@ -147,7 +296,8 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   }
 
   const menuItems = [
-    { label: 'My Profile', path: '/profile', icon: <FaUser /> },
+    { label: 'Profile & Security', path: '/profile', icon: <FaUser /> },
+    { label: 'Change PIN', path: '/profile/change-pin', icon: <FaKey /> },
     { label: 'Settings', path: '/settings', icon: <FaGear /> },
   ]
 
@@ -201,34 +351,40 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             const isActive = location.pathname === item.path
 
             return (
-              <div
+              <button
                 key={item.path}
+                type="button"
                 onClick={() => {
                   navigate(item.path)
                   onClose()
                 }}
-                className={
-                  'flex items-center gap-3 ' +
-                  'px-4 py-3 ' +
-                  'rounded-lg ' +
-                  'text-sm font-medium font-sans ' +
-                  'cursor-pointer ' +
-                  'transition-all duration-150 ' +
-                  (isActive
-                    ? 'bg-chrome-elevated text-brass-chrome border-l-2 border-brass-chrome pl-3'
-                    : 'text-chrome-ink-muted hover:text-chrome-ink hover:bg-chrome-elevated')
-                }
+                aria-current={isActive ? 'page' : undefined}
+                className={`
+                  flex items-center gap-3
+                  px-4 py-3
+                  rounded-lg
+                  text-sm font-medium font-sans text-left
+                  w-full
+                  cursor-pointer
+                  transition-all duration-150
+                  focus-visible:ring-2 focus-visible:ring-brass-chrome focus-visible:ring-offset-2 focus-visible:ring-offset-chrome focus-visible:outline-none
+                  ${
+                    isActive
+                      ? 'bg-chrome-elevated text-brass-chrome border-l-2 border-brass-chrome pl-3'
+                      : 'text-chrome-ink-muted hover:text-chrome-ink hover:bg-chrome-elevated border-l-2 border-transparent pl-3'
+                  }
+                `}
               >
                 <span className={'text-base shrink-0 ' + (isActive ? 'text-brass-chrome' : 'text-chrome-ink-subtle')}>
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
-              </div>
+              </button>
             )
           })}
         </nav>
 
-        {/* ── ACCOUNT MENU (R7) ────────────────────────────────────────── */}
+        {/* ── ACCOUNT MENU (O23) ────────────────────────────────────────── */}
         <div className="px-3 pb-6 pt-4 border-t border-chrome-line">
           <div className="relative">
             <button

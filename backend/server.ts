@@ -16,6 +16,8 @@ import kioskDeviceRoutes from "./routes/kioskDeviceRoutes.js";
 import kioskVerifyRoutes from "./routes/kioskVerifyRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
 import staffHelpRoutes from "./routes/staffHelpRoutes.js";
+import staffProfileRoutes from "./routes/staffProfileRoutes.js";
+import staffScheduleRoutes from "./routes/staffScheduleRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import businessRoutes from "./routes/businessRoutes.js";
 import auditRoutes from "./routes/auditRoutes.js";
@@ -171,6 +173,12 @@ app.use("/api/jobs", jobRoutes);
 // Staff self-service lane (contracts §3): help requests only for now. Its
 // own prefix keeps these staff routes out of the wider attendance router.
 app.use("/api/staff", staffHelpRoutes);
+
+// Staff self-service profile lane (M8-R1): PIN change.
+app.use("/api/staff/profile", staffProfileRoutes);
+
+// Staff self-service schedule lane (M8-R2): schedule and off-days.
+app.use("/api/staff", staffScheduleRoutes);
 
 // Reports (contracts §10, O9): register, punctuality summary, exceptions and
 // the streamed CSV export. Its own prefix keeps the four GET rows away from

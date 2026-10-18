@@ -4,7 +4,7 @@
 // Receives status: "OPEN" | "CLOSED" | "PRESENT" | "LATE" | "ABSENT" |
 //                 "HALF_DAY" | "ON_LEAVE"
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string; classes: string }> = {
   open: {
     label: 'Open',
     classes: 'bg-accent-soft border-accent-soft text-accent',
@@ -35,7 +35,11 @@ const statusConfig = {
   },
 }
 
-const StatBadge = ({ status }) => {
+interface StatBadgeProps {
+  status?: string
+}
+
+const StatBadge = ({ status }: StatBadgeProps) => {
   // Normalise to lowercase for lookup (backend returns uppercase enums)
   const key = (status || '').toLowerCase()
   const config = statusConfig[key] || {

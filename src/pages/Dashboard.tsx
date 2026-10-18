@@ -4,8 +4,9 @@ import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
 import KpiCard, { KpiHero } from '../components/ui/KpiCard'
-import AttendanceTable from '../components/ui/AttendanceTable'
+import AttendanceTable from '../components/ui/AttendanceTable.tsx'
 import { BentoSkeleton, TableSkeleton } from '../components/ui/Skeleton'
+import type { AttendanceRecord } from '../types'
 import { FaFire, FaChartLine, FaTriangleExclamation } from 'react-icons/fa6'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -64,12 +65,20 @@ const ClockPill = ({ isClockedIn }: { isClockedIn: boolean }) => {
   )
 }
 
+// Reads a failed API call's server message the way AxiosError carries it.
+// Only used for toast text; the interceptor owns the redirect policy.
+const apiErrorMessage = (err: unknown, fallback: string): string => {
+  const message = (err as { response?: { data?: { message?: string } } })
+    .response?.data?.message
+  return message || fallback
+}
+
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 function Dashboard() {
   const user = getCurrentUser()
 
-  const [records, setRecords] = useState([])
+  const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [isClockedIn, setIsClockedIn] = useState(false)
   const [clockLoading, setClockLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
@@ -78,7 +87,7 @@ function Dashboard() {
   const fetchAttendance = useCallback(async () => {
     try {
       const res = await api.get('/attendance/my-attendance')
-      const data = res.data.data || []
+      const data: AttendanceRecord[] = res.data.data || []
       setRecords(data)
 
       const openSession = data.find((r) => r.sessionStatus === 'OPEN')
@@ -117,7 +126,7 @@ function Dashboard() {
       toast.success('Clocked in successfully.')
       await fetchAttendance()
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Clock in failed.')
+      toast.error(apiErrorMessage(err, 'Clock in failed.'))
     } finally {
       setClockLoading(false)
     }
@@ -131,7 +140,7 @@ function Dashboard() {
       toast.success('Clocked out successfully.')
       await fetchAttendance()
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Clock out failed.')
+      toast.error(apiErrorMessage(err, 'Clock out failed.'))
     } finally {
       setClockLoading(false)
     }
@@ -152,7 +161,9 @@ function Dashboard() {
   // Streak — consecutive closed sessions going backwards from today
   const sortedClosed = [...records]
     .filter((r) => r.sessionStatus === 'CLOSED')
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
 
   let streak = 0
   let prevDate: Date | null = null

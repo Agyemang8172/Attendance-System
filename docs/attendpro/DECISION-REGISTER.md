@@ -93,3 +93,48 @@ recommendation are given; the owner decides.
 - No universal grace period and no universal 23:59 auto-clock-out rule.
 - No repository merges, destructive migrations, production resets or force-pushes without explicit authorization.
 - Gate scripts stay on the maintained Windows-safe versions.
+
+---
+
+## E. M8 rulings (owner, 2026-10-17)
+
+The M8 design-reconciliation audit (read-only, delivered before any M8 implementation)
+found four business decisions without which the approved screen list could not be wired
+truthfully. The owner ruled all four on 2026-10-17:
+
+| Ref | Ruling | Outcome |
+|-----|--------|---------|
+| M8-R1 | Staff self-service change-PIN | **Build.** Add `POST /api/staff/profile/change-pin` (additive, no schema change): requires the current PIN, sets a new 4-digit PIN (R5), audited like the HR reset. Brings the approved `/profile/change-pin` screen alive. |
+| M8-R2 | Staff schedule and off-days data | **Build staff read endpoints.** Additive staff-scoped reads for the caller's own shift assignments and off-day configuration, tenant-scoped like every other lane. No schema change. |
+| M8-R3 | Plan defaults | **All four confirmed as-is:** the landing page ships fictional static constants with no backend endpoint; employee management moves to the `/api/hr/employees` lane; no "forgot access" link appears (email recovery, O6, remains unbuilt and deferred); the Super Admin admin screens (shifts, policies, calendars, sites, devices) ship as clearly labelled stubs in M8. |
+| M8-R4 | Generic audit listing | **Build the listing endpoint.** Additive tenant-scoped audit listing per the already-designed contract rows, unlocking the HR audit-history screen and the Super Admin audit-log screen. No schema change. |
+
+All three endpoint additions stay inside the zero-migration footprint; M8 remains audit-approved
+otherwise. Carried, non-blocking items the audit recorded for later milestones: O12 tokenVersion
+hygiene for user sessions and close-out revocation, O15 timezone application in the status engine,
+the RLS app-role split on a standard PostgreSQL host, and the `error.message` hardening in
+`userController.ts` (folded into M8 Phase 0).
+
+---
+
+## E.2 M8 walkthrough rulings (owner, 2026-10-17)
+
+The screen-by-screen walkthrough (three read-only agents, delivered before M8 implementation) and
+the owner's UI design-system directive settled the remaining open items:
+
+| Ref | Ruling | Outcome |
+|-----|--------|---------|
+| M8-R5 | Correction withdrawal | **Build** `PATCH /api/staff/corrections/:id/withdraw` — requester-only, SUBMITTED corrections only, audited, zero migration. The lifecycle §8.1 `WITHDRAWN` state becomes reachable. |
+| M8-R6 | Staff profile editing | **Read-only this milestone.** The PATCH profile endpoint rides a later milestone; profile fields route corrections-of-identity through help requests meanwhile. |
+| M8-R7 | "Attendance Rate" card | **Dropped** in the staff overview rework (its 22-working-days denominator contradicted configurable calendars). |
+| M8-R8 | Employee deactivation lane | **Stays on the audited legacy endpoint** (`DELETE /api/users/:id` with the self-guard and last-superadmin rule) while list/create/edit move to `/api/hr/employees`. Documented dual-lane, matching the alias pattern. |
+| M8-R9 | HR "expected today" tile | **Dropped** — no endpoint knows today's shift assignments; the HR overview composes from punctuality-summary + exceptions only. |
+| M8-R10 | HR-assisted override | **Never in v1** — the contract's "Provisional O7" row settles as not built; all fixes flow staff corrections and the auto clock-out job. |
+| M8-R11 | SA admin screens | **Real screens in M8** (amends the stub default in M8-R3): shifts/assignments, working calendars, grace/auto-clock-out policies, sites, kiosk devices (pairing/revoke) — all endpoints already verified, zero migration. QR issue/revoke rides the employee detail/work. |
+| M8-R12 | Browser evidence | **`@playwright/test` approved** as M8's only new devDependency; viewport screenshots + interaction checks at 375/768/1440 are enforced evidence for every in-scope screen. |
+| M8-R13 | Unused webfonts | **Removed.** Fraunces/General Sans/IBM Plex Mono requests are deleted (loaded but never referenced); typography stays Georgia serif/system-ui exactly as rendered today. |
+
+Also settled by the design directive itself (no further decision): minimum keyboard-accessibility
+criteria fold into review, permission-denied screens must remain usable (the 403/404 panels are
+built), and fixtures/exports never substitute for backend authorization. The setup-health card on
+the SA home keeps the walkthrough default: a read-only checklist from existing GETs.

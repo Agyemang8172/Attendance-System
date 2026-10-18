@@ -58,6 +58,15 @@ export const handleApiError = (error: ApiFailure): string | null => {
   return null;
 };
 
+// ── Plain-language error map ──────────────────────────────────────────────────
+//
+// Lives in its own module (./errorCopy) — the route suites mock axios
+// wholesale, and the copy layer must survive that mock. Re-exported here so
+// the "one place decides" import stays `from '../api/axios'` for non-mocked
+// consumers.
+
+export { describeApiError, type ApiErrorShape } from "./errorCopy";
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {

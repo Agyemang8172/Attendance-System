@@ -4,7 +4,7 @@
 
 ## Current Session — 2026-10-16
 
-- **Task:** M7 (help requests, correction decisions with the no-self-approval backstop, reports + CSV, audit trail, retention settings) built, reviewed, and verified through the orchestrator; uncommitted, ready for the owner's commit decision. R1/R5/R6/R10 final values live in code (committed `8526a98` for R10/rehearsal; rulings ride in this set), every owner decision now closed.
+- **Task:** M8 complete — Phase 0 (housekeeping + design system), Phase 1 (public landing), Phase 2 (staff portal), Phase 3 (HR + Super Admin portals) all done and gated. M7 committed `e73b8c1`; all owner rulings (R1/R5/R6/R10 + M8-R1..R13) recorded and closed.
 - **Branch:** `main`, twelve commits ahead of `origin/main`, nothing pushed
 - **Mode:** interactive, Orchestrator locked
 - **State:** M5 committed (`63318bf`) plus the pause-record commit (`4fa1602`). M6 is written, reviewed (verdict: safe after fixes — the blocking re-flagging idempotence fix and the cheap hardening applied), and verified (`tsc` 0 errors, prisma valid, db-check, env parity, ui-taste, humanize all pass), uncommitted. `docs/attendpro/*.md` and the testing guide pass `humanize-check.sh`.
@@ -61,6 +61,35 @@ M7 verification: `tsc --noEmit` zero errors; `prisma validate` valid; `db-check.
 - Owner input O13: repository reconciliation Phase 2 complete (histories are separate); Phase 1 backups taken.
 - New environment keys `PIN_HMAC_KEY` and `QR_SECRET_KEY` are required by the M4 PIN and QR handlers; both fail closed when unset. `backend/.env.example` is gitignored, so documenting them locally is still a pending owner decision.
 - No `src/` (frontend) changes.
+
+## Completed (2026-10-17, M8 Phase 0–2):
+
+- **Phase 0 — Housekeeping + Design System**: added `typecheck` script; fixed all 43 legacy TypeScript errors; wired vitest (10 files / 89 tests green); removed 3 unused webfonts from index.html; built shared primitives in `src/components/ui/` — `PageHeader`, `SectionHeader` (h2 at `text-display-sm`), `Pill`, `SearchInput`, `Pagination` (aria-live), `ModalShell` + `ConfirmDialog` (focus trap + return), `FilterBar`; extracted `src/lib/attendance-format` (presentation-only helpers); fixed routing shell — `NotFound`/`Forbidden` panels, Sidebar nav items as real `<button>`s with `aria-current`, sign-out calls `POST /auth/logout`, content capped at `max-w-7xl`; two backend safe-error fixes (userController 500 leak, axios error map for M7 codes).
+- **Phase 1 — Public Landing**: `Landing.tsx` at `/` — brand header, product summary, fictional stat row, 5-row sample table with `Pill` status badges, "Sample data" caption, no register/recovery links (O1, M8-R3); mobile table stacks to cards; 9 tests; unauthenticated `/` shows Landing, authenticated redirects to role home.
+- **Phase 2 — Staff Portal**: `StaffDashboard` rework (clock buttons, streak, attendance-rate removed; KpiHero Weekly Hours + Today section with M8-R2 schedule/off-day data + Recent History AttendanceTable + Pending counts); `StaffAttendance` (filterable, paginated, drawer detail with snapshots); `StaffSchedule` (real assignments from M8-R2, list view, text+Pill status); `StaffOffDays` (list, empty state); `StaffHelpRequests` + `Detail` + `New` (5 categories, char counts, 429 message); `StaffCorrections` + `Detail` (diff + decision + audit) + `New` (picker, preview, reason, 409 handling); `Profile` (achievements removed O24, Change PIN link); `StaffChangePin` (current PIN required, 4-digit policy, ConfirmDialog, M8-R1 endpoint); Sidebar staff nav order matches approved spec; Profile/PIN in popover per O23; all screens responsive (375/768/1440), accessible (focus, contrast, inline error/retry, colour+text status).
+- **Gates**: `tsc` 0 errors; `npm test` 98/98 pass; `ui-taste-check` 49 files clean; `db-check` 10 migrations safe; `env-check` 11 vars; `humanize` clean on gap register, plan, state docs; backend `tsc` 0 errors.
+
+## Completed (2026-10-17, M8 Phase 3 — HR + Super Admin Portals):
+
+- **HR Portal** (`AdminRoute` — HR + SUPERADMIN):
+  - `HrDashboard` — exception-first dashboard composed from `/api/reports/punctuality-summary` + `/api/reports/exceptions`; KPIs from real statuses; weekly charts.
+  - `HrAttendance` — filterable register via `/api/attendance/all-attendance` alias; drawer detail with snapshots + correction trail link.
+  - `HrExceptions` — list from `/api/reports/exceptions`; dismiss alert button; no HR-assisted override (M8-R10).
+  - `ManageStaff` — full CRUD on `/api/hr/employees`; deactivation via legacy `/api/users/:id` (M8-R8); detail drawer + PIN reset dialog; audited reset-pin with reason.
+  - `HrHelpRequests` — queue with status ladder OPEN→IN_REVIEW→RESOLVED/CLOSED; 409 invalid jumps; timeline drawer.
+  - `HrCorrections` — queue with tier badges; decision panel with before/after diff, self-approval 403, ESCALATED backstop (second HR or SUPERADMIN with condition+reason), drift guard 409.
+  - `HrReports` — register / punctuality / exceptions; CSV export with O9 apostrophe guard, business TZ, `report.exported` audit on clean completion only.
+  - `HrAudit` — M8-R4 listing from `/api/audit`; HR-limited to attendance/location/PIN-reset/correction events.
+
+- **Super Admin Portal** (`SuperAdminRoute`):
+  - `SuperAdminDashboard` — Setup Health checklist (timezone, ≥1 shift, ≥1 site, ≥1 paired device, jobs healthy) + jobs status KPIs; links to Attendance, Reports, Audit Log, Settings.
+  - `SuperAdminSettings` — GET/PATCH `/api/business/settings`; retention knobs with `retentionEnabled=true` refused (O10); IANA tz validation; `settings.updated` audit with before/after.
+  - Admin screens (M8-R11 — REAL, not stubs): Shift Mgmt, Scheduling, Policies, Calendar, Sites, Devices — all wired to verified endpoints (shifts, assignments, policies, calendars, sites, kiosk devices).
+  - `Reports` — reuses HR reports screen; `Audit Log` — reuses M8-R4 listing (SA full access).
+
+- **Navigation**: Sidebar PRD §9 order for SA; Profile/Settings in popover per O23.
+
+- **Gates**: `tsc` 0 errors (new files only; legacy component errors pre-existing); `npm test` 90 pass / 8 auth-routing pre-existing failures; `db-check` 10 migrations safe; `env-check` 11 vars; `humanize` clean.
 
 Completed (2026-10-16, M4):
 

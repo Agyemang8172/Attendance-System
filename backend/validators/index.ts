@@ -444,6 +444,52 @@ export const updateCalendarSchema = {
     ),
 };
 
+// ── M8 Phase 2 — staff profile & schedule (contracts M8-R1, M8-R2) ────────────
+
+/**
+ * POST /api/staff/profile/change-pin (M8-R1).
+ * Body: { currentPin: string (4 digits), newPin: string (4 digits) }
+ * Both fields required; validator ensures format, handler enforces inequality.
+ */
+export const changePinSchema = {
+  body: z.object({
+    currentPin: z.string().regex(/^\d{4}$/, "Current PIN must be exactly 4 digits"),
+    newPin: z.string().regex(/^\d{4}$/, "New PIN must be exactly 4 digits"),
+  }),
+};
+
+/**
+ * GET /api/staff/schedule and GET /api/staff/off-days (M8-R2).
+ * Query: startDate (required, YYYY-MM-DD), endDate (required, YYYY-MM-DD), max 190 days.
+ * The same range rules as reports apply here.
+ */
+const STAFF_SCHEDULE_MAX_SPAN_DAYS = 190;
+
+const staffScheduleRangeFields = {
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "startDate must be YYYY-MM-DD"),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "endDate must be YYYY-MM-DD"),
+} as const;
+
+const staffScheduleRangeRefine = {
+  message: "endDate must be on or after startDate, and the range cannot span more than 190 days",
+  path: ["endDate"] as (string | number)[],
+};
+
+const isStaffScheduleBoundedRange = (data: { startDate: string; endDate: string }): boolean => {
+  const start = Date.parse(`${data.startDate}T00:00:00.000Z`);
+  const end = Date.parse(`${data.endDate}T00:00:00.000Z`);
+  if (Number.isNaN(start) || Number.isNaN(end)) return false;
+  return end >= start && (end - start) / 86_400_000 <= STAFF_SCHEDULE_MAX_SPAN_DAYS;
+};
+
+export const staffScheduleQuerySchema = {
+  query: z
+    .object({
+      ...staffScheduleRangeFields,
+    })
+    .refine(isStaffScheduleBoundedRange, staffScheduleRangeRefine),
+};
+
 export const createCalendarExceptionSchema = {
   params: z.object({
     id: z.string().uuid("Invalid calendar ID format"),
