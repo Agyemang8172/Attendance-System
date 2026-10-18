@@ -7,7 +7,7 @@ import PageHeader from '../components/ui/PageHeader'
 import SectionHeader from '../components/ui/SectionHeader'
 import { formatTodayLong } from '../lib/attendance-format'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
-import { FaFloppyDisk as FaSave, FaRotateLeft as FaUndo } from 'react-icons/fa6'
+import { FaFloppyDisk as FaSave, FaRotateLeft as FaUndo, FaTriangleExclamation } from 'react-icons/fa6'
 
 // ─── SuperAdminSettings ──────────────────────────────────────────────────────
 // GET/PATCH /api/business/settings — name, timezone, branding, retention knobs
@@ -218,7 +218,10 @@ function SuperAdminSettings() {
           <div className="card-elevated relative overflow-hidden p-6 mb-6">
             <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-accent opacity-30 pointer-events-none" />
             <div className="mb-4 p-4 bg-warning-soft border border-warning-soft rounded-lg">
-              <p className="text-warning text-sm font-medium mb-1">⚠ Retention Policy (O10)</p>
+              <div className="flex items-start gap-2">
+                <FaTriangleExclamation className="text-warning shrink-0 mt-0.5" aria-hidden="true" />
+                <p className="text-warning text-sm font-medium mb-1">Retention Policy (O10)</p>
+              </div>
               <p className="text-warning text-caption">
                 Enabling automated deletion requires Ghana-specific legal advice.
                 The "Enable Retention" toggle is locked until that review is complete.
