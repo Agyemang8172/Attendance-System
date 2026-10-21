@@ -11,24 +11,38 @@
 //                     replaces Deactivate; rows carry a status pill)
 //   canReactivate   → boolean · only SUPERADMIN may flip isActive back on
 
+import type { ReactNode } from 'react'
+
+export interface StaffUser {
+  id?: string
+  _id?: string
+  firstName?: string | null
+  lastName?: string | null
+  email?: string | null
+  role?: string | null
+}
+
+type RoleKey = 'STAFF' | 'HR' | 'SUPERADMIN'
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const getFullName = (user) => {
+const getFullName = (user: StaffUser) => {
   const name = `${user.firstName || ''} ${user.lastName || ''}`.trim()
   return name || 'Unnamed user'
 }
 
-const roleConfig = {
+const roleConfig: Record<RoleKey, { label: string; classes: string }> = {
   STAFF:      { label: 'Staff',      classes: 'bg-ink-subtle/15 text-ink-subtle border-ink-subtle/20' },
   HR:         { label: 'HR',         classes: 'bg-accent/15 text-accent border-accent/20' },
   SUPERADMIN: { label: 'Superadmin', classes: 'bg-warning/15 text-warning border-warning/20' },
 }
 
-const RolePill = ({ role }) => {
-  const config = roleConfig[role] || {
-    label: role || 'Unknown',
-    classes: 'bg-ink-subtle/15 text-ink-subtle border-ink-subtle/20',
-  }
+const RolePill = ({ role }: { role?: string | null }) => {
+  const config =
+    roleConfig[role as RoleKey] || {
+      label: role || 'Unknown',
+      classes: 'bg-ink-subtle/15 text-ink-subtle border-ink-subtle/20',
+    }
 
   return (
     <span
@@ -39,14 +53,20 @@ const RolePill = ({ role }) => {
   )
 }
 
-const TH = ({ children }) => (
+const TH = ({ children }: { children: ReactNode }) => (
   <th className="px-4 py-3 text-left text-caption font-medium text-ink-muted whitespace-nowrap">
     {children}
   </th>
 )
 
+interface EmptyStateProps {
+  inactive: boolean
+  onAdd?: () => void
+  onShowActive?: () => void
+}
+
 // Active empty state gets a real action: the caller can open the Add modal.
-const EmptyState = ({ inactive, onAdd, onShowActive }) => (
+const EmptyState = ({ inactive, onAdd, onShowActive }: EmptyStateProps) => (
   <tr>
     <td colSpan={99}>
       <div className="relative flex flex-col items-center justify-center py-14 text-center">
@@ -71,17 +91,33 @@ const EmptyState = ({ inactive, onAdd, onShowActive }) => (
   </tr>
 )
 
-const StaffTable = ({
+interface StaffTableProps<T extends StaffUser> {
+  users?: T[]
+  onEdit?: (user: T) => void
+  onDeactivate?: (user: T) => void
+  onResetPassword?: (user: T) => void
+  onReactivate?: (user: T) => void
+  onViewDetail?: (user: T) => void
+  onPinReset?: (user: T) => void
+  onAdd?: () => void
+  onShowActive?: () => void
+  inactive?: boolean
+  canReactivate?: boolean
+}
+
+function StaffTable<T extends StaffUser>({
   users = [],
   onEdit,
   onDeactivate,
   onResetPassword,
   onReactivate,
+  onViewDetail,
+  onPinReset,
   onAdd,
   onShowActive,
   inactive = false,
   canReactivate = false,
-}) => {
+}: StaffTableProps<T>) {
   const showStatus = inactive
 
   return (
@@ -143,6 +179,13 @@ const StaffTable = ({
 
                   <td className="px-4 py-3 whitespace-nowrap">
                     <button
+                      onClick={() => onViewDetail?.(user)}
+                      className="text-ink-muted font-mono text-body-sm hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas rounded px-1"
+                    >
+                      View
+                    </button>
+                    <span className="text-ink-tertiary mx-1">·</span>
+                    <button
                       onClick={() => onEdit?.(user)}
                       className="text-accent font-mono text-body-sm hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas rounded px-1"
                     >
@@ -156,6 +199,13 @@ const StaffTable = ({
                           className="text-ink-muted font-mono text-body-sm hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas rounded px-1"
                         >
                           Reset
+                        </button>
+                        <span className="text-ink-tertiary mx-1">·</span>
+                        <button
+                          onClick={() => onPinReset?.(user)}
+                          className="text-ink-muted font-mono text-body-sm hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas rounded px-1"
+                        >
+                          PIN
                         </button>
                         <span className="text-ink-tertiary mx-1">·</span>
                       </>

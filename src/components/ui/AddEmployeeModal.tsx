@@ -1,6 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ChangeEvent, type InputHTMLAttributes } from 'react'
 import { getCurrentUser } from '../../utils/auth'
 import api from '../../api/axios'
+
+type Role = 'STAFF' | 'HR' | 'SUPERADMIN'
+
+interface EmployeeForm {
+  firstName: string
+  lastName: string
+  email: string
+  department: string
+  role: Role
+}
+
+interface CreatedCredentials {
+  name: string
+  email: string
+  employeeCode: string
+  tempPassword: string | null
+}
 
 // ─── AddEmployeeModal ─────────────────────────────────────────────────────────
 //
@@ -36,7 +53,7 @@ import api from '../../api/axios'
 //      }
 // ─────────────────────────────────────────────────────────────────────────────
 
-const Field = ({ label, ...inputProps }) => (
+const Field = ({ label, ...inputProps }: { label: string } & InputHTMLAttributes<HTMLInputElement>) => (
   <div>
     <label className="block text-xs font-semibold uppercase tracking-widest text-chrome-ink-muted mb-2 font-sans">
       {label}
@@ -56,7 +73,7 @@ const Field = ({ label, ...inputProps }) => (
   </div>
 )
 
-const CopyRow = ({ label, value }) => {
+const CopyRow = ({ label, value }: { label: string; value: string }) => {
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -87,11 +104,17 @@ const CopyRow = ({ label, value }) => {
   )
 }
 
-const AddEmployeeModal = ({ onClose, onCreated }) => {
+const AddEmployeeModal = ({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void
+  onCreated: () => void
+}) => {
   const currentUser = getCurrentUser()
   const isHr = currentUser?.role === 'HR'
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<EmployeeForm>({
     firstName: '',
     lastName: '',
     email: '',
@@ -102,24 +125,26 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
   const [error, setError] = useState('')
 
   // When set, we switch from the form to the reveal screen.
-  const [created, setCreated] = useState(null)
+  const [created, setCreated] = useState<CreatedCredentials | null>(null)
 
   // Escape closes the popup — but ONLY on the form step
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !created) onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose, created])
 
-  const update = (key) => (e) =>
-    setForm((prev) => ({ ...prev, [key]: e.target.value }))
+  const update =
+    (key: keyof EmployeeForm) =>
+    (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm((prev) => ({ ...prev, [key]: e.target.value }))
 
   const handleSubmit = async () => {
     setError('')
 
-    const required = ['firstName', 'lastName', 'email', 'department']
+    const required: (keyof EmployeeForm)[] = ['firstName', 'lastName', 'email', 'department']
     const missing = required.find((k) => !form[k].trim())
     if (missing) {
       setError('Please fill in every field.')
@@ -145,7 +170,7 @@ const AddEmployeeModal = ({ onClose, onCreated }) => {
         employeeCode: data.employeeCode || '—',
         tempPassword: res.data?.tempPassword || null,
       })
-    } catch (err) {
+    } catch (err: any) {
       const raw = err.response?.data?.error || err.response?.data?.message || ''
       const friendly = /duplicate|E11000|P2002/i.test(raw)
         ? 'That email is already taken.'

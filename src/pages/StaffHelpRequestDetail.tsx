@@ -109,7 +109,7 @@ function StaffHelpRequestDetail() {
     setFetching(true)
     setError(null)
     try {
-      const res = await api.get(`/api/staff/help-requests/${id}`)
+      const res = await api.get(`/staff/help-requests/${id}`)
       setRequest(res.data.data)
     } catch (err: any) {
       if (err.response?.status === 404) {

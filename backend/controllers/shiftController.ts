@@ -6,6 +6,19 @@ import { callerBusinessId } from "../utils/tenant.js";
 const MINUTE_MIN = 0;
 const MINUTE_MAX = 1439;
 
+/**
+ * The `start_time` / `end_time` TEXT columns predate the minute-of-day pair and
+ * are still NOT NULL in the database, even though the Prisma model marks them
+ * optional. A create that omits them fails with a not-null violation, so every
+ * write mirrors the minute values into the legacy columns until an approved
+ * destructive migration removes them (M9-B2).
+ */
+const minutesToClock = (minute: number): string => {
+  const h = Math.floor(minute / 60);
+  const m = minute % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+};
+
 const shiftSelect = {
   id: true,
   businessId: true,
@@ -85,6 +98,9 @@ export const createShift = async (req: Request, res: Response): Promise<void> =>
         name,
         startMinute,
         endMinute,
+        // Legacy NOT NULL TEXT columns — see minutesToClock above.
+        startTime: minutesToClock(startMinute),
+        endTime: minutesToClock(endMinute),
         crossesMidnight: crossesMidnight ?? false,
         isActive: true,
       },
@@ -169,6 +185,12 @@ export const updateShift = async (req: Request, res: Response): Promise<void> =>
       endMinute !== undefined ? endMinute : existing.endMinute;
     const mergedCrossesMidnight =
       crossesMidnight !== undefined ? crossesMidnight : existing.crossesMidnight;
+
+    // Keep the legacy NOT NULL TEXT columns in step with the minute pair.
+    if (startMinute !== undefined || endMinute !== undefined) {
+      data.startTime = minutesToClock(mergedStart);
+      data.endTime = minutesToClock(mergedEnd);
+    }
 
     const geometryIsConsistent =
       mergedEnd < mergedStart

@@ -215,7 +215,7 @@ export const attendanceRegister = async (req: Request, res: Response): Promise<v
         requiresReviewReason: row.requiresReviewReason,
         employee: row.user,
         // Snapshot first (historical truth), live shift row second.
-        shiftName: row.shift?.name ?? row.shiftNameSnapshot ?? null,
+        shiftName: row.shiftNameSnapshot ?? row.shift?.name ?? null,
         shiftId: row.shiftId,
       })),
       pagination: {

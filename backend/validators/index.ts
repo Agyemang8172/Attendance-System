@@ -894,6 +894,30 @@ export const attendanceAuditQuerySchema = {
 };
 
 /**
+ * M8-R4 / M9-B3 — the generic audit listing. `search` is a free-text filter
+ * over the action, entity and reason columns; the UI sends it from its search
+ * box. Dates are ISO instants, matching every other range query.
+ */
+export const auditListQuerySchema = {
+  query: z.object({
+    action: z.string().min(1).max(120).optional(),
+    entityType: z.string().min(1).max(120).optional(),
+    entityId: z.string().uuid("Invalid entity ID format").optional(),
+    search: z.string().min(1).max(200).optional(),
+    startDate: z.string().datetime().optional(),
+    endDate: z.string().datetime().optional(),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(50),
+  }),
+};
+
+export const auditIdSchema = {
+  params: z.object({
+    id: z.string().uuid("Invalid audit ID format"),
+  }),
+};
+
+/**
  * GET /api/business/settings takes no request fields (contracts §5: "none").
  * Like `jobStatusSchema` above, this empty schema is the marker that the
  * omission is deliberate; the GET route wires no validate() middleware.

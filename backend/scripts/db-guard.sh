@@ -5,18 +5,16 @@
 # test database. Two checks, in this order:
 #
 #   1. The database name in the connection URL must end in `_test`.
-#      Owner amendment (O14, ruled 2026-10-17): the designated hosted test
-#      database — whose provider fixes the database name at "postgres" — is
-#      accepted WITHOUT the suffix when its host matches TEST_DB_HOST. The
-#      host is then the whole promise; the suffix stays the rule everywhere
-#      else. Recorded in docs/attendpro/DECISION-REGISTER.md.
-#   2. Before any destructive reset, the configured host must match the
-#      expected test host in TEST_DB_HOST. The suffix check alone is not
-#      sufficient, so the connection is confirmed as well.
+#      The authoritative guard for automated runs is tests/dbGuard.ts, which
+#      additionally verifies the EXACT host and database name (TEST_DB_HOST /
+#      TEST_DB_NAME) and refuses the development host, so neither a matching
+#      host nor a `_test` suffix is trusted on its own.
+#   2. The test URL must not name the development host (DEV_DB_HOST). This
+#      shell guard keeps the check available for humans and CI.
 #
 # Usage:
 #   source backend/scripts/db-guard.sh
-#   db_guard_assert_test "$TEST_DATABASE_URL"        # name check (tests, migrations)
+#   db_guard_assert_test "$TEST_DATABASE_URL"        # name + dev-host check
 #   db_guard_assert_test_host "$TEST_DATABASE_URL"   # name + host check (destructive reset)
 #
 # Or directly:
@@ -40,6 +38,16 @@ _db_guard_extract() {
     esac
 }
 
+_db_guard_extract_host() {
+    # Prints the host segment: after the last '@', before the first ':' or '/'.
+    local url="${1%%\?*}"
+    local authority="${url#*://}"
+    authority="${authority%%/*}"
+    local host="${authority##*@}"
+    host="${host%%:*}"
+    echo "$host"
+}
+
 db_guard_assert_test() {
     local url="${1:-}"
     if [ -z "$url" ]; then
@@ -52,25 +60,19 @@ db_guard_assert_test() {
         echo "[ DB-GUARD ] FAIL: could not read a database name from the URL." >&2
         return 1
     fi
+    # Positive rejection of the development target, before any suffix logic.
+    local host
+    host="$(_db_guard_extract_host "$url")"
+    if [ -n "${DEV_DB_HOST:-}" ] && [ "$host" = "$DEV_DB_HOST" ]; then
+        echo "[ DB-GUARD ] REFUSED: host '$host' is the development host (DEV_DB_HOST)." >&2
+        return 1
+    fi
     case "$db" in
         *_test) echo "[ DB-GUARD ] OK: database '$db' is a test database." ;;
         *)
-            # No suffix: the only tolerated exception is the designated hosted
-            # test database (owner amendment, O14, 2026-10-17) — identified by
-            # its HOST matching TEST_DB_HOST, since that provider cannot
-            # rename its single database.
-            local authority host
-            authority="${url#*://}"
-            authority="${authority%%/*}"
-            host="${authority##*@}"
-            host="${host%%:*}"
-            if [ -n "${TEST_DB_HOST:-}" ] && [ "$host" = "$TEST_DB_HOST" ]; then
-                echo "[ DB-GUARD ] OK: database '$db' is the designated test database on host '$TEST_DB_HOST' (O14 owner amendment, 2026-10-17; the provider cannot carry a _test-suffixed name)."
-            else
-                echo "[ DB-GUARD ] REFUSED: database '$db' does not end in '_test' (O14)." >&2
-                echo "             Tests and migrations never run against a non-test database." >&2
-                return 1
-            fi
+            echo "[ DB-GUARD ] REFUSED: database '$db' does not end in '_test'." >&2
+            echo "             Tests and migrations never run against a non-test database." >&2
+            return 1
             ;;
     esac
 }

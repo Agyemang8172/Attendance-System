@@ -40,7 +40,7 @@ function StaffChangePin() {
   const handleConfirm = async () => {
     setConfirmSubmitting(true)
     try {
-      await api.post('/api/staff/profile/change-pin', {
+      await api.post('/staff/profile/change-pin', {
         currentPin,
         newPin,
       })

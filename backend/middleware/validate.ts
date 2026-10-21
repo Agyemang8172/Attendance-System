@@ -39,7 +39,17 @@ export const validate = (schemas: ValidationSchemas) => {
           });
           return;
         }
-        Object.assign(req.query, result.data);
+        // Express 5 exposes `req.query` as an un-memoised prototype getter:
+        // it re-parses the URL on every read, so `Object.assign(req.query, …)`
+        // mutates a throwaway object and the controller then reads raw strings
+        // (page="1" instead of 1, or undefined) — 500s and silent empty pages.
+        // Defining an own property on the request shadows the getter.
+        Object.defineProperty(req, "query", {
+          value: result.data,
+          writable: true,
+          configurable: true,
+          enumerable: true,
+        });
       }
 
       if (schemas.params) {

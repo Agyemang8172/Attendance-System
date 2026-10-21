@@ -146,7 +146,7 @@ function StaffCorrections() {
       if (filters.search) params.set('search', filters.search)
       if (filters.status) params.set('status', filters.status)
 
-      const res = await api.get(`/api/staff/corrections?${params.toString()}`)
+      const res = await api.get(`/staff/corrections?${params.toString()}`)
       setCorrections(res.data.data || [])
       setTotal(res.data.total || 0)
     } catch {

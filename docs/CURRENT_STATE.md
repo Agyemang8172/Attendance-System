@@ -2,12 +2,12 @@
 
 > This file is maintained by the Orchestrator agent. It is updated at each phase transition to preserve context across long sessions.
 
-## Current Session — 2026-10-16
+## Current Session — 2026-10-19
 
-- **Task:** M8 complete — Phase 0 (housekeeping + design system), Phase 1 (public landing), Phase 2 (staff portal), Phase 3 (HR + Super Admin portals) all done and gated. M7 committed `e73b8c1`; all owner rulings (R1/R5/R6/R10 + M8-R1..R13) recorded and closed.
-- **Branch:** `main`, twelve commits ahead of `origin/main`, nothing pushed
-- **Mode:** interactive, Orchestrator locked
-- **State:** M5 committed (`63318bf`) plus the pause-record commit (`4fa1602`). M6 is written, reviewed (verdict: safe after fixes — the blocking re-flagging idempotence fix and the cheap hardening applied), and verified (`tsc` 0 errors, prisma valid, db-check, env parity, ui-taste, humanize all pass), uncommitted. `docs/attendpro/*.md` and the testing guide pass `humanize-check.sh`.
+- **Task:** M9 in progress — full test suite, testing guide, CI, security review, close-out. M8 is committed (`f011053` + `e6f41eb`) and the M9 plan is approved at `docs/superpowers/plans/2026-10-18-attendpro-m9-test-ci-security-closeout.md`.
+- **Branch:** `main`, eighteen commits ahead of `origin/main`, nothing pushed.
+- **Mode:** interactive, Orchestrator locked.
+- **State:** M9 Phases 0–6 are written but uncommitted. The suite runs against a dedicated local `attendpro_test` database; `tests/dbGuard.ts` verifies the exact host and name and refuses the development database, a `_test`-only guess, or a hosted Prisma host. Backend `tsc --noEmit` is clean and the backend suite is green (22 files, 590 tests); backend coverage is **93.43% statements / 85.93% branches**, and the 90/85 thresholds are enforced in `backend/vitest.config.ts` and CI. Frontend `typecheck` and `lint` are clean, the unit suite is green (98 tests / 11 files), and the production build succeeds. The frontend uses the owner-approved staged ratchet: 29.95% statements / 71.38% branches / 49.79% functions / 29.95% lines against a 29/71/49/29 floor, with the floor rising every milestone until 90/85. Playwright passed 5 of 5 runnable tests; the kiosk test is skipped because no kiosk UI exists. `ui-taste-check`, `db-check`, `env-check` and `humanize-check` pass. Five production defects surfaced by the new tests were fixed (M9-B1..B5), as was the staff-portal double `/api` prefix (SEC-20). The development seed now creates a SUPERADMIN and an HR account behind `SEED_CONFIRM=development`; a production bootstrap is still open (SSB-2). The dependency scan still reports 9 high frontend and 4 high backend production advisories, and the security review keeps SEC-07 (runtime RLS bypass) and SEC-08 (no JWT revocation on password reset) as public-launch blockers. The CI workflow has not been exercised on GitHub yet.
 
 Completed (2026-10-16, M3):
 
@@ -146,28 +146,31 @@ Frontend/backend state: backend M4 complete; frontend untouched.
 `docs/IMPLEMENTATION_PLAN.md` — eleven milestones M0–M10, each on its own
 branch, each committed through `.agents/scripts/commit.sh`.
 
-- M0 **DONE** — `chore/git-foundation`, commit `fea8a00`, pushed.
-- M1 **DONE** — `feat/auth-foundation`, commits `7927e1f` and `c5ee5ff`, plus the
-  GitGuardian config `9f08982`, merged to `main` via `merge/m1-into-main`.
-- M2 **DONE** — `feat/design-tokens`, commit `6ad2bd6`, merged to `main`.
-- M3 **DONE** — `feat/login-redesign`, commit `15be18c`, merged to `main`.
-- M4 **DONE** — `feat/dashboard-redesign`, commit `277ec10`, pushed and merged.
-- M5 **DONE** — `feat/sidebar-navigation`, commit `d599fee`, merged to `main`.
-- M6 **DONE** — `feat/staff-management`, commit `76da9a0` (+ `.gitguardian.yaml`
-  `624b5b2`), merged to `main` via PR #11.
-- M7 **DONE** — `feat/staff-management` (stacked), commit `584d796`, merged to
-  `main` via PR #12.
-- M8 **DONE** — `test/regression-suite`, commit `38b0920` (+ docs `dc681a3`),
-  merged to `main` via PR #13. Backend 71/71 and frontend 58/58 green as of
-  2026-10-10.
-- M9 **DONE** — `test/security-suite`, commit `165e09b`, merged to `main` via
-  PR #14. Backend 78/78 and frontend 63/63 green as of 2026-10-10.
-- M10 **DONE** — `qa/final-uiux-verification`, commit `20a1e43`, merged to
-  `main` via PR #15. Agent-executed checks green (ui-taste-check 0/24, 20-rule
-  audit, frontend 63/63, eslint and build clean); two uppercase residuals
-  fixed; `CURRENT_STATE.md`, `AUDIT_REPORT.md` and `REGRESSION_SNAPSHOT.md`
-  refreshed. Owner-run browser walkthrough and contrast re-measure itemised in
-  `REGRESSION_SNAPSHOT.md` §5.
+- M0 **DONE** — commit `c4ee602`, on `main`.
+- M1 **DONE** — commit `b403a66`, on `main`.
+- M2 **DONE** — commit `a74c72a`, on `main`.
+- M3 **DONE** — commit `d31a5a0`, on `main`.
+- M4 **DONE** — commit `f2db8e4`, on `main`.
+- M5 **DONE** — commit `63318bf`, on `main`.
+- M6 **DONE** — commit `6002e1c`, on `main`.
+- R10 ruling + O14 rehearsal — commit `8526a98`, on `main`.
+- M7 **DONE** — commit `e73b8c1`, on `main`.
+- M8 **DONE** — commit `f011053`, with the follow-up `e6f41eb` that replaced an
+  emoji with a Lucide icon to pass the UI taste gate. M8 was committed while the
+  frontend suite still had eight `auth-routing` failures and five legacy `.tsx`
+  type errors; M9 fixed both and restored the missing `/set-password` route.
+- M9 **IN PROGRESS** — working tree only, not committed. Backend 22 files / 590
+  tests green against a guarded local `attendpro_test` database, with coverage at
+  93.43% statements / 85.93% branches and the 90/85 gate enforced. Frontend 11
+  files / 98 tests green; typecheck and lint clean; build clean; the staged
+  frontend coverage ratchet passes at 29.95/71.38/49.79/29.95 against 29/71/49/29.
+  Playwright 5 passed / 1 skipped. CI now starts its own Postgres 16 service
+  container and runs the backend coverage command, so no database secret is
+  required. Testing guide, security review, deployment runbook and close-out docs
+  are written. The dependency scan (9 frontend + 4 backend high production
+  advisories) and SEC-01..SEC-08 remain the open release decisions; the CI
+  workflow itself has not run on GitHub yet. The owner must authorize the commit.
+- M10 **NOT STARTED**.
 
 ## Dev-OS Pipeline Status
 

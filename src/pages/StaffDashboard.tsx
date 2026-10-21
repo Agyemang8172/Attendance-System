@@ -86,7 +86,7 @@ function StaffDashboard() {
   // ── Fetch schedule (M8-R2 endpoint) ─────────────────────────────────────────
   const fetchSchedule = useCallback(async () => {
     try {
-      const res = await api.get('/api/staff/schedule')
+      const res = await api.get('/staff/schedule')
       setSchedule(res.data.data || [])
     } catch {
       // Endpoint may not exist yet; fail silently
@@ -97,7 +97,7 @@ function StaffDashboard() {
   // ── Fetch off-days (M8-R2 endpoint) ─────────────────────────────────────────
   const fetchOffDays = useCallback(async () => {
     try {
-      const res = await api.get('/api/staff/off-days')
+      const res = await api.get('/staff/off-days')
       setOffDays(res.data.data || [])
     } catch {
       // Endpoint may not exist yet; fail silently
@@ -108,7 +108,7 @@ function StaffDashboard() {
   // ── Fetch pending counts ────────────────────────────────────────────────────
   const fetchHelpRequestsCount = useCallback(async () => {
     try {
-      const res = await api.get('/api/staff/help-requests?status=PENDING&limit=1')
+      const res = await api.get('/staff/help-requests?status=PENDING&limit=1')
       setHelpRequestsCount(res.data.total || 0)
     } catch {
       setHelpRequestsCount(0)
@@ -117,7 +117,7 @@ function StaffDashboard() {
 
   const fetchCorrectionsCount = useCallback(async () => {
     try {
-      const res = await api.get('/api/staff/corrections?status=SUBMITTED&limit=1')
+      const res = await api.get('/staff/corrections?status=SUBMITTED&limit=1')
       setCorrectionsCount(res.data.total || 0)
     } catch {
       setCorrectionsCount(0)

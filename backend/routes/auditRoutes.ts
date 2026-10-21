@@ -4,7 +4,11 @@ import authMiddleware from "../middleware/authMiddleware.js";
 import authorizeRole from "../middleware/roleMiddleware.js";
 import requirePasswordChange from "../middleware/requirePasswordChange.js";
 import { validate } from "../middleware/validate.js";
-import { attendanceAuditQuerySchema } from "../validators/index.js";
+import {
+  attendanceAuditQuerySchema,
+  auditListQuerySchema,
+  auditIdSchema,
+} from "../validators/index.js";
 
 const router = express.Router();
 
@@ -25,6 +29,28 @@ router.get(
   authorizeRole("HR", "SUPERADMIN"),
   validate(attendanceAuditQuerySchema),
   auditController.getCorrectionTrail
+);
+
+// M8-R4 — the generic listing. Tenant-scoped and paginated; HR sees the
+// supervised subset, SUPERADMIN the whole trail (scope applied in the handler).
+router.get(
+  "/",
+  authMiddleware,
+  requirePasswordChange(),
+  authorizeRole("HR", "SUPERADMIN"),
+  validate(auditListQuerySchema),
+  auditController.listAudit
+);
+
+// M1 matrix §11 — one audit row. Same roles; HR gets the same 404 for a row
+// outside its subset as for a row that does not exist.
+router.get(
+  "/:id",
+  authMiddleware,
+  requirePasswordChange(),
+  authorizeRole("HR", "SUPERADMIN"),
+  validate(auditIdSchema),
+  auditController.getAuditById
 );
 
 export default router;

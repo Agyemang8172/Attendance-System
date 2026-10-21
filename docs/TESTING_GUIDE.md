@@ -3,7 +3,7 @@
 **Application:** AttendPro — Attendance System
 **Environment:** Local Development (`http://localhost:5173`)
 **Target Audience:** Human QA Testers, Product Owners, Startup Founders
-**Default Credentials Password:** `devos123` (universal across all test accounts)
+**Test fixture password:** `devos123` (the three `attendpro_test` accounts; the development seed uses the passwords in `backend/.env`)
 
 ---
 
@@ -11,38 +11,55 @@
 
 Start the three services in separate terminals, in this order:
 
-1. **Prisma Postgres proxy** — `cd backend && npx prisma dev`
-   (listens on port `51214`; the backend connects through it)
+1. **Database** — the application reads `DATABASE_URL` from `backend/.env`. For
+   the normal dev server that is the hosted Prisma Postgres instance; the
+   automated suite reads `TEST_DATABASE_URL` instead and refuses to touch the
+   dev database. Migrations for a fresh target:
+   `cd backend && DATABASE_URL="$TEST_DATABASE_URL" npx prisma migrate deploy`.
 2. **Backend API** — `cd backend && npm run dev`
    (listens on port `8000`; `http://localhost:8000/api`)
 3. **Frontend** — `npm run dev` (from the repository root)
    (listens on port `5173`; the Vite dev server feeds the browser)
 
-Open `http://localhost:5173` in the browser. You will land on the sign-in page.
+Open `http://localhost:5173` in the browser. The public landing page appears at
+`/`; click **Sign in to your AttendPro workspace** to reach `/login`.
 
-**First-time database setup (owner-run, destructive):**
-- Seed accounts and shift rows are written by `backend/prisma/seed.ts`, which
-  is gitignored and reads `SUPERADMIN_PASSWORD`, `HR_PASSWORD`, and
-  `STAFF_PASSWORD` from the gitignored `backend/.env`. Set those three to
-  `devos123` there before seeding, so the passwords below are exactly right.
-  Then run `cd backend && npm run db:seed`.
-- If you changed any seed password in `backend/.env`, use that value wherever
-  this guide names `devos123`.
+**Two account sets:**
+
+- **Development seed** — `cd backend && npm run db:seed` creates one SUPERADMIN
+  and one HR account from `SUPERADMIN_PASSWORD` / `HR_PASSWORD` and the
+  `SEED_*` variables. It refuses unless `SEED_CONFIRM=development` and
+  `DATABASE_URL` points at `DEV_DB_HOST`, and it creates no STAFF account.
+- **Test fixtures** — the three accounts in Section 2 live in the separate
+  `attendpro_test` database, not the development one. Seed them with
+  `cd backend && npx tsx scripts/test-seed.ts`, then start the backend against
+  that database for the walkthrough:
+  `DATABASE_URL="$TEST_DATABASE_URL" npm run dev` (bash).
+  The backend suite also upserts the same accounts.
 
 **Automated test suite (optional but a good smoke check):**
-- Backend: `cd backend && npx vitest run` (needs the proxy from step 1;
-  writes rows to the local database, so it is owner-run).
-- Frontend: `npx vitest run` (from the repository root, runs in jsdom).
+- Backend: `cd backend && npm run test:coverage` (uses `TEST_DATABASE_URL`; the
+  guard refuses the development database). The M9 result is 590 tests across 22
+  files with 93.43% statements / 85.93% branches; the command fails below
+  90/85.
+- Frontend: `npm run test:coverage` from the repository root (jsdom). The M9
+  result is 98 tests across 11 files with 29.95% statements / 71.38% branches;
+  the staged floor is 29/71/49/29 and rises every milestone.
+- Lint and types: `npm run lint`, `npm run typecheck`, and
+  `cd backend && npx tsc --noEmit`.
+- End-to-end: `npx playwright test` (Chromium; the login specs also need the
+  backend running against `attendpro_test` and the fixture accounts above).
 
 ---
 
 ## 2. Seed Data Fixtures
 
-### Standard test accounts (created by the automated suite, always available)
+### Standard test accounts (in `attendpro_test`)
 
-These are upserted by `backend/tests/fixtures.ts` the first time the backend
-suite runs. They exist in the database from then on, are always active, and
-never owe a password change.
+These are upserted by `backend/tests/fixtures.ts` in the local test database the
+first time the backend suite runs, or by `scripts/test-seed.ts`. They are always
+active and never owe a password change. They do not exist in the development
+database unless you point the backend at `TEST_DATABASE_URL`.
 
 | Account | Employee code | Role | Password |
 |---|---|---|---|
@@ -50,22 +67,16 @@ never owe a password change.
 | `hr@test.attendpro.com` | `EMP-9002` | HR | `devos123` |
 | `staff@test.attendpro.com` | `EMP-9003` | STAFF | `devos123` |
 
-### Seeded accounts (written by `seed.ts`)
-
-| Account | Role | Notes |
-|---|---|---|
-| `superadmin@attendpro.com` | SUPERADMIN | first login forces a password change |
-| `hr@attendpro.com` | HR | first login forces a password change |
-| `staff@attendpro.com` | STAFF (Jordan Reed) | first login forces a password change |
-
-The seeded accounts start with `mustChangePassword = true` (R4), so the very
-first sign-in redirects to `/set-password`. The test accounts above bypass
-that step, which makes them the faster path for feature testing.
-
 ### Supporting data
 
-- Shifts: `shift-morning` 06:00–14:00, `shift-afternoon` 14:00–22:00.
-- The 06:30 clock-in threshold marks a morning arrival as **late**.
+- The fixture writer assigns shifts and off-days only when a test needs them.
+  A fresh fixture database has the three accounts below and little else.
+- The 06:30 clock-in threshold marks a morning arrival as **late** once an
+  attendance policy and shift are in place. Create them through the admin
+  screens (Scenarios N and O) before grading punches.
+- Seed rows formerly described here (`shift-morning`, `shift-afternoon`) are
+  not written by the current repository. Treat every shift, site, policy, and
+  calendar value as data you create during the walkthrough.
 
 ---
 
@@ -73,7 +84,9 @@ that step, which makes them the faster path for feature testing.
 
 ### Scenario A: Authentication & Role Verification
 
-- [ ] 1. Open `http://localhost:5173` — verify you are redirected to `/login`.
+- [ ] 1. Open `http://localhost:5173` — verify the public landing page renders
+      at `/`. Click **Sign in to your AttendPro workspace** and verify the URL
+      becomes `/login`.
 - [ ] 2. Sign in as `staff@test.attendpro.com` / `devos123`. Verify you land
       on the staff `/dashboard`.
 - [ ] 3. Sign out from the account menu. Sign in as `hr@test.attendpro.com` /
@@ -86,9 +99,10 @@ that step, which makes them the faster path for feature testing.
 - [ ] 6. Sign in with a wrong password and verify an error message appears and
       you stay on the sign-in page (no crash, no reveal about whether the
       account exists).
-- [ ] 7. Sign in as `staff@attendpro.com` (seeded account). Verify the very
-      first login lands on `/set-password`, a strong new password is accepted,
-      and you are then routed to the staff home.
+- [ ] 7. As SUPERADMIN or HR, create an employee (Scenario B) and sign in with
+      the temporary password. Verify the first login lands on `/set-password`,
+      a strong new password is accepted, and you are then routed to the staff
+      home.
 
 ### Scenario B: Staff Management (SUPERADMIN and HR)
 
@@ -135,21 +149,26 @@ that step, which makes them the faster path for feature testing.
       staff login works (no forced-change screen for a reactivated account
       that had already changed its password).
 
-### Scenario E: Attendance Clock In / Clock Out (STAFF)
+### Scenario E: Attendance Review (STAFF)
 
-> **Superseded by M5.** The punch endpoints no longer accept a staff session
-> token. `POST /api/attendance/clock-in` and `/api/attendance/clock-out` now
-> require a kiosk device token and a verified QR + PIN session (Scenarios
-> P–S below). The dashboard button still sends the staff token, so the call
-> now answers `401` instead of recording a punch. Read this scenario as
-> historical UI context; punch testing happens at the kiosk now.
+> **Punching happens at the kiosk.** The staff dashboard has no Clock In or
+> Clock Out button. PRD §7 routes every punch through a paired kiosk device
+> and a verified QR + PIN session (Scenarios P–S). The staff screens read the
+> resulting rows.
 
-- [ ] 1. Sign in as `staff@test.attendpro.com`, open the staff `/dashboard`.
-- [ ] 2. Click **Clock In**. Verify an open session is recorded and the button
-      state changes to allow Clock Out.
-- [ ] 3. Click **Clock Out**. Verify the record closes and shows hours worked.
-- [ ] 4. Click **Clock In** again immediately — verify a second open session is
-      rejected (one open session per user).
+- [ ] 1. Sign in as `staff@test.attendpro.com` and open the staff `/dashboard`.
+- [ ] 2. Verify the **Today** section shows the assigned shift (or
+      "No shift assigned today"), the last punch, the current status pill, and
+      an off-day note when one applies.
+- [ ] 3. Open **My Attendance** in the sidebar (`/staff/attendance`). Verify
+      the **Full History** table lists the signed-in user's rows only.
+- [ ] 4. Use the date range, status, session, and search filters. Verify the
+      table refetches and the row count updates. Note the open defect in
+      Section 4: the API ignores the status, session, and search values even
+      though the UI sends them.
+- [ ] 5. Click a row. Verify the attendance drawer opens with the detail for
+      that record and closes from the close control.
+- [ ] 6. Confirm no control on this screen records a punch.
 
 ### Scenario F: Attendance Table Behaviour (HR / SUPERADMIN)
 
@@ -163,16 +182,23 @@ that step, which makes them the faster path for feature testing.
 - [ ] 5. Type in the search box and verify filtering by name, department, date,
       or status narrows the rows live.
 
-### Scenario G: Monthly Report & Export (SUPERADMIN)
+### Scenario G: Reports & CSV Export (HR / SUPERADMIN)
 
-- [ ] 1. Sign in as `superadmin@test.attendpro.com`, open the
-      `/superadmin-dashboard`.
-- [ ] 2. Find the **Monthly Report** panel. Select a month and verify the row
-      set filters to that month.
-- [ ] 3. Click **CSV**. Verify a file named `attendance-<month>.csv` downloads
-      and opens in a spreadsheet with headers and totals per row.
-- [ ] 4. Click **PDF**. Verify a print-friendly report panel opens for the
-      selected month.
+- [ ] 1. Sign in as `hr@test.attendpro.com` and open **Reports**
+      (`/hr-reports`). As SUPERADMIN, the same screen lives at `/reports`.
+- [ ] 2. Leave the dates empty and verify **Load Report** and **Export CSV**
+      are disabled.
+- [ ] 3. Choose **Attendance Register**, pick a date range that contains rows,
+      and click **Load Report**. Verify the table renders and the record count
+      appears.
+- [ ] 4. Switch to **Punctuality Summary**, choose a **Group By** value, and
+      load the report. Verify the table adapts.
+- [ ] 5. Switch to **Exceptions** and load the report. Verify flagged rows
+      appear first.
+- [ ] 6. Click **Export CSV**. Verify a CSV file downloads with the expected
+      header and row values.
+- [ ] 7. Verify the old dashboard **Monthly Report** panel no longer exists;
+      the reporting surface is this screen.
 
 ### Scenario H: Edge Cases & Boundary Handling
 
@@ -1462,20 +1488,388 @@ story in a single view.
 ## 4. Known Limitations & Notes
 
 - **Rate limiting:** failed logins are throttled per IP (10 attempts / 15
-  minutes). Rapid wrong-password attempts will start returning 429. Wait out
-  the window or restart the backend (the limiter is skipped under
-  `NODE_ENV=test`). Filing help requests has its own cap: five submissions per
-  account and IP address per 15 minutes (`POST /api/staff/help-requests`,
-  Scenario W).
+  minutes) and per account plus IP (8 attempts / 15 minutes). Rapid
+  wrong-password attempts will start returning 429. Wait out the window or
+  restart the backend (the limiter is skipped under `NODE_ENV=test`). Filing
+  help requests has its own cap: five submissions per account and IP address
+  per 15 minutes (`POST /api/staff/help-requests`, Scenario W).
 - **Forced password change:** an HR or SUPERADMIN resetting a password resets
   that account's `mustChangePassword` flag, so the next login of that user
   must set a new password before any app route opens.
-- **Excel export:** the Excel path needs an extra dependency
-  (`npm install xlsx`) and will show a toast instead of a file until it is
-  installed. CSV and PDF always work.
-- **Seed passwords:** all fixture accounts use `devos123`. The seeded
-  `@attendpro.com` accounts read their passwords from the gitignored
-  `backend/.env`; keep those values aligned with this guide or substitute the
-  ones you set.
+- **Report export:** the Reports screen exports CSV only. The earlier Excel and
+  print-panel paths are gone; do not look for an Excel button.
+- **Seed data:** `backend/prisma/seed.ts` is a development seed only (SSB-2):
+  it refuses unless `SEED_CONFIRM=development` and `DATABASE_URL` matches
+  `DEV_DB_HOST`, and it creates one SUPERADMIN and one HR account, no STAFF. The
+  automated suite uses the separate `attendpro_test` database, where
+  `backend/tests/fixtures.ts` (or `scripts/test-seed.ts`) writes the three
+  `devos123` accounts. A fresh development database has no users until you run
+  `npm run db:seed`. Any employee you create through the UI receives the
+  temporary password shown once in the creation response.
+- **Staff attendance filters (open defect):** `/staff/attendance` sends
+  `status`, `sessionStatus`, and `search`, but `getMyAttendance` ignores them.
+  The status choices also include legacy values (`PRESENT`, `HALF_DAY`,
+  `ON_LEAVE`) that the current lifecycle does not produce.
+- **Staff help-request status filter (open defect):** the filter offers
+  `PENDING` and `IN_PROGRESS`, while the API accepts `OPEN`, `IN_REVIEW`,
+  `RESOLVED`, and `CLOSED`. Expect empty results for the two legacy values.
+- **Missing detail routes (open defect):** the HR dashboard **View** action
+  points at `/hr-exceptions/:id` and the HR attendance drawer links to
+  `/hr-audit/corrections/:id`. Neither route exists, so both land on the 404
+  panel. Open those records from their list screens instead.
+- **Staff API prefix (open defect):** several staff screens call paths that
+  already start with `/api` on an axios client whose base URL ends in `/api`.
+  The resulting request goes to `/api/api/...` and returns 404. Affected calls
+  include schedule, off-days, help requests, corrections, and change PIN
+  (`src/pages/StaffDashboard.tsx:89-120`, `StaffSchedule.tsx:162-163`,
+  `StaffOffDays.tsx:81`, `StaffHelpRequests.tsx:148`,
+  `StaffCorrections.tsx:149`, `StaffHelpRequestNew.tsx:60`,
+  `StaffCorrectionNew.tsx:102`, `StaffChangePin.tsx:43`). Expect error toasts
+  on those screens until the paths are corrected.
+- **PIN change is blocked on a fresh fixture (open defect):** fixture accounts
+  have no PIN. The Change PIN API answers "No PIN is set. Contact HR to set one
+  up," and the HR reset response does not reveal the generated PIN (SEC-15), so
+  the full PIN-change path cannot be completed from a clean fixture database.
+- **Kiosk UI:** no kiosk route or screen exists. Pairing, identification, PIN
+  verification, and punching are API-only until the kiosk client ships.
+  Scenario P–T cover them with `curl`.
 - **Deactivated sessions:** deactivating or deleting an account invalidates its
   existing sessions immediately — sign out and back in after reactivation.
+
+---
+
+## 5. Public Landing Page
+
+The landing page at `/` is display-only. It reads no API data, so it stays
+honest about being a product page rather than a live dashboard.
+
+- [ ] 1. Sign out, then open `http://localhost:5173/`. Verify the hero heading
+      reads **Attendance that starts at the kiosk.**
+- [ ] 2. Verify the primary action is a link named **Sign in to your AttendPro
+      workspace** and that it opens `/login`.
+- [ ] 3. Confirm the page offers no registration link, no password-recovery
+      link, and no link into any dashboard.
+- [ ] 4. Verify the preview panel is labelled with the fictional business
+      **Finest Supermarket, Accra** and that its rows carry status pills
+      (Early, On time, Late, Open session).
+- [ ] 5. Open DevTools → Network and reload. Verify no request goes to
+      `localhost:8000`; the page has no live data source.
+- [ ] 6. Resize below 640px. Verify the preview table becomes stacked record
+      cards and the page does not scroll sideways.
+
+---
+
+## 6. Staff Portal Walkthrough
+
+Sign in as `staff@test.attendpro.com` / `devos123`. The sidebar shows
+**Overview**, **My Attendance**, **My Schedule**, **Off-Days**, **Help
+Requests**, **Corrections**, **Profile & Security**, and **Change PIN**.
+
+> Several staff calls double-prefix the API path today and return 404 (Section
+> 4). Use the checklist to confirm which screens are affected; do not treat a
+> failed fetch on schedule, off-days, help requests, corrections, or change PIN
+> as a test-environment problem.
+
+### 6.1 Dashboard (`/dashboard`)
+
+- [ ] 1. Verify the page heading greets the signed-in user by first name.
+- [ ] 2. Verify the weekly-hours card, the hours chart, and the current status
+      pill render. Record any 404s from the double-prefixed staff calls
+      (SEC-20) instead of treating them as a local setup fault.
+- [ ] 3. Verify **Today** shows the assigned shift or a clear "No shift
+      assigned today" message, the last punch, and the current status.
+- [ ] 4. Verify **Recent History** lists at most five rows and **Pending
+      Requests** reflects any open help request or correction.
+
+### 6.2 Attendance (`/staff/attendance`)
+
+- [ ] 1. Verify the **Full History** table shows only this user's rows.
+- [ ] 2. Apply a date range that contains rows and one that does not. Verify
+      the empty state is readable.
+- [ ] 3. Click a row and verify the detail drawer opens and closes.
+- [ ] 4. Confirm there is no clock-in or clock-out control on the page.
+
+### 6.3 Schedule and off-days
+
+> Both screens currently request `/api/api/staff/...` and return 404 (SEC-20).
+> Verify the error state and note the failure; run the functional checks below
+> after the path is fixed.
+
+- [ ] 1. Open **My Schedule** (`/schedule`). Verify **Assigned Shifts &
+      Off-Days** renders its header and does not crash.
+- [ ] 2. Move to the previous and next month. Verify the heading month changes.
+- [ ] 3. Open **Off-Days** (`/staff/off-days`). Verify **Holidays & Calendar
+      Overrides** renders its header and does not crash.
+- [ ] 4. Once the path is fixed, verify the month list and the off-day rows
+      load with their kind and note.
+
+### 6.4 Help requests
+
+> Listing and creating requests currently return 404 (SEC-20). The detail
+> route uses the same double prefix. Verify the error state first.
+
+- [ ] 1. Open **Help Requests** (`/staff/help-requests`) and click the create
+      action.
+- [ ] 2. Choose a category (PIN Issue, Kiosk Problem, Profile Issue, Access
+      Problem, Other), enter a subject and body, and submit.
+- [ ] 3. Verify the failure is surfaced as an error toast, not a silent no-op.
+- [ ] 4. Once the path is fixed, verify the new request appears with status
+      **Open** and the detail shows the thread and resolution note.
+- [ ] 5. Filter the list by status. Avoid the legacy **Pending** and
+      **In Progress** options; they do not match the API values (Section 4).
+
+### 6.5 Corrections
+
+> Listing, detail, and submission currently return 404 (SEC-20). The record
+> picker loads correctly because it uses the non-prefixed path.
+
+- [ ] 1. Open **Corrections** (`/staff/corrections`) and click **New
+      Correction**.
+- [ ] 2. Pick one of your attendance records, set the proposed clock-in or
+      clock-out, and give a reason.
+- [ ] 3. Submit and verify the failure is surfaced as an error toast.
+- [ ] 4. Once the path is fixed, verify the request appears with status
+      **Submitted** and the detail shows the proposed values read-only.
+
+### 6.6 Profile and PIN
+
+- [ ] 1. Open **Profile & Security** (`/profile`). Verify the **Identity** card
+      shows the account's name, email, role, employee code, and department.
+- [ ] 2. Open **Change PIN** (`/profile/change-pin`). The current request
+      double-prefixes the API path and returns 404 (SEC-20), so verify the
+      failure toast first.
+- [ ] 3. Once the path is fixed, repeat on an account that already has a PIN:
+      enter the current PIN, a new four-digit PIN, and confirm it. Verify a
+      success toast.
+- [ ] 4. On a fresh fixture account with no PIN, the fixed path answers "No PIN
+      is set. Contact HR to set one up." This is blocked end to end until
+      SEC-15 is fixed.
+- [ ] 5. Sign out and back in, then repeat with a wrong current PIN. Verify the
+      form rejects it without changing the PIN.
+- [ ] 6. Sign out from the account menu and verify you return to `/login`.
+
+---
+
+## 7. HR Portal Walkthrough
+
+Sign in as `hr@test.attendpro.com` / `devos123`. HR sees its own navigation
+plus the staff-management screens; SUPERADMIN-only screens bounce HR to its
+home.
+
+### 7.1 Dashboard (`/hr-dashboard`)
+
+- [ ] 1. Verify the heading reads **Welcome, Test.**
+- [ ] 2. Verify **Exceptions Requiring Attention**, **Weekly Overview**, and
+      **Recent Exceptions** render with real counts.
+- [ ] 3. Verify **All Attendance** defaults to exceptions first and that the
+      search box narrows by name, department, date, or status.
+- [ ] 4. Click a **View** action. Confirm the known defect from Section 4:
+      `/hr-exceptions/:id` has no route and the 404 panel appears.
+
+### 7.2 Attendance register (`/hr-attendance`)
+
+- [ ] 1. Verify the **Attendance Register** table loads with filters for date,
+      status, session, and search.
+- [ ] 2. Sort by the **Date** column and verify the direction toggles.
+- [ ] 3. Open a row's detail drawer. Verify the record details render.
+- [ ] 4. Click the drawer's correction link. Confirm it targets
+      `/hr-audit/corrections/:id`, which has no route (Section 4).
+
+### 7.3 Exceptions (`/hr-exceptions`)
+
+- [ ] 1. Verify the page lists flagged rows with the reason and status.
+- [ ] 2. Search by name, date, type, or reason and verify the list narrows.
+- [ ] 3. Clear the search and verify the full list returns.
+
+### 7.4 Manage staff (`/manage-staff`)
+
+- [ ] 1. Verify the **Add Employee** action opens the modal. Confirm **Role**
+      is disabled and new records save as STAFF.
+- [ ] 2. Create an employee with a unique email and a shift. Verify the
+      temporary password is shown once in the result area.
+- [ ] 3. Edit that employee and verify **Role** stays disabled for HR.
+- [ ] 4. Deactivate the employee and verify the row moves to the **Inactive**
+      view. Confirm **Reactivate** is visible but disabled for HR.
+- [ ] 5. Reset the employee's password and verify the new temporary password
+      is revealed once with a copy control.
+- [ ] 6. Try to reset your own password. Verify the action is refused.
+- [ ] 7. Try to deactivate an HR account while signed in as HR. Verify the
+      server refuses it.
+
+### 7.5 Help requests (`/hr-help-requests`)
+
+- [ ] 1. Verify the queue lists open requests with requester, category,
+      subject, and created time.
+- [ ] 2. Open a request and add a resolution note. Verify the status moves to
+      **Resolved**.
+- [ ] 3. Filter by **Resolved** and **Closed** and verify each view is correct.
+
+### 7.6 Corrections queue (`/hr-corrections`)
+
+- [ ] 1. Verify the **Corrections Queue** lists **Submitted**, **Approved**,
+      and **Rejected** requests.
+- [ ] 2. Open a submitted request and approve it with a decision note. Verify
+      the linked attendance row changes and the status becomes **Approved**.
+- [ ] 3. Open another request and reject it with a reason. Verify the row is
+      unchanged and the status becomes **Rejected**.
+- [ ] 4. Submit a correction as `hr@test.attendpro.com`, then try to approve
+      your own request. Verify the no-self-approval rule refuses it.
+
+### 7.7 Reports and audit
+
+- [ ] 1. Open **Reports** (`/hr-reports`) and run Scenario G.
+- [ ] 2. Open **Audit History** (`/hr-audit`). Verify the filter bar accepts an
+      actor, entity ID, and action, and that matching rows appear.
+- [ ] 3. Verify CSV export writes a `report.exported` audit row (Scenario Y).
+
+---
+
+## 8. Super Admin Portal Walkthrough
+
+Sign in as `superadmin@test.attendpro.com` / `devos123`. SUPERADMIN can open
+every HR screen plus the setup screens below.
+
+### 8.1 Dashboard (`/superadmin-dashboard`)
+
+- [ ] 1. Verify the heading reads **Welcome, Test.**
+- [ ] 2. Verify **Setup Health**, **Background Jobs**, **Weekly Overview**, and
+      **Quick Links** render.
+- [ ] 3. Verify the background-jobs card reports the last auto clock-out pass
+      or a clear "not run yet" state.
+
+### 8.2 Business settings (`/settings`)
+
+- [ ] 1. Verify **Business Profile** shows the business name, timezone, logo
+      URL, support email, and phone.
+- [ ] 2. Change a value and save. Verify the confirmation dialog appears before
+      the write and the new value persists after reload.
+- [ ] 3. Verify **Data Retention** shows the configured retention windows.
+
+### 8.3 Shift management (`/shift-management`)
+
+- [ ] 1. Verify **Shift Definitions** lists existing shifts with start, end,
+      and state.
+- [ ] 2. Create a shift (name, start minute, end minute). Verify it appears in
+      the table.
+- [ ] 3. Edit the shift and verify the change persists.
+- [ ] 4. Deactivate it and verify the confirmation dialog and the state pill.
+
+### 8.4 Scheduling (`/scheduling`)
+
+- [ ] 1. Verify the page lists assignments with employee, shift, effective
+      dates, and state.
+- [ ] 2. Create an assignment for the staff fixture account. Verify it appears
+      and that the staff dashboard picks up the shift.
+- [ ] 3. Edit and deactivate the assignment.
+
+### 8.5 Attendance policies (`/policies`)
+
+- [ ] 1. Verify **Attendance Policies** lists policies and their current
+      version.
+- [ ] 2. Create a policy with a grace period and auto clock-out settings.
+- [ ] 3. Use **New Version** to change a threshold. Verify the version list
+      keeps the older row and the active version moves.
+- [ ] 4. Use **View Versions** and confirm each version's values are intact.
+
+### 8.6 Calendar settings (`/calendar-settings`)
+
+- [ ] 1. Verify the calendar list with timezone and working days.
+- [ ] 2. Create a calendar (name, timezone, working days). Verify it appears.
+- [ ] 3. Add an exception (date, kind, note) and verify it appears under the
+      calendar.
+- [ ] 4. Delete the exception and confirm the dialog before the row disappears.
+
+### 8.7 Sites (`/sites`)
+
+- [ ] 1. Verify the site list with name, coordinates, radius, and state.
+- [ ] 2. Create a site with a latitude, longitude, and radius. Verify it
+      appears.
+- [ ] 3. Edit the site and verify the geofence values persist.
+
+### 8.8 Devices (`/devices`)
+
+- [ ] 1. Verify **Kiosk Devices** lists label, site, state, paired time, and
+      last-seen time.
+- [ ] 2. Click **Generate Pairing Code**, choose a site and label, and verify
+      the code and expiry appear on the pending row.
+- [ ] 3. Revoke an active device and confirm the dialog. Verify the state
+      becomes **Revoked**.
+- [ ] 4. Confirm there is no in-app kiosk screen to open; see Section 9.
+
+### 8.9 Reports, audit, and the missing admin link
+
+- [ ] 1. Open **Reports** (`/reports`) and run Scenario G.
+- [ ] 2. Open **Audit Log** (`/audit-log`) and filter by actor, entity, and
+      action.
+- [ ] 3. Click **Help & Corrections** in the sidebar. Confirm the known defect:
+      it targets `/admin-help-corrections`, which has no route, so the 404
+      panel appears. Use the HR queues at `/hr-help-requests` and
+      `/hr-corrections` instead.
+- [ ] 4. Confirm the setup screens (shifts, scheduling, policies, calendars,
+      sites, devices) refuse access to an HR session.
+
+---
+
+## 9. Kiosk Current State
+
+No kiosk route, page, or component exists in this repository. A browser
+walkthrough of pairing, QR scan, PIN entry, or punching is therefore not
+possible. The backend contract is complete and is covered by Scenarios P–T
+with `curl`.
+
+- [ ] 1. Confirm `src/App.jsx` has no `/kiosk` route and `src/pages/` has no
+      kiosk screen.
+- [ ] 2. Confirm `src/__tests__/e2e/kiosk/pairing.spec.ts` is a documented
+      `test.skip` with the reason that no kiosk UI exists.
+- [ ] 3. Pair a device through the API or the **Devices** screen, then exercise
+      identify → verify-pin → clock-in/clock-out with `curl` (Scenarios P–S).
+- [ ] 4. Verify a revoked device token is refused on the next call.
+- [ ] 5. Verify the PIN lockout behaviour described in Scenario R: repeated
+      wrong PINs lock the session and the device must cancel and start over.
+- [ ] 6. Record the missing kiosk client as an open item in the security review
+      or gap register rather than treating it as a UI regression.
+
+---
+
+## 10. Responsive, Keyboard & Accessibility Checks
+
+Run these checks on the landing page, the sign-in page, one staff screen, one
+HR screen, and one SUPERADMIN setup screen.
+
+### 10.1 Viewports
+
+- [ ] 1. At 375px wide, verify every page fits without horizontal scrolling.
+      Tables may stack or scroll inside their own container, but the page body
+      must not pan.
+- [ ] 2. At 768px, verify the sidebar collapses to its mobile control and the
+      content keeps a readable measure.
+- [ ] 3. At 1440px, verify the layout uses the available width without
+      stretching form fields across the whole screen.
+- [ ] 4. Verify the landing preview switches between stacked cards and a table
+      at the `sm` breakpoint.
+
+### 10.2 Keyboard
+
+- [ ] 1. Tab from the top of `/login`. Verify focus reaches the email field,
+      the password field, the show-password control, and the sign-in button in
+      a visible order.
+- [ ] 2. Activate the sign-in button with Enter and verify the form submits.
+- [ ] 3. Open a modal (add employee, pairing code, confirmation dialog). Verify
+      focus moves into the dialog, Tab stays inside it, and Escape closes it.
+- [ ] 4. Verify every interactive control shows a visible focus ring.
+- [ ] 5. Open the sidebar with the keyboard and verify the close control is
+      reachable.
+
+### 10.3 Semantics and feedback
+
+- [ ] 1. Verify each page has one clear heading and that table headers are
+      announced as headers.
+- [ ] 2. Verify form errors appear next to the field and are announced through
+      an alert or live region.
+- [ ] 3. Verify status pills do not rely on colour alone; each carries a text
+      label.
+- [ ] 4. Run the browser's accessibility tree or Lighthouse check on `/login`
+      and the landing page. Record any contrast or name/role failures as open
+      defects.
+- [ ] 5. Verify toast messages appear for successful and failed actions and do
+      not trap focus.

@@ -578,11 +578,13 @@ describe("forced password change on first sign-in", () => {
     expect(blocked.status).toBe(403);
     expect(blocked.body.code).toBe("PASSWORD_CHANGE_REQUIRED");
 
-    const blockedClock = await request(app)
-      .post("/api/attendance/clock-in")
-      .set("Authorization", `Bearer ${token}`)
-      .send({});
-    expect(blockedClock.status).toBe(403);
+    // The punch lane is kiosk-authenticated since M5, so the gate is checked on
+    // a staff read route that still carries requirePasswordChange().
+    const blockedAttendance = await request(app)
+      .get("/api/attendance/my-attendance")
+      .set("Authorization", `Bearer ${token}`);
+    expect(blockedAttendance.status).toBe(403);
+    expect(blockedAttendance.body.code).toBe("PASSWORD_CHANGE_REQUIRED");
 
     // Changing it is allowed, and is the point.
     const change = await request(app)

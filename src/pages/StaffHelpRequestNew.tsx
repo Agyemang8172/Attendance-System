@@ -57,7 +57,7 @@ function StaffHelpRequestNew() {
 
     setSubmitting(true)
     try {
-      const res = await api.post('/api/staff/help-requests', {
+      const res = await api.post('/staff/help-requests', {
         category,
         subject: subject.trim(),
         body: body.trim(),

@@ -78,7 +78,7 @@ function StaffOffDays() {
   const fetchOffDays = useCallback(async () => {
     setFetching(true)
     try {
-      const res = await api.get('/api/staff/off-days')
+      const res = await api.get('/staff/off-days')
       setOffDays(res.data.data || [])
     } catch {
       toast.error('Failed to load off-days.')

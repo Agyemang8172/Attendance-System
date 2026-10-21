@@ -123,7 +123,7 @@ function StaffCorrectionDetail() {
     setFetching(true)
     setError(null)
     try {
-      const res = await api.get(`/api/staff/corrections/${id}`)
+      const res = await api.get(`/staff/corrections/${id}`)
       setCorrection(res.data.data)
     } catch (err: any) {
       if (err.response?.status === 404) {

@@ -114,7 +114,9 @@ describe('route guards reject callers outside the declared role', () => {
     seedSession('HR')
     visit('/hr-dashboard')
 
-    await screen.findByText(/full attendance overview/i)
+    // The M8 dashboard opens with the person's name rather than the old
+    // "full attendance overview" paragraph.
+    await screen.findByText(/welcome,/i)
     expect(window.location.pathname).toBe('/hr-dashboard')
   })
 })
@@ -149,10 +151,13 @@ describe('a stale or invalid session is treated as signed out', () => {
 })
 
 describe('the root path lands each role on its own home', () => {
-  it('sends an unauthenticated visitor to the sign-in page', async () => {
+  it('shows the public landing page to an unauthenticated visitor', async () => {
     visit('/')
 
-    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+    // M8 §6: "/" is the public site when signed out; it does not bounce to
+    // /login. The sign-in link lives in the landing header.
+    await screen.findByText(/AttendPro records attendance at a shared kiosk/i)
+    expect(window.location.pathname).toBe('/')
   })
 
   it('lands STAFF on the staff dashboard', async () => {

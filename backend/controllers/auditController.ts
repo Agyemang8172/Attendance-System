@@ -192,4 +192,192 @@ export const getCorrectionTrail = async (req: Request, res: Response): Promise<v
   }
 };
 
-export default { getCorrectionTrail };
+/**
+ * M8-R4 — the generic audit listing. Tenant-scoped, paginated, filterable by
+ * action / entity / free text / date. HR reads the supervised subset only
+ * (attendance, location assessments, PIN events and the correction loop);
+ * SUPERADMIN reads the whole trail. Shape matches the HR/SA audit screens.
+ */
+const auditListSelect = {
+  id: true,
+  businessId: true,
+  actorType: true,
+  actorUserId: true,
+  actorKioskId: true,
+  action: true,
+  entityType: true,
+  entityId: true,
+  beforeValues: true,
+  afterValues: true,
+  reason: true,
+  createdAt: true,
+  actor: {
+    select: { id: true, firstName: true, lastName: true, email: true, role: true },
+  },
+} as const;
+
+const HR_AUDIT_PREFIXES = ["attendance.", "correction.", "pin."] as const;
+const HR_AUDIT_ACTIONS = ["hr.reset_pin"] as const;
+
+const isHrVisibleAction = (action: string): boolean =>
+  HR_AUDIT_PREFIXES.some((prefix) => action.startsWith(prefix)) ||
+  (HR_AUDIT_ACTIONS as readonly string[]).includes(action);
+
+const toAuditView = (row: {
+  id: string;
+  actorType: string;
+  actorUserId: string | null;
+  actorKioskId: string | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  beforeValues: unknown;
+  afterValues: unknown;
+  reason: string | null;
+  createdAt: Date;
+  actor: { id: string; firstName: string; lastName: string; email: string; role: string } | null;
+}) => ({
+  id: row.id,
+  action: row.action,
+  entityType: row.entityType,
+  entityId: row.entityId,
+  actorType: row.actorType,
+  actorUserId: row.actorUserId,
+  actorKioskId: row.actorKioskId,
+  actor: row.actor,
+  before: row.beforeValues,
+  after: row.afterValues,
+  metadata: {},
+  reason: row.reason,
+  createdAt: row.createdAt,
+});
+
+export const listAudit = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const caller = req.user;
+    if (!caller) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
+
+    const businessId = await callerBusinessId(caller.userId);
+    if (!businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+
+    const query = req.query as {
+      action?: string;
+      entityType?: string;
+      entityId?: string;
+      search?: string;
+      startDate?: string;
+      endDate?: string;
+      page?: number | string;
+      limit?: number | string;
+    };
+
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 50));
+
+    const where: Record<string, unknown> = { businessId };
+    if (query.action) where.action = query.action;
+    if (query.entityType) where.entityType = query.entityType;
+    if (query.entityId) where.entityId = query.entityId;
+    if (query.startDate || query.endDate) {
+      where.createdAt = {
+        ...(query.startDate ? { gte: new Date(query.startDate) } : {}),
+        ...(query.endDate ? { lte: new Date(query.endDate) } : {}),
+      };
+    }
+    if (query.search) {
+      where.OR = [
+        { action: { contains: query.search, mode: "insensitive" } },
+        { entityType: { contains: query.search, mode: "insensitive" } },
+        { entityId: { contains: query.search, mode: "insensitive" } },
+        { reason: { contains: query.search, mode: "insensitive" } },
+      ];
+    }
+    if (caller.role === "HR") {
+      const hrScope = {
+        OR: [
+          ...HR_AUDIT_PREFIXES.map((prefix) => ({ action: { startsWith: prefix } })),
+          ...HR_AUDIT_ACTIONS.map((action) => ({ action })),
+        ],
+      };
+      // Keep the free-text OR and the role OR as separate AND-ed clauses so
+      // the search cannot widen the HR scope.
+      where.AND = [hrScope, ...(where.OR ? [{ OR: where.OR }] : [])];
+      delete where.OR;
+    }
+
+    const [rows, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        select: auditListSelect,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: rows.map(toAuditView),
+      pagination: {
+        currentPage: page,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+        total,
+        totalRecords: total,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      logError(error, { route: "audit-list" });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+};
+
+export const getAuditById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const caller = req.user;
+    if (!caller) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
+
+    const businessId = await callerBusinessId(caller.userId);
+    if (!businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+
+    const { id } = req.params as { id: string };
+    const row = await prisma.auditLog.findFirst({
+      where: { id, businessId },
+      select: auditListSelect,
+    });
+
+    // One 404 for unknown, cross-tenant and out-of-scope (HR) rows, so the
+    // refusal confirms nothing.
+    if (!row || (caller.role === "HR" && !isHrVisibleAction(row.action))) {
+      res.status(404).json({ success: false, message: "Audit entry not found" });
+      return;
+    }
+
+    res.status(200).json({ success: true, data: toAuditView(row) });
+  } catch (error) {
+    if (error instanceof Error) {
+      logError(error, { route: "audit-detail" });
+      res.status(500).json({ success: false, message: "Server error" });
+    } else {
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  }
+};
+
+export default { getCorrectionTrail, listAudit, getAuditById };

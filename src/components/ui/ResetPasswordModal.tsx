@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import api from '../../api/axios'
 
+interface ResetTarget {
+  id: string
+  firstName?: string | null
+  lastName?: string | null
+  email?: string | null
+}
+
 // ─── ResetPasswordModal ──────────────────────────────────────────────────────
 //
 //  Two-step popup for issuing a fresh temporary password.
@@ -25,7 +32,7 @@ import api from '../../api/axios'
 //    The temporary password rides at the top level, not inside `data`.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CopyRow = ({ label, value }) => {
+const CopyRow = ({ label, value }: { label: string; value: string }) => {
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -56,15 +63,23 @@ const CopyRow = ({ label, value }) => {
   )
 }
 
-const ResetPasswordModal = ({ user, onClose, onReset }) => {
+const ResetPasswordModal = ({
+  user,
+  onClose,
+  onReset,
+}: {
+  user: ResetTarget
+  onClose: () => void
+  onReset: () => void
+}) => {
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
   // When set, we switch from the confirm screen to the reveal screen.
-  const [tempPassword, setTempPassword] = useState(null)
+  const [tempPassword, setTempPassword] = useState<string | null>(null)
 
   // Escape closes the popup — but ONLY on the confirm step
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !tempPassword) onClose()
     }
     window.addEventListener('keydown', onKey)
@@ -80,7 +95,7 @@ const ResetPasswordModal = ({ user, onClose, onReset }) => {
       if (!res.data?.tempPassword) {
         setError('The server did not return a temporary password.')
       }
-    } catch (err) {
+    } catch (err: any) {
       const raw = err.response?.data?.message || err.response?.data?.error || ''
       setError(raw || 'Failed to reset password.')
     } finally {

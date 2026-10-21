@@ -97,6 +97,16 @@ function App() {
         {/* Public route - anyone can access */}
         <Route path="/login" element={<Login />} />
 
+        {/* Forced password change — signed in, flag still set (S15) */}
+        <Route
+          path="/set-password"
+          element={
+            <SetPasswordRoute>
+              <SetPassword />
+            </SetPasswordRoute>
+          }
+        />
+
         {/* Staff only */}
         <Route path="/dashboard"
           element={

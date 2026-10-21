@@ -149,6 +149,8 @@ export const getAllUsers = async (req: Request, res: Response) => {
         message: "Error fetching users",
         error: error.message,
       });
+    } else {
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -210,6 +212,8 @@ export const getUserById = async (req: Request, res: Response) => {
         message: "Server Error",
         error: error.message,
       });
+    } else {
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -317,6 +321,8 @@ export const createUser = async (req: Request, res: Response) => {
         message: "Server error",
         error: error.message,
       });
+    } else {
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -447,6 +453,8 @@ export const updateUser = async (req: Request, res: Response) => {
         message: "Update failed",
         error: error.message,
       });
+    } else {
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -608,6 +616,8 @@ export const resetPassword = async (req: Request, res: Response) => {
         success: false,
         message: "Password reset failed",
       });
+    } else {
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };
@@ -685,6 +695,8 @@ export const changePassword = async (req: Request, res: Response) => {
         message: "Change password failed",
         error: error.message,
       });
+    } else {
+      res.status(500).json({ success: false, message: "Server error" });
     }
   }
 };

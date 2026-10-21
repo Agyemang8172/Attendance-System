@@ -1,7 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ChangeEvent, type InputHTMLAttributes } from 'react'
 import { getCurrentUser } from '../../utils/auth'
 import api from '../../api/axios'
 import toast from 'react-hot-toast'
+
+type Role = 'STAFF' | 'HR' | 'SUPERADMIN'
+
+interface EditableEmployee {
+  id: string
+  firstName?: string | null
+  lastName?: string | null
+  email?: string | null
+  department?: string | null
+  role?: string | null
+  employeeCode?: string | null
+}
+
+interface EmployeeForm {
+  firstName: string
+  lastName: string
+  email: string
+  department: string
+  role: Role
+}
 
 // ─── EditEmployeeModal ────────────────────────────────────────────────────────
 //
@@ -25,7 +45,7 @@ import toast from 'react-hot-toast'
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
-const Field = ({ label, ...inputProps }) => (
+const Field = ({ label, ...inputProps }: { label: string } & InputHTMLAttributes<HTMLInputElement>) => (
   <div>
     <label className="block text-xs font-semibold uppercase tracking-widest text-chrome-ink-muted mb-2 font-sans">
       {label}
@@ -45,18 +65,26 @@ const Field = ({ label, ...inputProps }) => (
   </div>
 )
 
-const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
+const EditEmployeeModal = ({
+  user,
+  onClose,
+  onUpdated,
+}: {
+  user: EditableEmployee
+  onClose: () => void
+  onUpdated: () => void
+}) => {
   const currentUser = getCurrentUser()
   const isEditingSelf = currentUser?.email === user.email
   const isHr = currentUser?.role === 'HR'
 
   // Pre-fill with the employee's current values.
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<EmployeeForm>({
     firstName: user.firstName || '',
     lastName: user.lastName || '',
     email: user.email || '',
     department: user.department || '',
-    role: user.role || 'STAFF',
+    role: (user.role as Role) || 'STAFF',
   })
 
   const [submitting, setSubmitting] = useState(false)
@@ -64,15 +92,17 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
 
   // Close on Escape.
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const update = (key) => (e) =>
-    setForm((prev) => ({ ...prev, [key]: e.target.value }))
+  const update =
+    (key: keyof EmployeeForm) =>
+    (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm((prev) => ({ ...prev, [key]: e.target.value }))
   
   // Check whether anything actually changed. Role never counts for an HR
   // caller who cannot change it anyway.
@@ -90,7 +120,7 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
   const handleSubmit = async () => {
     setError('')
 
-    const required = ['firstName', 'lastName', 'email', 'department']
+    const required: (keyof EmployeeForm)[] = ['firstName', 'lastName', 'email', 'department']
     const missing = required.find((k) => !form[k].trim())
     if (missing) {
       setError('Please fill in every field.')
@@ -105,7 +135,7 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
     setSubmitting(true)
     try {
       // HR writes profile fields only; role is SUPERADMIN's to change.
-      const payload = {
+      const payload: Record<string, string> = {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
         email: form.email.trim(),
@@ -117,7 +147,7 @@ const EditEmployeeModal = ({ user, onClose, onUpdated }) => {
       toast.success(`${form.firstName} updated.`)
       onUpdated()
       onClose()
-    } catch (err) {
+    } catch (err: any) {
       const raw = err.response?.data?.error || err.response?.data?.message || ''
       const friendly = /duplicate|E11000|P2002/i.test(raw)
         ? 'That email is already taken.'

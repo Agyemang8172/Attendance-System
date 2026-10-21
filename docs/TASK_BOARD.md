@@ -117,8 +117,8 @@ Post-M4 audit (2026-10-16, two review agents — one over M0–M3 records, one t
 | M5 | Kiosk: pairing, QR+PIN, location assessment, atomic punch, tenant isolation | committed (`63318bf`, reviewed) | M4 |
 | M6 | Automatic clock-out job, shift-aware, flagged | complete (reviewed, tsc 0 errors, uncommitted) | M5 |
 | M7 | Help requests, corrections with audit trail (no self-approval), reports, audit, retention | complete (reviewed, tsc 0 errors, uncommitted) | M6 |
-| M8 | Staff and HR portals, public landing page + the three ruled endpoint additions (M8-R1/R2/R4: staff change-pin, staff schedule/off-day reads, generic audit listing — all zero-migration) | complete — Phase 0–3 done, all gates green | M7 |
-| M9 | Full test suite, testing guide, CI, security review, close-out | release review | M8 |
+| M8 | Staff and HR portals, public landing page + the three ruled endpoint additions (M8-R1/R2/R4: staff change-pin, staff schedule/off-day reads, generic audit listing — all zero-migration) | complete — committed `f011053` + `e6f41eb`. The commit carried 8 failing `auth-routing` tests, 5 legacy `.tsx` type errors and a missing `/set-password` route; M9 fixed all three. The M8-R4 listing was not built until M9 (M9-B3). | M7 |
+| M9 | Full test suite, testing guide, CI, security review, close-out | in progress — Phases 0–6 written, uncommitted. Backend 22 files / 590 tests green against the guarded local `attendpro_test` DB, coverage 93.43% statements / 85.93% branches with the 90/85 gate enforced in CI; frontend 98 tests green; typechecks, lint and build clean; frontend coverage ratchet passes at 29.95/71.38/49.79/29.95 against 29/71/49/29; Playwright 5 passed / 1 skipped (kiosk UI absent). Five production defects fixed (M9-B1..B5) plus SEC-20. Open: dependency scan 9 frontend + 4 backend high production advisories (SEC-01..06), release blockers SEC-07/SEC-08, no production bootstrap (SSB-2), and the CI workflow has not run on GitHub yet. | M8 |
 
 ### [ COMPLETE ] — M7 help requests, correction decisions, reports, audit trail, retention
 
@@ -136,11 +136,11 @@ Post-M4 audit (2026-10-16, two review agents — one over M0–M3 records, one t
 
 ### [ BLOCKED ] — carried risks
 
-- **Test isolation (F7 / O14):** backend tests write to the development database. A separate
-  test database must exist before M2 runs integration tests.
-- **Frontend type check (F1):** 43 `tsc` errors and no `typecheck` script. M8 cannot be
-  called complete while the frontend fails its type check; the errors are remediated inside
-  the slices that own those files.
+- **Test isolation (F7 / O14):** resolved by the designated Prisma Postgres test instance;
+  `TEST_DB_HOST` and the destructive-reset guard are wired, and the backend suite runs
+  against it.
+- **Frontend type check (F1):** resolved in M9 — `npm run typecheck` is 0 errors, including
+  the five legacy `.tsx` components that were renamed from JSX without types.
 - **Nested `backend/.git` (F5 / O13):** preserved untouched until the owner approves a
   preservation method.
 

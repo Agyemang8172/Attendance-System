@@ -145,7 +145,7 @@ function StaffHelpRequests() {
       if (filters.search) params.set('search', filters.search)
       if (filters.status) params.set('status', filters.status)
 
-      const res = await api.get(`/api/staff/help-requests?${params.toString()}`)
+      const res = await api.get(`/staff/help-requests?${params.toString()}`)
       setRequests(res.data.data || [])
       setTotal(res.data.total || 0)
     } catch {

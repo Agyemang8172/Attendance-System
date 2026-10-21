@@ -6,11 +6,25 @@
  * accessible popover — aria-expanded state, Escape, click-outside, arrow-key
  * cycling, and a sign-out that clears the session and leaves the app.
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
+
+// Sign-out fires a fire-and-forget `/auth/logout`. Left to the real client it
+// reaches an absent server, the 401 interceptor assigns `window.location`,
+// and jsdom tears down the document while the next test is still rendering.
+// The sidebar's job here is the menu, not the network.
+vi.mock('../api/axios', () => ({
+  default: {
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    get: vi.fn(() => new Promise(() => {})),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+  },
+}))
 
 const PathProbe = () => {
   const { pathname } = useLocation()

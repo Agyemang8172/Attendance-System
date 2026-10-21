@@ -159,8 +159,8 @@ function StaffSchedule() {
     setFetching(true)
     try {
       const [assignmentsRes, offDaysRes, attendanceRes] = await Promise.allSettled([
-        api.get('/api/staff/schedule'),
-        api.get('/api/staff/off-days'),
+        api.get('/staff/schedule'),
+        api.get('/staff/off-days'),
         api.get('/attendance/my-attendance'),
       ])
 

@@ -99,7 +99,7 @@ function StaffCorrectionNew() {
         reason: reason.trim(),
       }
 
-      const res = await api.post('/api/attendance/corrections', payload)
+      const res = await api.post('/attendance/corrections', payload)
       toast.success('Correction request submitted.')
       navigate(`/staff/corrections/${res.data.data.id}`)
     } catch (err: any) {
