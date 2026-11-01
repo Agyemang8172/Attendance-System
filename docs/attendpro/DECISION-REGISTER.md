@@ -138,3 +138,12 @@ Also settled by the design directive itself (no further decision): minimum keybo
 criteria fold into review, permission-denied screens must remain usable (the 403/404 panels are
 built), and fixtures/exports never substitute for backend authorization. The setup-health card on
 the SA home keeps the walkthrough default: a read-only checklist from existing GETs.
+
+
+## Execution checkpoint — latest owner authorization
+
+The owner approved the remaining screen compositions, kiosk brass-on-dark action emphasis with ink labels, existing semantic colors and frozen attendance status tokens, with contrast verification during implementation. Business-specific timezone, shifts, schedules, calendars, policies, sites and terminals come from authorized business configuration.
+
+Phased execution is now authorized with a stop for review after each bounded slice. QA, Tester, Security and secret-scanning evidence precede the human commit checkpoint; commits use `.agents/scripts/commit.sh`. No automatic commit or push, database/schema/migration change, installation or deployment is implied.
+
+P01 has existing compatibility evidence ready for review. Concrete Node 26.12.1 selection remains at HUMAN_CHECKPOINT under the plan's explicit numeric-runtime gate. P02 remains BACKLOG until that prerequisite is accepted. No production source was changed during this checkpoint.

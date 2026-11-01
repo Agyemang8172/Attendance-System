@@ -252,3 +252,14 @@ Database is **no longer a blocker**: local Prisma Postgres is running, migrated,
 - `backend/test-suite.mjs` stays untracked (decision C).
 - Every commit runs pre-commit gates: gitleaks, env parity, db-check (`.sql`), ui-taste (frontend), humanize (`docs/*.md`).
 - Every push runs `.agents/scripts/pre-push-gate.sh` over the commits being pushed, honouring `.gitleaks-baseline`.
+
+
+## Execution checkpoint — latest owner authorization
+
+The owner approved the remaining screen compositions, kiosk brass-on-dark action emphasis with ink labels, existing semantic colors and frozen attendance status tokens, with contrast verification during implementation. Business-specific timezone, shifts, schedules, calendars, policies, sites and terminals come from authorized business configuration.
+
+Phased execution is now authorized with a stop for review after each bounded slice. QA, Tester, Security and secret-scanning evidence precede the human commit checkpoint; commits use `.agents/scripts/commit.sh`. No automatic commit or push, database/schema/migration change, installation or deployment is implied.
+
+P01 has existing compatibility evidence ready for review. Concrete Node 26.12.1 selection remains at HUMAN_CHECKPOINT under the plan's explicit numeric-runtime gate. P02 remains BACKLOG until that prerequisite is accepted. No production source was changed during this checkpoint.
+
+Commit gate follow-up: the first commit attempt stopped at environment parity because DATABASE_URL_APP was missing from the root example. Added a placeholder only; no live environment or database configuration changed. The commit remains pending until the gates pass.
