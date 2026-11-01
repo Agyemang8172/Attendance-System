@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import prisma from "../config/prismaClient.js";
+import { signAccessToken } from "../utils/tokens.js";
+import { PASSWORD_HASH_ROUNDS } from "../utils/passwords.js";
+import { authenticateLookup } from "../utils/tenantLookup.js";
+import { runWithTenant } from "../utils/tenantContext.js";
 import { logError, auditLog } from "../utils/logger.js";
 
 /**
@@ -15,24 +18,18 @@ const INVALID_CREDENTIALS = {
 } as const;
 
 /**
- * A real bcrypt hash of an unguessable value. When no user matches, a
- * comparison is still run against this so that an unknown email costs the same
- * time as a wrong password — without it, the missing ~100ms compare separates
- * the two cases by timing alone.
+ * Unknown-account verification uses the account password work factor.
+ * This does not guarantee equal response timing.
  */
-const DUMMY_HASH = bcrypt.hashSync("timing-equaliser-not-a-credential", 10);
+const DUMMY_HASH = bcrypt.hashSync("timing-equaliser-not-a-credential", PASSWORD_HASH_ROUNDS);
 
 /**
  * A token is a bearer credential: whoever holds it, is the account, until it
- * expires. Twenty-four hours is a long time for one to survive being copied out
- * of a browser, a log line or a shoulder-surfed screenshot. Eight hours bounds
- * the damage to a working day, and an employee signing in each morning is not
- * inconvenienced by it.
- *
- * Logging out does not shorten this — see the note on `logout`.
+ * expires. The lifetime bounds the damage; the token version ends it early.
+ * A password change, an admin reset, a role change or a deactivation increments
+ * the version, and `authMiddleware` compares the claim with the account row on
+ * every request.
  */
-const TOKEN_TTL = "8h";
-
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body as { email: string; password: string };
@@ -42,40 +39,50 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    // Login is the one request that starts before a tenant exists. The
+    // SECURITY DEFINER lookup resolves the account and its business without
+    // exposing any other tenant's rows; the full account is then read under
+    // that business through the ordinary tenant-scoped client.
+    const lookup = await authenticateLookup(email);
 
-    if (!user) {
+    if (!lookup) {
       await bcrypt.compare(password, DUMMY_HASH);
       auditLog.loginRejected(email, req.ip);
       res.status(401).json(INVALID_CREDENTIALS);
       return;
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, lookup.password);
 
     if (!isPasswordValid) {
-      auditLog.login(user.id, email, false, req.ip);
+      auditLog.login(lookup.id, email, false, req.ip);
       res.status(401).json(INVALID_CREDENTIALS);
       return;
     }
 
     // Reached only once the caller has proved knowledge of the password, so
     // this discloses nothing to anyone who does not already hold the credential.
-    if (!user.isActive) {
-      auditLog.login(user.id, email, false, req.ip);
+    if (!lookup.is_active) {
+      auditLog.login(lookup.id, email, false, req.ip);
       res.status(403).json({ success: false, message: "Account deactivated" });
+      return;
+    }
+
+    const user = await runWithTenant(lookup.business_id, () =>
+      prisma.user.findUnique({
+        where: { id: lookup.id },
+      })
+    );
+
+    if (!user) {
+      auditLog.loginRejected(email, req.ip);
+      res.status(401).json(INVALID_CREDENTIALS);
       return;
     }
 
     auditLog.login(user.id, email, true, req.ip);
 
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET as string,
-      { expiresIn: TOKEN_TTL }
-    );
+    const token = signAccessToken(user);
 
     res.status(200).json({
       success: true,
@@ -105,16 +112,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 /**
  * D9 — a sign-out endpoint, which this API did not have.
  *
- * Worth being precise about what it can and cannot do. The token is a bearer
- * credential signed by the server with no server-side state behind it, so
- * refusing to accept it again is not possible without a revocation list or a
- * token-version column on the account — both of which are migrations and are
- * deliberately deferred. What this endpoint does is record that the holder
- * signed out, and what it tells the client is that the token must be discarded.
- *
- * Until one of those migrations lands, the practical bound on a copied token is
- * the eight-hour lifetime set above, and deactivating the account — which every
- * request now checks against the database — ends it immediately.
+ * Worth being precise about what it can and cannot do. Sign-out records the
+ * event and tells the client to discard its copy. The token itself stays valid
+ * until it expires, because logging out on one device must not sign the account
+ * out everywhere. A password change, an admin reset, a role change or a
+ * deactivation increments the account's token version, and that does end every
+ * existing session on the next request.
  */
 export const logout = async (req: Request, res: Response): Promise<void> => {
   try {
