@@ -28,11 +28,20 @@ api.interceptors.request.use(
 /** The subset of an AxiosError the policy reads. */
 export interface ApiFailure {
   config?: { url?: string };
-  response?: { status?: number; data?: { code?: string } };
+  response?: { status?: number; data?: { code?: string; message?: string } };
 }
 
 export const handleApiError = (error: ApiFailure): string | null => {
   const isLoginRequest = error?.config?.url?.includes("/auth/login");
+  const requestPath = error?.config?.url?.split(/[?#]/, 1)[0].replace(/\/+$/, "");
+  const isCurrentPasswordRefusal = requestPath === "/users/change-password"
+    && error?.response?.status === 401
+    && error.response.data?.message === "Invalid current password";
+
+  // The current credential can be wrong while this authenticated session is
+  // valid. Only this established refusal stays inline; real auth failures
+  // from the same endpoint still invalidate the session below.
+  if (isCurrentPasswordRefusal) return null;
 
   // 401 — token expired or invalid (but NOT a failed login attempt): the
   // session is gone, throw it out and start over at the sign-in page.

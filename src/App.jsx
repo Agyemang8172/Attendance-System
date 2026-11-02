@@ -31,6 +31,7 @@ import { Toaster } from 'react-hot-toast'
 import { getCurrentUser, roleHome } from './utils/auth'
 import Profile from './pages/Profile'
 import StaffChangePin from './pages/StaffChangePin'
+import ChangePassword from './pages/ChangePassword'
 import Settings from './pages/Settings'
 import ManageStaff from './pages/ManageStaff'
 import SetPassword from './pages/SetPassword'
@@ -67,6 +68,12 @@ const SuperAdminRoute = ({ children }) => {
 // Any logged in user — staff, hr, superadmin
 const ProtectedRoute = ({ children }) => {
   if (!isAuthenticated()) return <Navigate to="/login" replace />
+  return children
+}
+
+const OrdinaryPasswordRoute = ({ children }) => {
+  if (!isAuthenticated()) return <Navigate to="/login" replace />
+  if (getCurrentUser()?.mustChangePassword !== false) return <Navigate to="/set-password" replace />
   return children
 }
 
@@ -209,6 +216,14 @@ function App() {
             <StaffRoute>
               <StaffChangePin />
             </StaffRoute>
+          }
+        />
+
+        <Route path="/profile/change-password"
+          element={
+            <OrdinaryPasswordRoute>
+              <ChangePassword />
+            </OrdinaryPasswordRoute>
           }
         />
 

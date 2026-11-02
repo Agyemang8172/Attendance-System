@@ -140,7 +140,7 @@ function Profile() {
           icon={<FaLock className="text-accent" aria-hidden="true" />}
           label="Change Password"
           description="Update your account password"
-          href="/set-password"
+          href="/profile/change-password"
         />
         {user?.role === 'STAFF' && (
           <ActionLink

@@ -1873,3 +1873,30 @@ HR screen, and one SUPERADMIN setup screen.
       defects.
 - [ ] 5. Verify toast messages appear for successful and failed actions and do
       not trap focus.
+
+## Ordinary Change Password — 2026-11-02
+
+This account-security screen is separate from initial password setup. It uses the existing password endpoint and refreshes the accepted session. The checks below do not authorize seed, database or production changes.
+
+### Isolated automated checks
+
+- Run `node node_modules/vitest/vitest.mjs run src/__tests__/change-password.test.tsx src/__tests__/interceptors.test.js --configLoader runner`: 31 focused tests cover the form, route guards and response policy without a database.
+- Run `node node_modules/typescript/bin/tsc --noEmit --pretty false`.
+- Run `node node_modules/eslint/bin/eslint.js src/__tests__/interceptors.test.js`. The existing ESLint configuration does not match TypeScript files; their checks are typechecking, tests and code review.
+- For the browser smoke, start the existing Vite server using `node node_modules/vite/bin/vite.js --configLoader runner --host 127.0.0.1 --port 5173`, then run `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/staff/change-password.spec.ts --project chromium --workers 1 --reporter line`. This uses a fabricated local session and intercepted API responses at 375px and 1440px. It does not establish live server, token verification or database behavior.
+
+### Human review checklist
+
+Use an existing authorized test account; seeded test-account passwords remain `devos123`. Do not create or alter production accounts for this review. A replacement password must satisfy the displayed existing password policy.
+
+- [ ] Open Profile and choose Change Password. Verify the URL is `/profile/change-password` and the ordinary account shell remains visible.
+- [ ] Verify STAFF, HR and SUPERADMIN accounts can open this screen after completing initial setup. An account still owing initial setup goes to `/set-password`; a signed-out visitor goes to login.
+- [ ] Submit an empty form, a short replacement, mismatched confirmation and an unchanged password. Verify field-specific feedback and no password-update request.
+- [ ] Use the keyboard to reach each password visibility control. Verify its accessible name changes between Show and Hide and that Enter submits the form.
+- [ ] Enter an incorrect current password. Verify the refusal stays inline and does not discard an otherwise valid session. A genuine expired-token response must still sign out.
+- [ ] Submit an accepted change. Verify inline success, cleared password inputs, refreshed session and Back to profile. Do not record credentials in screenshots or logs.
+- [ ] While a request is pending, verify controls are disabled and repeated submission cannot send a duplicate request.
+- [ ] Simulate an incomplete or mismatched success response using only isolated test tools. Verify no success message and no replacement of the stored session.
+- [ ] At 375px and 1440px, verify labels, controls, inline feedback and return action are readable without horizontal page scrolling.
+
+The browser smoke saves screenshots only before passwords are entered. These checks use mocked API responses; real authentication, concurrent account changes and production security require their separate verification gates.
