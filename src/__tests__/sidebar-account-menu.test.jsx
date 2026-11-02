@@ -122,9 +122,19 @@ describe('the account menu (R7)', () => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('menu', { name: /account menu/i })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /profile & security/i })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: /change pin/i })).toBeInTheDocument()
+    // The kiosk PIN is a STAFF credential; the endpoint refuses HR and
+    // SUPERADMIN, so the shared menu must not offer the dead-end action.
+    expect(screen.queryByRole('menuitem', { name: /change pin/i })).not.toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /settings/i })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeInTheDocument()
+  })
+
+  it('offers the PIN screen to STAFF', async () => {
+    renderSidebar('STAFF', { firstName: 'Ada', lastName: 'Lovelace' })
+
+    await userEvent.click(screen.getByRole('button', { name: /ada lovelace/i }))
+
+    expect(screen.getByRole('menuitem', { name: /change pin/i })).toBeInTheDocument()
   })
 
   it('closes on Escape', async () => {

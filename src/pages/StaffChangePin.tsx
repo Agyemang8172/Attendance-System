@@ -93,7 +93,7 @@ function StaffChangePin() {
             <ul className="list-disc list-inside space-y-1 text-ink-muted">
               <li>4 digits only (0000–9999)</li>
               <li>10 failed attempts locks the PIN for 5 minutes</li>
-              <li>Locked PINs can only be reset by HR</li>
+              <li>The lock clears after 5 minutes; HR can reset a forgotten PIN</li>
               <li>Your current PIN is required to make changes</li>
             </ul>
           </div>

@@ -297,7 +297,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   const menuItems = [
     { label: 'Profile & Security', path: '/profile', icon: <FaUser /> },
-    { label: 'Change PIN', path: '/profile/change-pin', icon: <FaKey /> },
+    // The kiosk PIN belongs to STAFF accounts; the endpoint refuses the other
+    // roles, so the shared account menu must not offer a dead-end action.
+    ...(currentUser?.role === 'STAFF'
+      ? [{ label: 'Change PIN', path: '/profile/change-pin', icon: <FaKey /> }]
+      : []),
     { label: 'Settings', path: '/settings', icon: <FaGear /> },
   ]
 

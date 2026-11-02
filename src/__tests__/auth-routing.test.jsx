@@ -250,6 +250,31 @@ describe('the password screen refuses accounts that already set one', () => {
   })
 })
 
+// P04 — the kiosk PIN belongs to STAFF accounts. The backend refuses the
+// other roles, so the route guard must not let them reach a dead-end screen.
+describe('the staff PIN screen is staff-only', () => {
+  it('bounces HR to the HR dashboard', async () => {
+    seedSession('HR')
+    visit('/profile/change-pin')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/hr-dashboard'))
+  })
+
+  it('bounces SUPERADMIN to the superadmin dashboard', async () => {
+    seedSession('SUPERADMIN')
+    visit('/profile/change-pin')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/superadmin-dashboard'))
+  })
+
+  it('renders for STAFF', async () => {
+    seedSession('STAFF')
+    visit('/profile/change-pin')
+
+    expect(await screen.findByRole('heading', { name: /change pin/i })).toBeInTheDocument()
+  })
+})
+
 describe('setting the first password', () => {
   it('rejects a password the shared policy forbids (S7)', async () => {
     seedSession('STAFF', { mustChangePassword: true })

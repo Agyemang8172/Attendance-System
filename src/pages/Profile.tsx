@@ -142,12 +142,14 @@ function Profile() {
           description="Update your account password"
           href="/set-password"
         />
-        <ActionLink
-          icon={<FaKey className="text-accent" aria-hidden="true" />}
-          label="Change PIN"
-          description="Update your 4-digit kiosk PIN"
-          href="/profile/change-pin"
-        />
+        {user?.role === 'STAFF' && (
+          <ActionLink
+            icon={<FaKey className="text-accent" aria-hidden="true" />}
+            label="Change PIN"
+            description="Update your 4-digit kiosk PIN"
+            href="/profile/change-pin"
+          />
+        )}
       </div>
 
       {/* Note about read-only profile */}

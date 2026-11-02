@@ -173,6 +173,13 @@ describe("account controller contracts without a database", () => {
     expect(mocks.user.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ mustChangePassword: true, tokenVersion: { increment: 1 } }),
     }));
+    // An open kiosk session must not survive a credential reset.
+    expect(mocks.expireSessions).toHaveBeenCalledWith({
+      where: { businessId, employeeId: staff.id, consumedAt: null },
+      data: { state: "EXPIRED" },
+    });
+    const tempPassword = (result.body as { tempPassword: string }).tempPassword;
+    expect(JSON.stringify(mocks.auditCreate.mock.calls)).not.toContain(tempPassword);
     expect(JSON.stringify(result.body)).not.toContain("replacement-hash");
   });
 

@@ -4,6 +4,7 @@ import prisma from "../config/prismaClient.js";
 import { auditLog, verifyLogger } from "../utils/logger.js";
 import { writeAudit } from "../utils/auditWriter.js";
 import { constantTimeEqual } from "../utils/kioskKeys.js";
+import { PIN_MAX_ATTEMPTS, PIN_LOCK_MINUTES } from "../utils/pinPolicy.js";
 import { assessLocation, KioskGeoSite } from "../utils/location.js";
 
 /**
@@ -45,18 +46,8 @@ const pinCandidateHash = (
     .update(`${employeeId}${pin}${pinSalt}`)
     .digest("hex");
 
-// ── Final R5 constants (owner ruling R5, 2026-10-17) ─────────────────────────
-// R5 is settled: the attempt limit and lock window below are the owner's
-// final values — ten wrong attempts, a 5-minute lockout (the 4-digit PIN
-// length itself lives in the validator and the reset generator). The lock
-// timestamp arithmetic stays in code on top of the generic DB columns;
-// nothing is stored as a number of minutes. Named constants so R5 lands in
-// one place.
-
-/** Wrong PINs tolerated per session before it locks (kiosk §5.2, R5). */
-const PIN_MAX_ATTEMPTS = 10;
-/** How long a tripped lock holds, per employee and per session (R5). */
-const PIN_LOCK_MINUTES = 5;
+// Final R5 values (owner ruling R5, 2026-10-17) live in utils/pinPolicy.ts so
+// the kiosk lane and the self-service PIN change share one guessing budget.
 
 /** Session lifetime: a candidate identity lives two minutes (kiosk §4.3). */
 const SESSION_TTL_MS = 2 * 60 * 1000;

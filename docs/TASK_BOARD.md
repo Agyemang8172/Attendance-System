@@ -438,3 +438,10 @@ The owner approved the remaining screen compositions, kiosk brass-on-dark action
 Phased execution is now authorized with a stop for review after each bounded slice. QA, Tester, Security and secret-scanning evidence precede the human commit checkpoint; commits use `.agents/scripts/commit.sh`. No automatic commit or push, database/schema/migration change, installation or deployment is implied.
 
 P01 has existing compatibility evidence ready for review. Concrete Node 26.12.1 selection remains at HUMAN_CHECKPOINT under the plan's explicit numeric-runtime gate. P02 remains BACKLOG until that prerequisite is accepted. No production source was changed during this checkpoint.
+
+
+## P04 PIN correction commit checkpoint — 2026-11-02
+
+Owner approved committing the reviewed P04 PIN security slice through commit.sh. QA, Tester and Security approved the late-lock observed-state guards and strict audit writes. The no-database backend suite passes 69 tests; both typechecks, environment parity, scoped secret scanning and whitespace checks pass. Real database concurrency, rollback and RLS remain unverified.
+
+Ordinary Change Password UI is the next authorized bounded slice, separate from forced setup. P04 is not fully complete. P05 detail/context contracts remain proposals for review; no endpoint or schema implementation is authorized by this commit.

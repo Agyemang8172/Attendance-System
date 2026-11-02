@@ -263,3 +263,10 @@ Phased execution is now authorized with a stop for review after each bounded sli
 P01 has existing compatibility evidence ready for review. Concrete Node 26.12.1 selection remains at HUMAN_CHECKPOINT under the plan's explicit numeric-runtime gate. P02 remains BACKLOG until that prerequisite is accepted. No production source was changed during this checkpoint.
 
 Commit gate follow-up: the first commit attempt stopped at environment parity because DATABASE_URL_APP was missing from the root example. Added a placeholder only; no live environment or database configuration changed. The commit remains pending until the gates pass.
+
+
+## P04 PIN correction commit checkpoint — 2026-11-02
+
+Owner approved committing the reviewed P04 PIN security slice through commit.sh. QA, Tester and Security approved the late-lock observed-state guards and strict audit writes. The no-database backend suite passes 69 tests; both typechecks, environment parity, scoped secret scanning and whitespace checks pass. Real database concurrency, rollback and RLS remain unverified.
+
+Ordinary Change Password UI is the next authorized bounded slice, separate from forced setup. P04 is not fully complete. P05 detail/context contracts remain proposals for review; no endpoint or schema implementation is authorized by this commit.

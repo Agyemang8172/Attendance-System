@@ -206,9 +206,9 @@ function App() {
 
         <Route path="/profile/change-pin"
           element={
-            <ProtectedRoute>
+            <StaffRoute>
               <StaffChangePin />
-            </ProtectedRoute>
+            </StaffRoute>
           }
         />
 
