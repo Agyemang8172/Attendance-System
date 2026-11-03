@@ -1900,3 +1900,28 @@ Use an existing authorized test account; seeded test-account passwords remain `d
 - [ ] At 375px and 1440px, verify labels, controls, inline feedback and return action are readable without horizontal page scrolling.
 
 The browser smoke saves screenshots only before passwords are entered. These checks use mocked API responses; real authentication, concurrent account changes and production security require their separate verification gates.
+
+
+## Attendance Detail API — P05a, 2026-11-02
+
+This slice adds the direct record read only. The Attendance Detail screen is not implemented by these API checks. Do not run seed, reset, migrations or fixture writes to review it.
+
+### Isolated automated checks
+
+- From `backend`, run `node node_modules/vitest/vitest.mjs run --config vitest.unit.config.ts --configLoader runner`: 90 contracts in four files pass, including 21 direct-detail cases. The unit configuration has no database setup.
+- From `backend`, run `node node_modules/typescript/bin/tsc --noEmit --pretty false -p tsconfig.json`.
+- The new route suite uses the real attendance router, correction router, role/forced-password gates and validator, with a mocked authentication context and mocked persistence. Existing punch/list handlers and correction persistence are seams used to verify routing. It does not prove token authentication, RLS or actual database behavior.
+
+### Human API review checklist
+
+Use only an already authorized test environment and existing account/record fixtures. Standard seeded account passwords remain `devos123`; do not create accounts or alter data for this read-only review. Keep credentials out of commands, screenshots and reports.
+
+- [ ] As STAFF, request `GET /api/attendance/:id` for an existing own record. Verify `success`, the factual session/classification, punches and historical snapshots, with `Cache-Control: no-store`.
+- [ ] Request another employee's record in the same business as STAFF. Verify refusal. Request a missing or foreign-business record and verify the same generic not-found response.
+- [ ] As authorized HR/SUPERADMIN, request an own-business employee record. Verify the allowed record context without any new review or correction permission.
+- [ ] Verify a signed-out request is refused, an account owing initial password setup is held by its gate, and a malformed record ID is rejected before data access.
+- [ ] Verify absent historical policy, shift, location, employee or terminal evidence stays absent. Current configuration must not replace historical snapshots.
+- [ ] Verify the payload excludes network IP, raw verification handles, credential fields and arbitrary policy JSON keys. Coordinates must not become an invented geofence verdict, checkout location or attempt relationship.
+- [ ] Verify existing `my-attendance` and `all-attendance` paths still reach their list workflows. The unimplemented correction GET namespace must remain not-found rather than being parsed as an attendance ID.
+
+The isolated suite also checks existing correction submission routing and validation through a mocked persistence handler. Do not submit a real correction as part of this read-only human checklist. Cross-tenant enforcement and live authentication remain separate authorized integration checks; no database-backed suite ran for this slice.

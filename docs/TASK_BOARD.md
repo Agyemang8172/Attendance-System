@@ -452,3 +452,10 @@ Ordinary Change Password UI is the next authorized bounded slice, separate from 
 Owner approved proceeding after review. The ordinary Change Password slice passed QA, Tester and Security: full frontend 192/192, focused 31/31, two mocked browser checks at 375px and 1440px, typecheck, scoped JavaScript lint and mechanical gates. Prepare only this reviewed scope for commit.sh; no push. Live authentication/database checks remain separate.
 
 Next phase P05 is contract review only: proposed detail/context reads must be checked against current source and permissions. No missing endpoint, schema or database implementation is authorized by this transition.
+
+
+## P05a approved commit checkpoint — 2026-11-03
+
+Owner explicitly approved committing only the reviewed P05a Attendance Detail API files/documentation through commit.sh with message feat(attendance): add scoped attendance detail read. QA, Tester and Security gates passed. Recorded evidence remains 90 isolated backend tests, clean typechecks and scoped mechanical checks; no tests were rerun for commit preparation.
+
+Commit preparation includes only the detail controller, attendance route additions, isolated detail test, P05a verification/plan and P05a-only guide/state hunks. Preserve unrelated changes. No push or next source slice. The commit remains pending until commit.sh succeeds.

@@ -1,4 +1,5 @@
 import express from "express";
+import { getAttendanceById } from "../controllers/attendanceDetailController.js";
 import {
   clockIn,
   clockOut,
@@ -22,6 +23,10 @@ import {
 
 const router = express.Router();
 
+// This namespace is mounted separately by server.ts. Leave the router so
+// correction requests cannot be mistaken for attendance IDs, including GETs.
+router.use("/corrections", (_req, _res, next) => next("router"));
+
 /**
  * Limits per the kiosk limiter table (kiosk §7): the punch lane is keyed on
  * the device, because a kiosk token carries no employee identity until the
@@ -40,6 +45,7 @@ const punchLimiter = createRateLimiter({
 //   POST /api/attendance/clock-out    kiosk   consume a VERIFIED session, close the row
 //   GET  /api/attendance/my-attendance        STAFF self — read alias kept (§8 row)
 //   GET  /api/attendance/all-attendance       HR/SUPERADMIN — read alias kept (§8 row)
+//   GET  /api/attendance/:id                  own STAFF / business HR/SUPERADMIN
 //   PATCH /api/attendance/:id/dismiss-alert   STAFF self/HR
 
 // ── Kiosk punch routes ───────────────────────────────────────────────────────
@@ -100,6 +106,16 @@ router.patch(
   requirePasswordChange(),
   validate(attendanceIdSchema),
   dismissAlert
+);
+
+// Static list paths and the correction namespace take precedence over IDs.
+router.get(
+  "/:id",
+  authMiddleware,
+  requirePasswordChange(),
+  authorizeRole("STAFF", "HR", "SUPERADMIN"),
+  validate(attendanceIdSchema),
+  getAttendanceById
 );
 
 export default router;
