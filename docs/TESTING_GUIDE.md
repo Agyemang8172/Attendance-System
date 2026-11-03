@@ -1925,3 +1925,35 @@ Use only an already authorized test environment and existing account/record fixt
 - [ ] Verify existing `my-attendance` and `all-attendance` paths still reach their list workflows. The unimplemented correction GET namespace must remain not-found rather than being parsed as an attendance ID.
 
 The isolated suite also checks existing correction submission routing and validation through a mocked persistence handler. Do not submit a real correction as part of this read-only human checklist. Cross-tenant enforcement and live authentication remain separate authorized integration checks; no database-backed suite ran for this slice.
+
+
+## Staff Attendance Detail — P06a, 2026-11-03
+
+This slice changes only Staff detail presentation and the links/return context needed to reach it. P05a API, database/schema/migrations and unrelated list behavior remain unchanged.
+
+### Focused automated checks
+
+- Run `node node_modules/vitest/vitest.mjs run src/__tests__/staff-attendance-detail.test.tsx src/__tests__/auth-routing.test.jsx --configLoader runner`: 29 new detail cases and 29 existing routing cases pass without a database.
+- The two obsolete drawer assertions in `admin-flows.test.jsx` now exercise the dedicated detail route. In the broader 27-case file, 26 passed initially; one unrelated policy-creation case hit the existing 20-second timeout while browser checks ran. Its isolated rerun passed without source changes or a timeout increase.
+- Run `node node_modules/typescript/bin/tsc --noEmit --pretty false`. The existing ESLint configuration does not match TypeScript files; retain typecheck, tests and review rather than claiming TypeScript lint coverage.
+- For controlled browser checks, start the existing Vite tool with `node node_modules/vite/bin/vite.js --configLoader runner --host 127.0.0.1 --port 5173`, then run `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/staff/attendance-detail.spec.ts --project chromium --workers 1 --reporter line`.
+
+The browser tests fabricate a local test session and intercept every fetch/XHR response. They check keyboard entry, direct URL, refresh, filter/page return and browser Back at 375px and 1440px, plus narrow partial-evidence/error-retry behavior. They do not prove live API authentication or database behavior. Non-GET API calls are blocked; no credentials or database records are created or changed.
+
+### Live/runtime boundary
+
+At the start of this verification there was no local application/backend listener on ports 5173, 8000 or 3000, and no authorized existing authenticated session was supplied. The live Staff-to-backend flow could not be exercised. Starting the frontend for intercepted-response checks does not remove that blocker. No backend, seed, account creation, password reset or data write was used to manufacture a live test environment. The required agent-browser skill is absent; existing installed Playwright and Chromium provide the separate controlled browser checks without installation.
+
+### Human review with an existing authorized environment
+
+- [ ] Sign in using an existing permitted Staff account and existing records only. Do not create credentials or data for this check.
+- [ ] Open Attendance, set the existing filters and page, then open a record by keyboard or pointer. Verify the URL is `/staff/attendance/:id` and the direct record is loaded rather than a first-page list lookup.
+- [ ] Inspect classification separately from session state, punches, recorded hours, historical shift/rules and source/location evidence. Closed zero hours and zero coordinates remain valid; missing values stay unavailable. Coordinates must not imply Inside/Outside.
+- [ ] Open the detail URL directly and refresh. Verify the same record loads. Missing/invalid recorded timezone must show the recorded timestamps explicitly rather than silently using the browser timezone or current business settings.
+- [ ] Return through Back to Attendance and through browser Back. Verify the original filters and page remain. Unknown return destinations must never send the user away from the local Attendance path.
+- [ ] Inspect loading, not-found, forbidden and retryable errors using already authorized isolated test tools. Verify old record data disappears when the record or session changes.
+- [ ] At desktop and narrow/mobile widths, verify the detail sections, return action and timestamp text remain readable without page-wide horizontal overflow. No routine Clock In/Out control or attendance-result popup appears.
+
+The existing list's date-filter contract, fixed-time table styling, shared table behavior and navigation labels are outside this slice and were not repaired or certified by the controlled browser responses.
+
+Scoped lint limitation: the existing untracked admin-flows.test.jsx reports an unused local user variable in the untouched HR Exceptions test (line 716 at verification time). This slice changed only its two obsolete Staff drawer cases and their local route helper; no unrelated test cleanup or lint suppression was made.

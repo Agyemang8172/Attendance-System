@@ -459,3 +459,10 @@ Next phase P05 is contract review only: proposed detail/context reads must be ch
 Owner explicitly approved committing only the reviewed P05a Attendance Detail API files/documentation through commit.sh with message feat(attendance): add scoped attendance detail read. QA, Tester and Security gates passed. Recorded evidence remains 90 isolated backend tests, clean typechecks and scoped mechanical checks; no tests were rerun for commit preparation.
 
 Commit preparation includes only the detail controller, attendance route additions, isolated detail test, P05a verification/plan and P05a-only guide/state hunks. Preserve unrelated changes. No push or next source slice. The commit remains pending until commit.sh succeeds.
+
+
+## P06a approved commit checkpoint — 2026-11-03
+
+Owner explicitly approved only the reviewed P06a changes through commit.sh with message feat(attendance): add staff attendance detail view. QA, Tester and Security approved. Recorded evidence remains58 focused/detail/auth-routing tests,3 mocked browser checks, clean typecheck and scoped mechanical checks, with live API/session and baseline lint limits retained.
+
+Commit scope: detail view/helpers, required list navigation/filter-context wiring and its reviewed canonical status-selector dependency, existing App detail mount, new focused/browser tests and P06a-only documentation hunks. The pre-existing untracked admin-flows file remains uncommitted, including its two local P06a test adjustments; new focused/browser tests cover the slice. Preserve unrelated App routes, search-placeholder edit and all other changes. No push or next slice. Commit remains pending until commit.sh succeeds.

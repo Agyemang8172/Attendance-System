@@ -18,6 +18,7 @@ import Sites from './pages/Sites'
 import Devices from './pages/Devices'
 import StaffDashboard from './pages/StaffDashboard'
 import StaffAttendance from './pages/StaffAttendance'
+import StaffAttendanceDetail from './pages/StaffAttendanceDetail'
 import StaffSchedule from './pages/StaffSchedule'
 import StaffOffDays from './pages/StaffOffDays'
 import StaffHelpRequests from './pages/StaffHelpRequests'
@@ -134,7 +135,7 @@ function App() {
         <Route path="/staff/attendance/:id"
           element={
             <StaffRoute>
-              <StaffAttendance />
+              <StaffAttendanceDetail />
             </StaffRoute>
           }
         />
