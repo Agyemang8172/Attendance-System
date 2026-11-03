@@ -466,3 +466,13 @@ Commit preparation includes only the detail controller, attendance route additio
 Owner explicitly approved only the reviewed P06a changes through commit.sh with message feat(attendance): add staff attendance detail view. QA, Tester and Security approved. Recorded evidence remains58 focused/detail/auth-routing tests,3 mocked browser checks, clean typecheck and scoped mechanical checks, with live API/session and baseline lint limits retained.
 
 Commit scope: detail view/helpers, required list navigation/filter-context wiring and its reviewed canonical status-selector dependency, existing App detail mount, new focused/browser tests and P06a-only documentation hunks. The pre-existing untracked admin-flows file remains uncommitted, including its two local P06a test adjustments; new focused/browser tests cover the slice. Preserve unrelated App routes, search-placeholder edit and all other changes. No push or next slice. Commit remains pending until commit.sh succeeds.
+
+## P06c Staff Help Requests — 2026-11-03
+
+Owner authorized direct execution of the next dependency-eligible approved slice. IN_PROGRESS P06c list/detail recovery, independent of pending Schedule calendar/timing prerequisites. Developer help_requests_developer owns two Help views and feature-local helpers; Tester help_requests_tester owns focused/browser tests/guide. QA help_requests_qa reviews actual slice. Plan: docs/superpowers/plans/2026-11-03-attendpro-staff-help-recovery.md.
+
+Existing creation form and backend/permissions remain unchanged. No schema/migration, credentials/data, dependencies, unrelated screens, staging, commit or push. Existing frontend/API servers are healthy; live Staff verification depends on an existing authorized session, never newly created test credentials/data. Mocked browser checks remain separate evidence.
+
+## P06c — HUMAN_CHECKPOINT — 2026-11-03
+
+Assignee: Orchestrator; Developer help_requests_developer, Tester help_requests_tester, QA help_requests_qa. Bounded Staff Help list/detail implementation complete;26 focused tests,32 relevant screen tests,3 intercepted browser checks and type/mechanical gates passed. Final review evidence: docs/attendpro/P06C-STAFF-HELP-VERIFICATION.md. Owner review required before any scoped commit through commit.sh. Live authentication remains unverified; no credentials/data changed. No staging, commit, push or next slice.

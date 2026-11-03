@@ -291,3 +291,15 @@ Commit preparation includes only the detail controller, attendance route additio
 Owner explicitly approved only the reviewed P06a changes through commit.sh with message feat(attendance): add staff attendance detail view. QA, Tester and Security approved. Recorded evidence remains58 focused/detail/auth-routing tests,3 mocked browser checks, clean typecheck and scoped mechanical checks, with live API/session and baseline lint limits retained.
 
 Commit scope: detail view/helpers, required list navigation/filter-context wiring and its reviewed canonical status-selector dependency, existing App detail mount, new focused/browser tests and P06a-only documentation hunks. The pre-existing untracked admin-flows file remains uncommitted, including its two local P06a test adjustments; new focused/browser tests cover the slice. Preserve unrelated App routes, search-placeholder edit and all other changes. No push or next slice. Commit remains pending until commit.sh succeeds.
+
+## P06c Staff Help Requests — 2026-11-03
+
+Owner authorized direct execution of the next dependency-eligible approved slice. IN_PROGRESS P06c list/detail recovery, independent of pending Schedule calendar/timing prerequisites. Developer help_requests_developer owns two Help views and feature-local helpers; Tester help_requests_tester owns focused/browser tests/guide. QA help_requests_qa reviews actual slice. Plan: docs/superpowers/plans/2026-11-03-attendpro-staff-help-recovery.md.
+
+Existing creation form and backend/permissions remain unchanged. No schema/migration, credentials/data, dependencies, unrelated screens, staging, commit or push. Existing frontend/API servers are healthy; live Staff verification depends on an existing authorized session, never newly created test credentials/data. Mocked browser checks remain separate evidence.
+
+## P06c final review checkpoint — 2026-11-03
+
+P06c Staff Help Requests list/detail recovery is implemented. Tester verified26 focused and32 existing screen tests, frontend typecheck and3 intercepted-API browser checks at375px/1440px. Latest alignment screenshots were inspected. UI taste, environment parity, scoped secrets, whitespace and documentation checks passed. QA final verdict is recorded in the verification report.
+
+State: HUMAN_CHECKPOINT. Live authenticated Staff verification remains unverified because native browser tooling could not identify the existing URL under policy; healthy existing servers were preserved. Existing lint configuration ignores TypeScript files. No backend, role/tenant/RLS, schema/migration, credentials/data or other-screen changes. No staging, commit or push. Proposed commit after owner review: fix(help): recover staff request list and detail. Exclude the pre-existing untracked legacy screen-test file; preserve unrelated changes. No next slice started.

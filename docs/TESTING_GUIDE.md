@@ -1957,3 +1957,31 @@ At the start of this verification there was no local application/backend listene
 The existing list's date-filter contract, fixed-time table styling, shared table behavior and navigation labels are outside this slice and were not repaired or certified by the controlled browser responses.
 
 Scoped lint limitation: the existing untracked admin-flows.test.jsx reports an unused local user variable in the untouched HR Exceptions test (line 716 at verification time). This slice changed only its two obsolete Staff drawer cases and their local route helper; no unrelated test cleanup or lint suppression was made.
+
+## P06c — Staff Help Requests list and detail
+
+This slice repairs the existing Staff Help Requests read workflow. Creation retains its existing category, subject and description form and POST contract. It does not merge Help Requests with Corrections or implement the later sidebar restructuring.
+
+### Focused automated checks
+
+- Run `node node_modules/vitest/vitest.mjs run src/__tests__/staff-help-requests.test.tsx --configLoader runner`: 26 cases cover backend pagination, four factual statuses, filtered/first-use empty states, inline errors/retry, flat resolution evidence, safe rendering, local return context, stale responses and session ownership. The unchanged creation contract is exercised with intercepted responses only.
+- Run `node node_modules/vitest/vitest.mjs run src/__tests__/admin-screens.test.jsx --configLoader runner`: 32 existing screen smoke cases pass after Help-only fixture corrections. This pre-existing untracked file is outside the proposed P06c commit.
+- Run `node node_modules/typescript/bin/tsc --noEmit --pretty false`.
+- With the existing frontend available on port 5173, run `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/staff/help-requests.spec.ts --project chromium --workers 1 --reporter line`.
+
+The three isolated browser cases cover 375px and 1440px list/detail navigation, keyboard activation, direct URL, refresh, preserved status/page, browser Back, flat resolution fields and narrow error/retry behavior. Every fetch/XHR is intercepted; non-GET calls are blocked. The local fixture session is not a real credential. No database rows or accounts are created or changed. Screenshots are written under ignored `test-results/`.
+
+### Live verification boundary
+
+Existing frontend and API health endpoints responded successfully on ports 5173 and 8000. Live authenticated Staff verification remains unverified: the native browser tool could not confidently identify the existing browser URL under its policy and stopped before navigation or authentication. No user profile/CDP attachment was attempted. The required agent-browser skill is absent; installed Playwright/Chromium provide the separate intercepted-response checks. These browser checks do not certify a live authenticated API/database flow.
+
+### Human review with existing authorized records
+
+- [ ] Sign in with an existing authorized Staff account. Do not create accounts or records for this check.
+- [ ] Open Help Requests. Verify the request count and page controls use the server pagination. Status offers Open, In review, Resolved and Closed; unsupported search is absent.
+- [ ] Choose a status and page, then open an existing request by keyboard or pointer. Verify Back to Help Requests and browser Back preserve the status/page. Changing status starts on page one.
+- [ ] Open the detail URL directly and refresh. Verify subject, description, category, factual status, submitted time and updated time come from the same request. Recorded timestamps are explicitly labelled UTC, without implying a configurable business timezone was supplied.
+- [ ] For existing resolved/closed records, verify only recorded resolution note/time appear. Missing evidence reads unavailable; no resolver identity or fictional timeline appears.
+- [ ] Check first-use empty, filtered empty, loading and inline failure/retry states with authorized isolated tools. Failed or malformed responses must not appear as zero requests. A session change or late response must not reveal stale employee data.
+- [ ] At desktop and narrow widths, check list/detail readability, focus, return controls and absence of page-wide horizontal overflow. The existing shared navigation labels remain outside this slice.
+- [ ] Confirm New Request still opens the existing form. Do not submit it during this read-only runtime review; its POST-and-detail navigation contract is covered by the isolated component test.
