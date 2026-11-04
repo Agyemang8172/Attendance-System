@@ -303,3 +303,19 @@ Existing creation form and backend/permissions remain unchanged. No schema/migra
 P06c Staff Help Requests list/detail recovery is implemented. Tester verified26 focused and32 existing screen tests, frontend typecheck and3 intercepted-API browser checks at375px/1440px. Latest alignment screenshots were inspected. UI taste, environment parity, scoped secrets, whitespace and documentation checks passed. QA final verdict is recorded in the verification report.
 
 State: HUMAN_CHECKPOINT. Live authenticated Staff verification remains unverified because native browser tooling could not identify the existing URL under policy; healthy existing servers were preserved. Existing lint configuration ignores TypeScript files. No backend, role/tenant/RLS, schema/migration, credentials/data or other-screen changes. No staging, commit or push. Proposed commit after owner review: fix(help): recover staff request list and detail. Exclude the pre-existing untracked legacy screen-test file; preserve unrelated changes. No next slice started.
+
+## P06c committed; P07a IN_PROGRESS — 2026-11-03
+
+P06c committed through commit.sh as8880a30 with all mechanical gates passed. Narrow legacy test adjustments and unrelated working-tree changes remain uncommitted. Owner authorized the next eligible slice directly. P07a operational Attendance register/direct detail recovery is IN_PROGRESS. Developer hr_attendance_developer owns HrAttendance, new detail and feature-local helpers; Tester hr_attendance_tester owns new focused/browser tests and guide; QA hr_attendance_qa reviews. Plan: docs/superpowers/plans/2026-11-03-attendpro-hr-attendance-recovery.md. No backend/routes/schema/permissions/data changes or new commit/push authorized. P06d business-time form dependency remains intact; no interim input semantics selected.
+
+## P07a resumed — 2026-11-04
+
+Resumed the existing P07a slice after the interrupted session. P06c remains committed at8880a30. Tester had already captured23 baseline cases with21 failures and2 passes; that RED investigation was not repeated. Developer, Tester and QA continue their existing ownership. Session freshness fetch succeeded after filesystem elevation; working-tree changes remain preserved. Current read-only HTTP checks return200 for frontend5173 and API8000 health. Live authenticated browser verification remains unverified under the existing native URL-policy limitation. No credentials/data changes are authorized to remove it.
+
+## P07a final review checkpoint — 2026-11-04
+
+P07a HR/SUPERADMIN Attendance register and direct detail recovery is implemented. QA APPROVED with no findings; Tester verified29 focused tests,29 existing authentication/routing tests, final frontend TypeScript and3 intercepted-API browser cases at375px/1440px. Five screenshots were inspected. Scoped UI taste, secrets, environment parity, whitespace and documentation checks passed. Evidence: docs/attendpro/P07A-HR-ATTENDANCE-VERIFICATION.md.
+
+State: HUMAN_CHECKPOINT. P06c remains committed8880a30. P07a has no staged files, commit or push; proposed commit after owner review is fix(attendance): recover operational register and detail. All74 unrelated tracked-file fingerprints match the captured baseline; narrow untracked legacy tests remain preserved. No backend, route, Staff/Exceptions, credentials/data, schema/migrations, permissions or general-business configuration changes. Live authenticated verification remains unverified under native browser URL policy; healthy existing servers were preserved. Existing ESLint does not cover TypeScript. Explicit UTC clock-in filters do not claim P17 business-day correctness. P06d configured business-time form dependency remains intact. No next slice started.
+
+Session continuity record: .agents/memory/handoffs/handoff-2026-11-04-p07a.md. It records this review checkpoint only and remains unstaged.

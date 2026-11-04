@@ -476,3 +476,11 @@ Existing creation form and backend/permissions remain unchanged. No schema/migra
 ## P06c — HUMAN_CHECKPOINT — 2026-11-03
 
 Assignee: Orchestrator; Developer help_requests_developer, Tester help_requests_tester, QA help_requests_qa. Bounded Staff Help list/detail implementation complete;26 focused tests,32 relevant screen tests,3 intercepted browser checks and type/mechanical gates passed. Final review evidence: docs/attendpro/P06C-STAFF-HELP-VERIFICATION.md. Owner review required before any scoped commit through commit.sh. Live authentication remains unverified; no credentials/data changed. No staging, commit, push or next slice.
+
+## P07a — IN_PROGRESS — 2026-11-03
+
+Assignee: Orchestrator. Developer hr_attendance_developer owns bounded HR Attendance list/detail/helpers; Tester hr_attendance_tester owns tests/guide; QA hr_attendance_qa reviews. DependsOn P04, P05a and P06a accepted; P06c committed8880a30. Approved phase plan permits HR work without waiting for all Staff slices. No Exceptions, backend, routes, credentials/data, schema/migrations or permission changes. Plan: docs/superpowers/plans/2026-11-03-attendpro-hr-attendance-recovery.md. Stop after verification for owner review; no commit/push.
+
+## P07a — HUMAN_CHECKPOINT — 2026-11-04
+
+Assignee: Orchestrator; Developer hr_attendance_developer, Tester hr_attendance_tester, QA hr_attendance_qa. Implementation verified:29 focused tests,29 auth/routing tests, final frontend typecheck,3 intercepted browser cases and scoped mechanical gates passed. QA APPROVED without findings. Verification: docs/attendpro/P07A-HR-ATTENDANCE-VERIFICATION.md. No P07a staging/commit/push; owner review is next. P06c is committed8880a30; preserve unrelated tracked/untracked work. No next slice.

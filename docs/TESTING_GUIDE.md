@@ -1985,3 +1985,33 @@ Existing frontend and API health endpoints responded successfully on ports 5173 
 - [ ] Check first-use empty, filtered empty, loading and inline failure/retry states with authorized isolated tools. Failed or malformed responses must not appear as zero requests. A session change or late response must not reveal stale employee data.
 - [ ] At desktop and narrow widths, check list/detail readability, focus, return controls and absence of page-wide horizontal overflow. The existing shared navigation labels remain outside this slice.
 - [ ] Confirm New Request still opens the existing form. Do not submit it during this read-only runtime review; its POST-and-detail navigation contract is covered by the isolated component test.
+
+## P07a — Operational Attendance register and direct detail
+
+This slice repairs the existing HR/SUPERADMIN Attendance read workflow using the current APIs. It does not change Exceptions, business timing, attendance data, account permissions or configuration.
+
+### Focused automated checks
+
+- Run `node node_modules/vitest/vitest.mjs run src/__tests__/hr-attendance.test.tsx --configLoader runner`. The focused cases cover the flat list envelope, server pagination, factual classifications and separate session state, supported filters, UTC clock-in boundaries, direct record reads, bounded return context, empty/malformed/error responses and stale/session protection.
+- Run `node node_modules/typescript/bin/tsc --noEmit --pretty false`.
+- With the existing frontend on port5173, run `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/hr/attendance.spec.ts --project chromium --workers 1 --reporter line`.
+
+The three isolated browser cases use HR at375px and SUPERADMIN at1440px, plus narrow detail error/retry and partial evidence. Their browser timezone is America/New_York to verify UTC query conversion independently of the device timezone. Every fetch/XHR is intercepted and non-GET operations are blocked. Coherent pagination fixtures use the final single row on page2 of13 total records. No actual account, credential, attendance row or database state is created or changed. Screenshots are saved under ignored test-results.
+
+### Runtime scope
+
+Read-only HTTP checks returned200 from localhost5173 and localhost8000/api/health during P07a verification. Existing servers are preserved. Live authenticated verification remains unverified because native tooling previously stopped when it could not confidently identify the existing browser URL under policy. No further computer-use/CDP access or credential creation is attempted. The agent-browser skill is absent; installed Playwright/Chromium supply the isolated intercepted-response checks, which do not establish live API/authentication/tenant enforcement.
+
+### Human review with existing authorized records
+
+- [ ] Sign in with an existing authorized HR or SUPERADMIN account; do not create records or reset credentials for this review. Existing seeded test passwords, where applicable, remain devos123.
+- [ ] Open Attendance Register at /hr-attendance; SUPERADMIN may also use the existing /admin-attendance compatibility route. Verify the count and single pager use the server total/page rather than a second page of only loaded rows.
+- [ ] Choose a Classification and Session state separately. Verify status is recorded classification, not a fixed clock-time lateness rule. Unsupported employee-name search is absent.
+- [ ] Set From and To UTC clock-in dates. Verify the explanatory copy identifies clock-in instant filtering and does not imply business-local attendance dates. The end boundary includes the UTC date through23:59:59.999Z. Configured business-day semantics remain part of P17.
+- [ ] Move to another page, open an employee record with keyboard or pointer, then use Back to Attendance. Verify supported dates, classification, session and page return intact. Repeat with browser Back.
+- [ ] Open the attendance detail URL directly and refresh. Verify this record loads independently of the first register page and shows actual employee name/code, recorded punches, classification/session, closure/review information and recorded hours.
+- [ ] Verify historical shift/policy/timezone values stay historical. Missing values read not recorded/unavailable rather than current configuration. Open-session hours are not presented as final.
+- [ ] Inspect available check-in coordinates and source terminal label. Do not expect an inferred INSIDE/OUTSIDE verdict, site, GPS accuracy, network IP or guaranteed attempt relation.
+- [ ] Verify genuine empty, filtered empty, out-of-range page, inline failure/retry, forbidden/not-found and partial evidence states with authorized isolated tools. Failed reads must not look like zero records; stale responses must not reveal a previous record/session.
+- [ ] At375px and1440px, verify readable content, visible keyboard focus, compact status pills and no document-wide horizontal overflow. Table overflow should stay within its own container.
+- [ ] Confirm there are no routine punch controls, fake Dismiss action or attendance result overlays. Any contextual correction-trail link retains its separate workflow and is not certified by this slice.
