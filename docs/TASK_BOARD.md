@@ -492,3 +492,11 @@ Assignee: Orchestrator. Developer exceptions_developer owns Exceptions/helpers, 
 ## P07b — HUMAN_CHECKPOINT — 2026-11-05
 
 QA approved the Exceptions recovery with no findings. Tests and limits are recorded in docs/attendpro/P07B-EXCEPTIONS-VERIFICATION.md. P07b awaits owner review with an empty staging index.
+
+## P08a — IN_PROGRESS — 2026-11-05
+
+Assignee: Orchestrator. Developer hr_help_developer owns HR Help source. Tester hr_help_tester owns focused frontend and mocked router tests, browser checks and the testing guide. QA hr_help_qa reviews the scoped diff and tenant and transition controls. Depends on P07b committed as 1826452. Scope is HR Help queue, direct detail and legal transitions under H-04. No schema, permission or live data changes.
+
+## P08a — HUMAN_CHECKPOINT — 2026-11-05
+
+QA approved HR Help recovery with no findings. Verification and limits are recorded in docs/attendpro/P08A-HR-HELP-VERIFICATION.md. P08a awaits owner review with an empty staging index.

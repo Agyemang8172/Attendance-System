@@ -327,3 +327,11 @@ P07a committed through commit.sh asb4cc2b6; all commit gates passed and unrelate
 ## P07b review checkpoint — 2026-11-05
 
 P07a was committed through commit.sh at b4cc2b6. P07b Exceptions recovery is implemented and QA approved with no findings. Passed 20 Exceptions frontend tests, 29 P07a regression tests, 20 mocked backend contract tests, three intercepted browser cases at 375px and 1440px, frontend and backend typechecks, and scoped mechanical gates. See docs/attendpro/P07B-EXCEPTIONS-VERIFICATION.md. Live authenticated verification remains outstanding and full Attempt Detail remains P28. P07b is unstaged and uncommitted for owner review. Proposed commit is fix(exceptions): recover kinds and pagination.
+
+## P07b committed and P08a in progress — 2026-11-05
+
+P07b committed through commit.sh as 1826452. P08a covers the approved HR Help queue and direct detail. The direct GET uses the existing business queue projection and role and tenant scope. The existing status update gains a conditional write to enforce the final-state ladder during concurrent review. Resolve and Close require a note in the UI under H-04. The API retains its optional note contract.
+
+## P08a review checkpoint — 2026-11-05
+
+P08a HR Help queue, direct detail and transition recovery passed QA and scoped access review with no findings. Tests passed for 15 HR cases, 26 Staff regressions, 10 mocked backend cases and two intercepted Chromium viewport flows. TypeScript and scoped mechanical gates passed. See docs/attendpro/P08A-HR-HELP-VERIFICATION.md for file list and limits. P07b is committed as 1826452. P08a awaits owner review with an empty staging index. Proposed message is fix(help): recover HR request detail and review.

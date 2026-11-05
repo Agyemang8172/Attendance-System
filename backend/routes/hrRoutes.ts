@@ -1,6 +1,7 @@
 import express from "express";
 import userController from "../controllers/userController.js";
 import {
+  getBusinessHelpRequest,
   listBusinessHelpRequests,
   updateHelpRequest,
 } from "../controllers/helpRequestController.js";
@@ -17,6 +18,7 @@ import {
   updateUserSchema,
   resetPinSchema,
   listHelpRequestsQuerySchema,
+  helpRequestIdSchema,
   updateHelpRequestSchema,
   listCorrectionsQuerySchema,
   correctionDecisionSchema,
@@ -82,6 +84,15 @@ router.get(
   authorizeRole("HR", "SUPERADMIN"),
   validate(listHelpRequestsQuerySchema),
   listBusinessHelpRequests
+);
+
+router.get(
+  "/help-requests/:id",
+  authMiddleware,
+  requirePasswordChange(),
+  authorizeRole("HR", "SUPERADMIN"),
+  validate(helpRequestIdSchema),
+  getBusinessHelpRequest
 );
 
 // Decide a request: status move plus an optional resolution note, audited.

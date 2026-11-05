@@ -283,6 +283,37 @@ export const listBusinessHelpRequests = async (req: Request, res: Response): Pro
   }
 };
 
+/** Direct detail uses the same tenant and field scope as the business queue. */
+export const getBusinessHelpRequest = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const caller = req.user;
+    if (!caller) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
+
+    const businessId = await callerBusinessId(caller.userId);
+    if (!businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+
+    const { id } = req.params as { id: string };
+    const row = await prisma.attendanceHelpRequest.findFirst({
+      where: { id, businessId },
+      select: businessSelect,
+    });
+    if (!row) {
+      res.status(404).json({ success: false, message: "Request not found" });
+      return;
+    }
+    res.status(200).json({ success: true, data: row });
+  } catch (error) {
+    if (error instanceof Error) logError(error, { route: "help-requests-get-business" });
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 /**
  * The transition map behind `updateHelpRequest`'s ladder, read as "current
  * status → statuses it may move to". An entry with no legal destination
@@ -393,19 +424,9 @@ export const updateHelpRequest = async (req: Request, res: Response): Promise<vo
       // resolution the status column contradicts.
       const resolvedAt = status === "RESOLVED" ? new Date() : null;
 
-      // The status change and its audit row commit together: an unaudited
-      // status change is the failure the append-only trail exists to prevent.
-      await writeAudit({
-        businessId,
-        action: status === "RESOLVED" ? "help.request_resolved" : "help.request_status_changed",
-        entityType: "help_request",
-        entityId: row.id,
-        userId: caller.userId,
-        reason: `Status set to ${status}${noteProvided ? " with a resolution note" : ""}`,
-      }, tx);
-
-      return tx.attendanceHelpRequest.update({
-        where: { id: row.id },
+      // Match the observed state so overlapping decisions cannot overwrite it.
+      const result = await tx.attendanceHelpRequest.update({
+        where: { id: row.id, businessId, status: row.status },
         data: {
           status: status as never,
           ...(noteProvided ? { resolutionNote } : {}),
@@ -421,8 +442,28 @@ export const updateHelpRequest = async (req: Request, res: Response): Promise<vo
           requesterId: true,
           updatedAt: true,
         },
+      }).catch((error: unknown) => {
+        if (typeof error === "object" && error !== null && "code" in error && error.code === "P2025") return null;
+        throw error;
       });
+      if (!result) return null;
+
+      // Commit the audit together with the status change.
+      await writeAudit({
+        businessId,
+        action: status === "RESOLVED" ? "help.request_resolved" : "help.request_status_changed",
+        entityType: "help_request",
+        entityId: row.id,
+        userId: caller.userId,
+        reason: `Status set to ${status}${noteProvided ? " with a resolution note" : ""}`,
+      }, tx);
+      return result;
     });
+
+    if (!updated) {
+      res.status(409).json({ success: false, message: "Request changed while it was being reviewed" });
+      return;
+    }
 
     auditLog.helpRequestResolved(caller.userId, updated.id, status, noteProvided, businessId);
 
@@ -447,5 +488,6 @@ export default {
   listMyHelpRequests,
   getMyHelpRequest,
   listBusinessHelpRequests,
+  getBusinessHelpRequest,
   updateHelpRequest,
 };

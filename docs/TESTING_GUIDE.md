@@ -2042,3 +2042,22 @@ This slice restores the existing factual Exceptions workflow. It does not add At
 ### Runtime limitations
 
 Current frontend and API health reads returned200 on ports5173 and8000. Existing servers were preserved. Live authenticated verification remains unverified under the previously recorded native browser URL-policy identification limitation. The agent-browser skill is absent; installed Playwright/Chromium provides the separate intercepted-response UI evidence. No credentials, accounts, database rows or environment variables are created or changed. These checks do not prove live authentication, production tenant/RLS enforcement or production scheduler behavior.
+
+## P08a — HR Help queue and request review
+
+### Focused automated commands
+
+- From the repository root, run `node node_modules/vitest/vitest.mjs run --configLoader runner src/__tests__/hr-help-requests.test.tsx src/__tests__/staff-help-requests.test.tsx`.
+- From `backend/`, run `node node_modules/vitest/vitest.mjs run --config vitest.unit.config.ts --configLoader runner tests/unit/hrHelpRequests.contract.test.ts`. The contract suite uses the real HR router and mocks persistence, tenant lookup, authentication and audit dependencies.
+- With the local frontend already running, run `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/hr/help-requests.spec.ts --project chromium --workers 1 --reporter line`. The browser tests intercept fetch and XHR, including the status update. They use isolated fixture sessions at 375px and 1440px.
+
+### Human checklist
+
+- [ ] In an existing authorized HR or Superadmin session, open Help Requests. Choose a status, move to another page and open a request. Confirm the request URL identifies the record and retains the status and page.
+- [ ] Refresh the request URL. Verify the request body, requester, status and any recorded resolution note. Choose Back to queue and confirm the original filter and page return.
+- [ ] Verify that Open offers Start review, Resolve and Close. Verify that In review offers Resolve and Close. Resolved and Closed requests have no further status action.
+- [ ] In the intercepted browser fixture, open Resolve and confirm the action is disabled until the note contains non-whitespace text. Enter a note and confirm. Check that the recorded note appears, the request is read-only and only one update was sent.
+- [ ] Use the focused suite for conflict coverage. A 409 triggers a fresh read of the request so the current status replaces the stale status without resending the update.
+- [ ] At both viewport widths, navigate to the request by keyboard. Check visible focus, labelled controls and the absence of page-wide horizontal overflow.
+
+Live authenticated verification remains outstanding under the existing browser URL policy limitation. The automated checks used fixtures in place of live accounts and records.
