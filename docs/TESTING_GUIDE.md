@@ -2015,3 +2015,30 @@ Read-only HTTP checks returned200 from localhost5173 and localhost8000/api/healt
 - [ ] Verify genuine empty, filtered empty, out-of-range page, inline failure/retry, forbidden/not-found and partial evidence states with authorized isolated tools. Failed reads must not look like zero records; stale responses must not reveal a previous record/session.
 - [ ] At375px and1440px, verify readable content, visible keyboard focus, compact status pills and no document-wide horizontal overflow. Table overflow should stay within its own container.
 - [ ] Confirm there are no routine punch controls, fake Dismiss action or attendance result overlays. Any contextual correction-trail link retains its separate workflow and is not certified by this slice.
+
+## P07b — Exceptions kinds and pagination
+
+This slice restores the existing factual Exceptions workflow. It does not add Attempt Detail, change geofence rules, modify permissions or dismiss recorded facts. Use an existing authorized HR/SUPERADMIN session for manual review; do not create accounts, attendance or attempts to enable these checks.
+
+### Focused automated commands
+
+- Frontend contracts: `node node_modules/vitest/vitest.mjs run src/__tests__/hr-exceptions.test.tsx src/__tests__/hr-attendance.test.tsx --configLoader runner`.
+- From `backend/`, run only the no-database unit configuration: `node node_modules/vitest/vitest.mjs run tests/unit/exceptionsReport.contract.test.ts --config vitest.unit.config.ts --configLoader runner`. Prisma, tenant lookup, audit and logger dependencies are mocked before the real router/handler loads. Do not use the default integration configuration, seed, reset or database setup.
+- Browser: `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/hr/exceptions.spec.ts --project chromium --workers 1 --reporter line` with the existing frontend available. All fetch/XHR responses are intercepted, non-GET requests blocked, and fixture sessions are isolated from real authentication.
+
+### Human checklist
+
+- [ ] Open `/hr-exceptions` without query parameters. Verify blank From/To inputs and a choose-range instruction. No unsupported search/type controls or invented business-local today are shown.
+- [ ] Choose actual dates no more than 190 days apart and apply them. Verify draft edits do not silently replace the currently applied results. Reversed, missing, impossible or overlong ranges must not fetch.
+- [ ] Confirm the page describes its existing date coverage: attendance uses the stored attendance date; attempts use UTC creation instants. This does not certify business-local period semantics.
+- [ ] With existing records, verify the count means exception rows, not employees or incidents. Page through later attempt pages and a page spanning the attendance-to-attempt boundary. The backend keeps attendance rows first and attempts second, with no missing or duplicated rows caused by page offsets.
+- [ ] Verify attendance rows show the employee, classification, session state and recorded reason. Open View attendance by keyboard, refresh its direct URL, then use Back to Exceptions. The original valid range/page must be restored.
+- [ ] Verify kiosk attempt summaries show their recorded action, outcome, step, site/terminal labels, assessment and reason where available. A null employee is unidentified/unavailable, not a former employee. UNKNOWN stays UNKNOWN and must not be relabelled OUTSIDE.
+- [ ] Verify attempt IDs never link to Attendance Detail. Full Attempt Detail remains pending its separate approved slice; available summary evidence stays visible without a dead action.
+- [ ] Confirm there is no Dismiss control, dismissal dialog, PATCH or attendance-result toast. Review flags remain factual.
+- [ ] Inspect loading, successful empty range, out-of-range page, malformed response, inline error/retry and unavailable-count behavior using authorized isolated tools. A failed read must not appear as zero exceptions. Changing account/token/role must not reveal stale pending or loaded results after rerender.
+- [ ] At 375px and 1440px, check readable labels, compact status pills, keyboard focus, usable date/apply/page actions and absence of page-wide horizontal overflow.
+
+### Runtime limitations
+
+Current frontend and API health reads returned200 on ports5173 and8000. Existing servers were preserved. Live authenticated verification remains unverified under the previously recorded native browser URL-policy identification limitation. The agent-browser skill is absent; installed Playwright/Chromium provides the separate intercepted-response UI evidence. No credentials, accounts, database rows or environment variables are created or changed. These checks do not prove live authentication, production tenant/RLS enforcement or production scheduler behavior.

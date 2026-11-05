@@ -532,7 +532,7 @@ export const exceptionsReport = async (req: Request, res: Response): Promise<voi
     // actually holds, so neither read ever over-fetches.
     const attendanceTake = Math.max(0, Math.min(limit, attendanceCount - skip));
     const attemptSkip = Math.max(0, skip - attendanceCount);
-    const attemptTake = Math.max(0, limit - attendanceTake - attemptSkip);
+    const attemptTake = Math.min(limit - attendanceTake, Math.max(0, attemptCount - attemptSkip));
 
     const [attendanceRows, attemptRows] = await Promise.all([
       attendanceTake > 0

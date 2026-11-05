@@ -5,6 +5,7 @@ import PageHeader from '../components/ui/PageHeader'
 import SectionHeader from '../components/ui/SectionHeader'
 import Pill from '../components/ui/Pill'
 import { hrAttendanceReturnPath } from '../lib/hr-attendance-context'
+import { exceptionsReturnPath } from '../lib/exceptions-context'
 import { employeeName, operationalStatusTone, type OperationalAttendance } from '../lib/hr-attendance-data'
 import { useOperationalDetail } from '../lib/use-hr-attendance'
 import { attendanceLabels, closureLabel, recordedDate, recordedHours, recordedMinute, recordedNumber, recordedTime, validRecordedTimezone } from '../lib/staff-attendance-detail'
@@ -56,5 +57,6 @@ function DetailBody({ state }: { state: ReturnType<typeof useOperationalDetail> 
 export default function HrAttendanceDetail({ id }: { id: string }) {
   const { search } = useLocation()
   const state = useOperationalDetail(id)
-  return <Layout><PageHeader eyebrow="Attendance" title="Attendance detail" actions={<Link to={hrAttendanceReturnPath(search)} className="btn-secondary inline-flex items-center min-h-xxl">Back to Attendance</Link>} /><DetailBody state={state} /></Layout>
+  const exceptionReturn = exceptionsReturnPath(search)
+  return <Layout><PageHeader eyebrow="Attendance" title="Attendance detail" actions={<Link to={exceptionReturn || hrAttendanceReturnPath(search)} className="btn-secondary inline-flex items-center min-h-xxl">{exceptionReturn ? 'Back to Exceptions' : 'Back to Attendance'}</Link>} /><DetailBody state={state} /></Layout>
 }

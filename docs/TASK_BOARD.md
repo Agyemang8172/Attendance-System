@@ -484,3 +484,11 @@ Assignee: Orchestrator. Developer hr_attendance_developer owns bounded HR Attend
 ## P07a — HUMAN_CHECKPOINT — 2026-11-04
 
 Assignee: Orchestrator; Developer hr_attendance_developer, Tester hr_attendance_tester, QA hr_attendance_qa. Implementation verified:29 focused tests,29 auth/routing tests, final frontend typecheck,3 intercepted browser cases and scoped mechanical gates passed. QA APPROVED without findings. Verification: docs/attendpro/P07A-HR-ATTENDANCE-VERIFICATION.md. No P07a staging/commit/push; owner review is next. P06c is committed8880a30; preserve unrelated tracked/untracked work. No next slice.
+
+## P07b — IN_PROGRESS — 2026-11-04
+
+Assignee: Orchestrator. Developer exceptions_developer owns Exceptions/helpers, minimal fixed-origin detail return and report pagination expression. Tester exceptions_tester owns new frontend/backend/browser tests and guide; QA exceptions_qa reviews. DependsOn P07a committedb4cc2b6. Scope and acceptance: docs/superpowers/plans/2026-11-04-attendpro-exceptions-recovery.md. No data/credential, schema/migration, permission, route or P28 detail expansion. No staging, commit, push or next slice.
+
+## P07b — HUMAN_CHECKPOINT — 2026-11-05
+
+QA approved the Exceptions recovery with no findings. Tests and limits are recorded in docs/attendpro/P07B-EXCEPTIONS-VERIFICATION.md. P07b awaits owner review with an empty staging index.
