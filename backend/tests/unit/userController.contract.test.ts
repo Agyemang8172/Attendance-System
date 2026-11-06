@@ -42,10 +42,10 @@ vi.mock("../../middleware/roleMiddleware.js", () => ({ default: () => vi.fn() })
 vi.mock("../../middleware/requirePasswordChange.js", () => ({ default: () => vi.fn() }));
 vi.mock("../../middleware/validate.js", () => ({ validate: () => vi.fn() }));
 vi.mock("../../controllers/helpRequestController.js", () => ({
-  listBusinessHelpRequests: vi.fn(), updateHelpRequest: vi.fn(),
+  listBusinessHelpRequests: vi.fn(), getBusinessHelpRequest: vi.fn(), updateHelpRequest: vi.fn(),
 }));
 vi.mock("../../controllers/correctionController.js", () => ({
-  listBusinessCorrections: vi.fn(), decideCorrection: vi.fn(),
+  listBusinessCorrections: vi.fn(), getBusinessCorrection: vi.fn(), decideCorrection: vi.fn(),
 }));
 
 const controller = await import("../../controllers/userController.js");

@@ -2061,3 +2061,22 @@ Current frontend and API health reads returned200 on ports5173 and8000. Existing
 - [ ] At both viewport widths, navigate to the request by keyboard. Check visible focus, labelled controls and the absence of page-wide horizontal overflow.
 
 Live authenticated verification remains outstanding under the existing browser URL policy limitation. The automated checks used fixtures in place of live accounts and records.
+
+## P08b1 — Reviewer Corrections queue and decisions
+
+### Focused automated commands
+
+- From the repository root, run `node node_modules/vitest/vitest.mjs run --configLoader runner src/__tests__/hr-corrections.test.tsx`.
+- From `backend/`, run `node node_modules/vitest/vitest.mjs run --config vitest.unit.config.ts --configLoader runner tests/unit/hrCorrections.contract.test.ts`. This uses the HR router with mocked authentication, persistence and audit. The transaction double buffers an attendance update and discards it on a thrown conflict.
+- With the local frontend already running, run `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/hr/corrections.spec.ts --project chromium --workers 1 --reporter line`. The fixture intercepts fetch and XHR, including decision writes. It exercises HR at 375px and Superadmin at 1440px.
+
+### Human checklist
+
+- [ ] In an authorized reviewer session, open Corrections. Select a status and review tier, move to a later page, and open a correction by keyboard. Refresh the detail URL. Confirm requester, employee, reason, and the original and proposed values are still available. Back to queue should restore the filters and page.
+- [ ] Compare Original, Proposed and Approved. An omitted proposal leaves that field unchanged. Approved displays the stored decision evidence where available.
+- [ ] Use the browser fixture for decision writes. Open Approve, confirm a blank note blocks submission, enter a note, and submit. Check that one write was sent, the final record is read-only and the queue refreshes on return.
+- [ ] In the escalated Superadmin fixture, verify the decision also requires a backstop condition and reason. Self-submitted and final records offer no decision actions.
+- [ ] Use the focused suite for conflict handling. A 409 triggers a fresh read without retrying the decision. When the correction decision loses its race, the backend mock verifies that the earlier attendance change is discarded.
+- [ ] Check labels, focus and layout at both viewport widths. The queue and decision dialog should fit without page-wide horizontal scrolling.
+
+Browser and transaction checks use fixtures. Live authentication, production data and database RLS remain outside this verification.

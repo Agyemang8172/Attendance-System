@@ -500,3 +500,11 @@ Assignee: Orchestrator. Developer hr_help_developer owns HR Help source. Tester 
 ## P08a — HUMAN_CHECKPOINT — 2026-11-05
 
 QA approved HR Help recovery with no findings. Verification and limits are recorded in docs/attendpro/P08A-HR-HELP-VERIFICATION.md. P08a awaits owner review with an empty staging index.
+
+## P08b1 — IN_PROGRESS — 2026-11-05
+
+Assignee: Orchestrator. Developer reviewer_dev owns reviewer Corrections implementation. Tester reviewer_test owns focused tests and guide. P08a dependency committed at 1343d45. Scope and acceptance are recorded in the P08b1 execution note.
+
+## P08b1 — HUMAN_CHECKPOINT — 2026-11-06
+
+Reviewer Corrections recovery is implemented and verified. Evidence and runtime limits are in docs/attendpro/P08B1-REVIEWER-CORRECTIONS-VERIFICATION.md. The staging index is empty.

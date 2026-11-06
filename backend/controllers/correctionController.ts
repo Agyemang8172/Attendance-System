@@ -470,6 +470,34 @@ export const listBusinessCorrections = async (req: Request, res: Response): Prom
   }
 };
 
+/** Direct detail uses the reviewer queue's tenant scope and stored evidence. */
+export const getBusinessCorrection = async (req: Request, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
+    const businessId = await callerBusinessId(req.user.userId);
+    if (!businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+    const { id } = req.params as { id: string };
+    const correction = await prisma.attendanceCorrection.findFirst({
+      where: { id, businessId },
+      select: { ...correctionBusinessSelect, approvedValues: true },
+    });
+    if (!correction) {
+      res.status(404).json({ success: false, message: "Correction not found" });
+      return;
+    }
+    res.status(200).json({ success: true, data: correction });
+  } catch (error) {
+    if (error instanceof Error) logError(error, { route: "corrections-detail-hr" });
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 /**
  * A Prisma `Json` column round-trips a `Date` as an ISO string, so every
  * time comparison pulls each side to a millisecond count first.
@@ -529,6 +557,7 @@ const rowStillMatchesOriginal = (
 };
 
 type Backstop = { condition: string; reason: string };
+class CorrectionDecisionLost extends Error {}
 
 type DecisionResult =
   | { kind: "NOT_FOUND" }
@@ -826,7 +855,9 @@ export const decideCorrection = async (req: Request, res: Response): Promise<voi
         const applied = await tx.attendance.updateMany({
           where: {
             id: attendance.id,
+            clockIn: attendance.clockIn,
             clockOut: attendance.clockOut,
+            hoursWorked: attendance.hoursWorked,
             sessionStatus: attendance.sessionStatus,
             status: attendance.status,
             // Cheap future-proofing: if some path ever rewrites the closure
@@ -872,10 +903,8 @@ export const decideCorrection = async (req: Request, res: Response): Promise<voi
         },
       });
       if (decided.count === 0) {
-        return {
-          kind: "ALREADY_CLOSED" as const,
-          message: "This correction has already been decided",
-        };
+        // A normal return would commit any attendance change made above.
+        throw new CorrectionDecisionLost();
       }
 
       // Revision history (lifecycle §8.3 steps 3-5): one append-only row per
@@ -1049,7 +1078,9 @@ export const decideCorrection = async (req: Request, res: Response): Promise<voi
       },
     });
   } catch (error) {
-    if (error instanceof Error) {
+    if (error instanceof CorrectionDecisionLost) {
+      res.status(409).json({ success: false, message: "This correction has already been decided" });
+    } else if (error instanceof Error) {
       logError(error, { route: "corrections-decide" });
       res.status(500).json({ success: false, message: "Server error" });
     } else {
@@ -1064,5 +1095,6 @@ export default {
   listMyCorrections,
   getMyCorrection,
   listBusinessCorrections,
+  getBusinessCorrection,
   decideCorrection,
 };

@@ -7,6 +7,7 @@ import {
 } from "../controllers/helpRequestController.js";
 import {
   listBusinessCorrections,
+  getBusinessCorrection,
   decideCorrection,
 } from "../controllers/correctionController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -21,6 +22,7 @@ import {
   helpRequestIdSchema,
   updateHelpRequestSchema,
   listCorrectionsQuerySchema,
+  correctionIdSchema,
   correctionDecisionSchema,
 } from "../validators/index.js";
 
@@ -116,6 +118,15 @@ router.get(
   authorizeRole("HR", "SUPERADMIN"),
   validate(listCorrectionsQuerySchema),
   listBusinessCorrections
+);
+
+router.get(
+  "/corrections/:id",
+  authMiddleware,
+  requirePasswordChange(),
+  authorizeRole("HR", "SUPERADMIN"),
+  validate(correctionIdSchema),
+  getBusinessCorrection
 );
 
 // The decision endpoint (lifecycle §8.3, O17 + the O21 backstop). The

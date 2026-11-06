@@ -335,3 +335,11 @@ P07b committed through commit.sh as 1826452. P08a covers the approved HR Help qu
 ## P08a review checkpoint — 2026-11-05
 
 P08a HR Help queue, direct detail and transition recovery passed QA and scoped access review with no findings. Tests passed for 15 HR cases, 26 Staff regressions, 10 mocked backend cases and two intercepted Chromium viewport flows. TypeScript and scoped mechanical gates passed. See docs/attendpro/P08A-HR-HELP-VERIFICATION.md for file list and limits. P07b is committed as 1826452. P08a awaits owner review with an empty staging index. Proposed message is fix(help): recover HR request detail and review.
+
+## P08a committed and P08b1 in progress — 2026-11-05
+
+P08a committed through commit.sh as 1343d45 with its documented audit limitation. P08b1 recovers reviewer Corrections queue and detail and guards conflict rollback. See docs/superpowers/plans/2026-11-05-attendpro-reviewer-corrections.md.
+
+## P08b1 review checkpoint — 2026-11-06
+
+P08a committed through commit.sh as 1343d45. P08b1 reviewer Corrections recovery is implemented. Passed 10 frontend cases, 9 mocked backend cases, 39 shared-router regressions, intercepted 375px and 1440px Chromium flows and scoped mechanical checks. The rollback regression covers a losing decision after an attendance write. See docs/attendpro/P08B1-REVIEWER-CORRECTIONS-VERIFICATION.md. P08b1 awaits review with an empty staging index. Proposed message is fix(corrections): recover reviewer detail and decisions.

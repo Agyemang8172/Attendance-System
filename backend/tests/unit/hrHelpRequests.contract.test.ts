@@ -25,7 +25,7 @@ vi.mock('../../controllers/userController.js', () => ({
   default: { getAllUsers: vi.fn(), createUser: vi.fn(), updateUser: vi.fn(), resetPin: vi.fn() },
 }));
 vi.mock('../../controllers/correctionController.js', () => ({
-  listBusinessCorrections: vi.fn(), decideCorrection: vi.fn(),
+  listBusinessCorrections: vi.fn(), getBusinessCorrection: vi.fn(), decideCorrection: vi.fn(),
 }));
 vi.mock('../../middleware/authMiddleware.js', () => ({
   default: (req: Request, res: Response, next: NextFunction) => {
