@@ -297,6 +297,8 @@ const correctionsNewestFirst = { requestedAt: "desc" as const };
  * ever return the caller's own rows, all of which answer to the same user.
  */
 export const listMyCorrections = async (req: Request, res: Response): Promise<void> => {
+  // Personal correction rows: keep them out of shared browser and proxy caches.
+  res.setHeader("Cache-Control", "no-store");
   try {
     const caller = req.user;
     if (!caller) {
@@ -402,6 +404,69 @@ export const getMyCorrection = async (req: Request, res: Response): Promise<void
     } else {
       res.status(500).json({ success: false, message: "Server error" });
     }
+  }
+};
+
+const ownCorrectionDetailSelect = {
+  ...correctionSelfSelect,
+  attendance: { select: { id: true, date: true } },
+  originalValues: true,
+  approvedValues: true,
+} as const;
+
+function ownCorrectionSnapshot(value: Prisma.JsonValue) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return {
+    clockIn: typeof value.clockIn === "string" ? value.clockIn : null,
+    clockOut: typeof value.clockOut === "string" ? value.clockOut : null,
+    status: typeof value.status === "string" ? value.status : null,
+    sessionStatus: typeof value.sessionStatus === "string" ? value.sessionStatus : null,
+    closureReason: typeof value.closureReason === "string" ? value.closureReason : null,
+    hoursWorked: typeof value.hoursWorked === "number" && Number.isFinite(value.hoursWorked) ? value.hoursWorked : null,
+  };
+}
+
+export const getOwnCorrectionDetail = async (req: Request, res: Response): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
+  try {
+    const caller = req.user;
+    if (!caller) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
+    const businessId = await callerBusinessId(caller.userId);
+    if (!businessId) {
+      res.status(400).json({ success: false, message: "Account has no business" });
+      return;
+    }
+    const { id } = req.params as { id: string };
+    const row = await prisma.attendanceCorrection.findFirst({
+      where: { id, businessId, requestedById: caller.userId },
+      select: ownCorrectionDetailSelect,
+    });
+    if (!row) {
+      const sameBusiness = await prisma.attendanceCorrection.findFirst({
+        where: { id, businessId },
+        select: { id: true },
+      });
+      if (sameBusiness) {
+        res.status(403).json({ success: false, message: "Access denied" });
+      } else {
+        res.status(404).json({ success: false, message: "Correction not found" });
+      }
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      data: {
+        ...row,
+        originalValues: ownCorrectionSnapshot(row.originalValues),
+        approvedValues: ownCorrectionSnapshot(row.approvedValues),
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error) logError(error, { route: "corrections-get-own" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
@@ -1094,6 +1159,7 @@ export default {
   createCorrection,
   listMyCorrections,
   getMyCorrection,
+  getOwnCorrectionDetail,
   listBusinessCorrections,
   getBusinessCorrection,
   decideCorrection,

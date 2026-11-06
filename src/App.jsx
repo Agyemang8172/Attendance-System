@@ -6,6 +6,7 @@ import HrAttendance from './pages/HrAttendance'
 import HrExceptions from './pages/HrExceptions'
 import HrHelpRequests from './pages/HrHelpRequests'
 import HrCorrections from './pages/HrCorrections'
+import HrOwnCorrections from './pages/HrOwnCorrections'
 import HrReports from './pages/HrReports'
 import HrAudit from './pages/HrAudit'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
@@ -56,6 +57,14 @@ const AdminRoute = ({ children }) => {
   if (!isAuthenticated()) return <Navigate to="/login" replace />
   if (user?.role !== 'HR' && user?.role !== 'SUPERADMIN') return <Navigate to={roleHome(user?.role)} replace />
   return children
+}
+
+const HrOwnCorrectionsRoute = () => {
+  const user = getCurrentUser()
+  if (!isAuthenticated()) return <Navigate to="/login" replace />
+  if (user?.role !== 'HR') return <Navigate to={roleHome(user?.role)} replace />
+  if (user.mustChangePassword !== false) return <Navigate to="/set-password" replace />
+  return <HrOwnCorrections />
 }
 
 // SuperAdmin only — everyone else goes to their own home.
@@ -284,6 +293,9 @@ function App() {
             </AdminRoute>
           }
         />
+
+        <Route path="/hr-corrections/mine" element={<HrOwnCorrectionsRoute />} />
+        <Route path="/hr-corrections/mine/:id" element={<HrOwnCorrectionsRoute />} />
 
         <Route path="/hr-corrections/:id"
           element={

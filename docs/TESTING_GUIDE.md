@@ -2080,3 +2080,22 @@ Live authenticated verification remains outstanding under the existing browser U
 - [ ] Check labels, focus and layout at both viewport widths. The queue and decision dialog should fit without page-wide horizontal scrolling.
 
 Browser and transaction checks use fixtures. Live authentication, production data and database RLS remain outside this verification.
+
+## P08b2a — HR own correction tracking
+
+### Focused automated checks
+
+- From the repository root, run `node node_modules/vitest/vitest.mjs run --configLoader runner src/__tests__/hr-own-corrections.test.tsx`.
+- From `backend/`, run `node node_modules/vitest/vitest.mjs run --config vitest.unit.config.ts --configLoader runner tests/unit/ownCorrections.contract.test.ts tests/unit/attendanceDetail.contract.test.ts tests/unit/hrCorrections.contract.test.ts`. These use real route handlers with mocked authentication, persistence and audit. No database setup is needed.
+- With the local frontend running, run `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/hr/own-corrections.spec.ts --project chromium --workers 1 --reporter line`. The browser tests use isolated fixture sessions and intercept API traffic.
+
+### Human checklist
+
+- [ ] In an authorized HR session, open Corrections and select My corrections. Confirm that the list shows only requests submitted by that HR account.
+- [ ] Choose a status and navigate to a later page when enough records exist. Open a correction, refresh its detail URL, then choose Back to my corrections. Confirm that the selected status and page return.
+- [ ] Compare Original, Proposed and Approved where recorded. Check the status, reason and decision note. The view is read-only.
+- [ ] At 375px and 1440px, check keyboard navigation, visible focus and absence of page-wide horizontal scrolling.
+- [ ] Run the mocked API tests for cross-tenant and same-tenant ownership refusals. They also cover the role and forced-password gates and the response allowlist.
+- [ ] Confirm an HR account that still owes a password change is sent to the password screen before any correction read.
+
+P08b2b submission remains deferred until the authorized business-timezone read and applicable P17b prerequisites are complete. Browser and backend tests use fixtures. Live authentication and database RLS remain unverified by these tests.

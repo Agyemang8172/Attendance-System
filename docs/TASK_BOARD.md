@@ -508,3 +508,23 @@ Assignee: Orchestrator. Developer reviewer_dev owns reviewer Corrections impleme
 ## P08b1 — HUMAN_CHECKPOINT — 2026-11-06
 
 Reviewer Corrections recovery is implemented and verified. Evidence and runtime limits are in docs/attendpro/P08B1-REVIEWER-CORRECTIONS-VERIFICATION.md. The staging index is empty.
+
+## P08b2 — DEPENDENCY CHECKPOINT — 2026-11-06
+
+P08b1 committed as 9458cda. The next slice combines HR own submission and tracking. Business-zone input handling remains pending under the same timing dependency as P06d. Await owner direction on deferring the full slice or separately authorizing the tracking portion.
+
+## P08b2a — DEPENDENCY CHECKPOINT — 2026-11-06
+
+Own-request tracking awaits the scoped list and detail reads proposed in P05. P08b2b submission remains deferred on the authorized business-timezone read and applicable P17b work.
+
+## P08b2a — IN_PROGRESS — 2026-11-06
+
+Owner authorized the P05 own-correction GET prerequisite and HR tracking. Assignee: Orchestrator. Developer own_api, Tester own_test and Security own_review own the API gate. Frontend follows verification of the read contract. P08b2b remains deferred.
+
+## P08b2a — HUMAN_CHECKPOINT — 2026-11-06
+
+Own list and detail reads now answer at `GET /api/attendance/corrections` and `:id` for STAFF and HR. Both filter on the caller business and requester, carry the forced-password gate, and the detail uses an explicit projection with a snapshot allowlist. Same-tenant other-requester answers 403; foreign and absent records share a 404. HR tracking adds `/hr-corrections/mine` with status filtering, paging, return context and a read-only detail.
+
+Evidence: 142 isolated backend tests, 8 own-tracking and 12 reviewer frontend cases, 4 Playwright cases, 327 passing frontend tests, both typechecks, UI taste, environment parity, redacted secret scan and humanizer. The four failing frontend cases sit in two untracked legacy test files and failed before this slice.
+
+QA required the P08c correction-trail hunk in `App.jsx` to stay out of this commit scope. Security approved with minor findings. The owner review added `Cache-Control: no-store` to the own list read and a safe page bound to the shared correction list validator; the affected suites were rerun with unchanged results. Live authentication, database RLS and database-backed suites remain unverified. The staging index is empty. Proposed message: `feat(corrections): add HR own correction tracking`.

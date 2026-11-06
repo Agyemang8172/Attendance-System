@@ -738,7 +738,16 @@ export const listCorrectionsQuerySchema = {
   query: z.object({
     status: correctionStatus.optional(),
     reviewTier: z.enum(["SAME_DAY", "ESCALATED"]).optional(),
-    page: z.coerce.number().int().positive().default(1),
+    // The maximum allowed limit is 100, so a safe page bound guarantees the
+    // computed skip stays a safe integer for every accepted request. Without
+    // it an absurd page number reaches Prisma as a float offset and returns
+    // 500 instead of a validation refusal. Real consumers never approach it.
+    page: z.coerce
+      .number()
+      .int()
+      .positive()
+      .refine((page) => Number.isSafeInteger((page - 1) * 100), "Page number is too large")
+      .default(1),
     limit: z.coerce.number().int().positive().max(100).default(50),
   }),
 };

@@ -343,3 +343,21 @@ P08a committed through commit.sh as 1343d45 with its documented audit limitation
 ## P08b1 review checkpoint — 2026-11-06
 
 P08a committed through commit.sh as 1343d45. P08b1 reviewer Corrections recovery is implemented. Passed 10 frontend cases, 9 mocked backend cases, 39 shared-router regressions, intercepted 375px and 1440px Chromium flows and scoped mechanical checks. The rollback regression covers a losing decision after an attendance write. See docs/attendpro/P08B1-REVIEWER-CORRECTIONS-VERIFICATION.md. P08b1 awaits review with an empty staging index. Proposed message is fix(corrections): recover reviewer detail and decisions.
+
+## P08b1 committed and P08b2 dependency checkpoint — 2026-11-06
+
+P08b1 committed through commit.sh as 9458cda. Its audit failure, live database concurrency and Superadmin backstop verification limits remain recorded. P08b2 ownership review confirmed HR can already submit time-only corrections for its own records. The accepted P05 contract defines narrow own tracking. The submission UI depends on approved business-zone handling, which is also outstanding for P06d. HR currently lacks an authorized current business-timezone read, and P17b remains pending. P08b2 awaits an owner decision on deferral or a tracking-only split.
+
+## P08b2a tracking dependency — 2026-11-06
+
+Owner approved the split. P08b2a is blocked on the HR own-request list and detail read contract described in P05. The Staff reads are STAFF-only, the HR reviewer reads are business-wide, and the attendance corrections router currently supports submission only. P08b2b remains deferred until an authorized current business-timezone read and applicable P17b prerequisites are complete.
+
+## P08b2a review checkpoint — 2026-11-06
+
+The P05 own-correction reads are mounted and the HR tracking screen is implemented. The list and detail pass the caller business and requester into every query, ignore supplied scope fields, and share the forced-password and role gates. The detail projection exposes only record, status, reason, timestamps, proposed punches and allowlisted snapshots; business, requester and reviewer identifiers do not leave the server. The correction namespace pass-through still precedes the generic attendance ID route, and no write path changed.
+
+HR tracking adds `/hr-corrections/mine` and `:id` behind an HR-only guard, with status filtering, paging, return context and a read-only evidence view. SUPERADMIN is redirected and never sees the link.
+
+Verification: 142 isolated backend tests, including 13 own-correction contracts and four guard and failure matrix cases; 8 own-tracking and 12 reviewer frontend cases; 4 Playwright cases at 375px and 1440px; 327 passing frontend tests; both typechecks; UI taste; environment parity; redacted secret scan; humanizer. Four frontend failures remain in two untracked legacy test files and predate this slice.
+
+QA required the unrelated P08c trail hunk in `App.jsx` to stay out of this commit scope. Security approved with minor findings: the shared list validator had no page upper bound, the list read carried no cache header, and per-requester scope remains application-enforced because the corrections RLS policy is tenant-only. Owner review fixed the first two: the list read sends `Cache-Control: no-store`, and the shared list validator refuses a page that would produce an unsafe offset (400 instead of a Prisma 500), with no change for realistic pages. The composite index remains a schema change outside this authorization. Live authentication, database RLS, PostgreSQL concurrency and the database-backed suites remain unverified. P08b2b stays deferred. See docs/attendpro/P08B2A-OWN-CORRECTION-TRACKING-VERIFICATION.md. State: HUMAN_CHECKPOINT, empty staging index, no commit or push. Proposed message: feat(corrections): add HR own correction tracking.

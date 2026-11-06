@@ -7,6 +7,7 @@ import Pill from '../components/ui/Pill'
 import { CORRECTION_PAGE_SIZE, CORRECTION_QUEUE, correctionDate, correctionQuery, correctionStatuses, readCorrectionContext, reviewTiers, statusLabels, statusTones, tierLabels, type CorrectionContext, type ReviewerCorrection } from '../lib/hr-corrections'
 import { helpTimestamp } from '../lib/staff-help-requests'
 import { useCorrectionQueue } from '../lib/use-hr-corrections'
+import { getCurrentUser } from '../utils/auth'
 import HrCorrectionDetail from './HrCorrectionDetail'
 
 function QueueRow({ row, context }: { row: ReviewerCorrection; context: CorrectionContext }) {
@@ -66,7 +67,9 @@ function CorrectionQueue() {
   const state = useCorrectionQueue(context)
   const change = (next: CorrectionContext) => setParams(correctionQuery(next).slice(1))
   return <Layout>
-    <PageHeader eyebrow="Requests" title="Corrections" />
+    <PageHeader eyebrow="Requests" title="Corrections" actions={getCurrentUser()?.role === 'HR' && (
+      <Link className="btn-secondary" to="/hr-corrections/mine">My corrections</Link>
+    )} />
     <FilterBar label="Correction filters">
       <label className="text-body-sm text-ink-muted">
         Status

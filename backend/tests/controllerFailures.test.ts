@@ -105,6 +105,7 @@ const userLookupHandlers: Array<[string, Handler]> = [
   ["correction.createCorrection", correctionController.createCorrection],
   ["correction.listMyCorrections", correctionController.listMyCorrections],
   ["correction.getMyCorrection", correctionController.getMyCorrection],
+  ["correction.getOwnCorrectionDetail", correctionController.getOwnCorrectionDetail],
   ["correction.listBusinessCorrections", correctionController.listBusinessCorrections],
   ["correction.decideCorrection", correctionController.decideCorrection],
   ["helpRequest.createHelpRequest", helpRequestController.createHelpRequest],

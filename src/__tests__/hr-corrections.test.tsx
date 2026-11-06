@@ -111,6 +111,18 @@ describe('reviewer correction reads', () => {
     expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Decline' })).not.toBeInTheDocument()
   })
+
+  it('offers the own-corrections link to HR', async () => {
+    renderView(base)
+    expect(await screen.findByRole('link', { name: /my corrections/i })).toHaveAttribute('href', '/hr-corrections/mine')
+  })
+
+  it('hides the own-corrections link from Superadmin', async () => {
+    auth('SUPERADMIN')
+    renderView(base)
+    await screen.findByRole('heading', { name: 'Corrections' })
+    expect(screen.queryByRole('link', { name: /my corrections/i })).not.toBeInTheDocument()
+  })
 })
 
 describe('reviewer correction decision', () => {

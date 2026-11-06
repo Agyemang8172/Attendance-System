@@ -24,16 +24,17 @@ function readError(error: unknown) {
   return { error: 'Unable to load corrections. Try again.', retryable: true }
 }
 
-function sessionIdentity() {
+function sessionIdentity(hrOnly: boolean) {
   const user = getCurrentUser()
   const token = getToken()
-  if (!user?.id || !token || user.mustChangePassword !== false || (user.role !== 'HR' && user.role !== 'SUPERADMIN')) return null
+  if (!user?.id || !token || user.mustChangePassword !== false) return null
+  if (user.role !== 'HR' && (hrOnly || user.role !== 'SUPERADMIN')) return null
   return JSON.stringify([user.id, user.role, token])
 }
 
-function useCorrectionRead<T>(path: string, decode: (value: unknown) => T) {
-  const initialSession = useRef(sessionIdentity())
-  const isCurrent = useCallback(() => Boolean(initialSession.current && initialSession.current === sessionIdentity()), [])
+function useCorrectionRead<T>(path: string, decode: (value: unknown) => T, hrOnly = false) {
+  const initialSession = useRef(sessionIdentity(hrOnly))
+  const isCurrent = useCallback(() => Boolean(initialSession.current && initialSession.current === sessionIdentity(hrOnly)), [hrOnly])
   const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState<ReadState<T>>({ path, loading: true })
   const refresh = useCallback(() => {
@@ -83,4 +84,16 @@ export function useCorrectionQueue({ status, reviewTier, page }: CorrectionConte
 export function useCorrectionDetail(id: string) {
   const decode = useCallback((value: unknown) => readCorrectionDetail(value, id), [id])
   return useCorrectionRead('/hr/corrections/' + encodeURIComponent(id), decode)
+}
+
+export function useOwnCorrectionQueue({ status, page }: Pick<CorrectionContext, 'status' | 'page'>) {
+  const params = new URLSearchParams({ page: String(page), limit: String(CORRECTION_PAGE_SIZE) })
+  if (status) params.set('status', status)
+  const decode = useCallback((value: unknown) => readCorrectionQueue(value, page), [page])
+  return useCorrectionRead('/attendance/corrections?' + params, decode, true)
+}
+
+export function useOwnCorrectionDetail(id: string) {
+  const decode = useCallback((value: unknown) => readCorrectionDetail(value, id), [id])
+  return useCorrectionRead('/attendance/corrections/' + encodeURIComponent(id), decode, true)
 }
