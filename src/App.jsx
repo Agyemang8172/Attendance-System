@@ -9,6 +9,7 @@ import HrCorrections from './pages/HrCorrections'
 import HrOwnCorrections from './pages/HrOwnCorrections'
 import HrReports from './pages/HrReports'
 import HrAudit from './pages/HrAudit'
+import HrCorrectionTrail from './pages/HrCorrectionTrail'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import SuperAdminSettings from './pages/SuperAdminSettings'
 import ShiftManagement from './pages/ShiftManagement'
@@ -317,6 +318,14 @@ function App() {
           element={
             <AdminRoute>
               <HrAudit />
+            </AdminRoute>
+          }
+        />
+
+        <Route path="/hr-audit/corrections/:id"
+          element={
+            <AdminRoute>
+              <HrCorrectionTrail />
             </AdminRoute>
           }
         />

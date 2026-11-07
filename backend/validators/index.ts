@@ -908,16 +908,29 @@ export const attendanceAuditQuerySchema = {
  * box. Dates are ISO instants, matching every other range query.
  */
 export const auditListQuerySchema = {
-  query: z.object({
-    action: z.string().min(1).max(120).optional(),
-    entityType: z.string().min(1).max(120).optional(),
-    entityId: z.string().uuid("Invalid entity ID format").optional(),
-    search: z.string().min(1).max(200).optional(),
-    startDate: z.string().datetime().optional(),
-    endDate: z.string().datetime().optional(),
-    page: z.coerce.number().int().positive().default(1),
-    limit: z.coerce.number().int().positive().max(100).default(50),
-  }),
+  query: z
+    .object({
+      action: z.string().min(1).max(120).optional(),
+      entityType: z.string().min(1).max(120).optional(),
+      entityId: z.string().uuid("Invalid entity ID format").optional(),
+      search: z.string().min(1).max(200).optional(),
+      startDate: z.string().datetime().optional(),
+      endDate: z.string().datetime().optional(),
+      // The maximum allowed limit is 100, so a safe page bound keeps the
+      // computed skip a safe integer and answers 400 rather than letting an
+      // absurd page reach Prisma as a float offset.
+      page: z.coerce
+        .number()
+        .int()
+        .positive()
+        .refine((page) => Number.isSafeInteger((page - 1) * 100), "Page number is too large")
+        .default(1),
+      limit: z.coerce.number().int().positive().max(100).default(50),
+    })
+    .refine(
+      (query) => !query.startDate || !query.endDate || new Date(query.startDate) <= new Date(query.endDate),
+      { message: "startDate must not be after endDate", path: ["startDate"] }
+    ),
 };
 
 export const auditIdSchema = {

@@ -87,6 +87,9 @@ const trailAuditSelect = {
   entityId: true,
   reason: true,
   createdAt: true,
+  actor: {
+    select: { id: true, firstName: true, lastName: true },
+  },
 } as const;
 
 /**
@@ -111,6 +114,8 @@ const trailAuditSelect = {
  * reads except the CSV export, which O9 carves out explicitly).
  */
 export const getCorrectionTrail = async (req: Request, res: Response): Promise<void> => {
+  // Correction evidence is personal history; keep it out of shared caches.
+  res.setHeader("Cache-Control", "no-store");
   try {
     const caller = req.user;
     if (!caller) {
@@ -253,6 +258,8 @@ const toAuditView = (row: {
 });
 
 export const listAudit = async (req: Request, res: Response): Promise<void> => {
+  // Audit history is tenant-scoped personal data; never cache it.
+  res.setHeader("Cache-Control", "no-store");
   try {
     const caller = req.user;
     if (!caller) {
@@ -343,6 +350,8 @@ export const listAudit = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const getAuditById = async (req: Request, res: Response): Promise<void> => {
+  // One audited event can carry before/after evidence; never cache it.
+  res.setHeader("Cache-Control", "no-store");
   try {
     const caller = req.user;
     if (!caller) {

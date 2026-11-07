@@ -2099,3 +2099,23 @@ Browser and transaction checks use fixtures. Live authentication, production dat
 - [ ] Confirm an HR account that still owes a password change is sent to the password screen before any correction read.
 
 P08b2b submission remains deferred until the authorized business-timezone read and applicable P17b prerequisites are complete. Browser and backend tests use fixtures. Live authentication and database RLS remain unverified by these tests.
+
+## P08c — audit history and correction trail
+
+### Focused automated checks
+
+- From the repository root, run `node node_modules/vitest/vitest.mjs run --configLoader runner src/__tests__/hr-audit-trail.test.tsx`.
+- From `backend/`, run `node node_modules/vitest/vitest.mjs run --config vitest.unit.config.ts --configLoader runner tests/unit/audit.contract.test.ts`. The suite mounts the real routes with mocked authentication, Prisma and logging, so no database setup is needed.
+- With the local frontend running, run `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/hr/audit-trail.spec.ts --project chromium --workers 1 --reporter line`. The browser cases use an isolated fixture session and intercepted API traffic.
+
+### Human checklist
+
+- [ ] In an HR session, open Audit History. Confirm the actor name renders normally, the entity cell tolerates a missing id, and the date column reads as UTC.
+- [ ] Choose a From date and a To date. Confirm the request carries full ISO instants and the To day includes its later events. Reverse the dates and confirm the inline warning appears without a request.
+- [ ] Open an entry and check the reason, actor type, before and after evidence, and the attendance link where the entity is an attendance row.
+- [ ] Fail the list request and confirm an inline error with Try again appears instead of a disappearing toast.
+- [ ] Open a correction trail from an attendance record. Confirm status, tier, original, proposed and approved evidence, revision history and audit events. Confirm a withdrawn request reads as withdrawn.
+- [ ] Open a trail for a missing record and confirm the not-found message and the retry action differ from an empty history.
+- [ ] At 375px and 1440px, open and close the audit drawer with keyboard and pointer. Confirm visible focus and no page-wide horizontal scrolling.
+
+Browser and backend checks use fixtures. Live authentication, database RLS and the database-backed audit suite remain unverified by these checks. Business-time display still waits for P17.
