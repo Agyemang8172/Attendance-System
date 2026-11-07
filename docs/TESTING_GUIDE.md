@@ -2119,3 +2119,25 @@ P08b2b submission remains deferred until the authorized business-timezone read a
 - [ ] At 375px and 1440px, open and close the audit drawer with keyboard and pointer. Confirm visible focus and no page-wide horizontal scrolling.
 
 Browser and backend checks use fixtures. Live authentication, database RLS and the database-backed audit suite remain unverified by these checks. Business-time display still waits for P17.
+
+## P09 — HR dashboard triage
+
+### Focused automated checks
+
+- From the repository root, run `node node_modules/vitest/vitest.mjs run --configLoader runner src/__tests__/hr-dashboard.test.tsx`. The suite mocks the report and queue responses, so it needs no database.
+- With the local frontend running, run `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/hr/dashboard.spec.ts --project chromium --workers 1 --reporter line`. The browser cases intercept every API response and use an isolated fixture session at 375px and 1440px.
+
+### Human checklist
+
+- [ ] Open `/hr-dashboard` in an authorized HR or Superadmin session. Confirm the note says the seven-day window uses this device's date and that business-timezone handling is pending P17.
+- [ ] Check the four attention links: open help requests, help requests in review, corrections awaiting a decision, and review exceptions. Each link should reach its queue with the relevant status or date range.
+- [ ] Confirm the daily figures come from the punctuality report: recorded rows, late arrivals, absent staff and open sessions are separate. An exception row must not be read as an absent employee.
+- [ ] Open the exception preview. Attendance rows show the employee, classification and reason and reach the attendance record with the exception range. Attempt rows reach the exceptions queue, because Attempt Detail is still P28.
+- [ ] Open the attendance preview. Five rows should appear from the dated register, with a link to the register that keeps the same range. The old full register and its search box must not appear on the dashboard.
+- [ ] When the register holds more than the 100 rows the charts read, confirm the chart captions and the note state the coverage. A large queue total must not be shown as a small count.
+- [ ] Fail the dashboard read with an authorized isolated tool. Confirm an inline alert and Try again appear and no zero metrics render. Retry and confirm the figures return.
+- [ ] Return a successful empty response. Confirm zeros render as zeros, with the two empty messages, rather than the failure state.
+- [ ] Return a successful punctuality response without today's bucket. Confirm the page shows a failure instead of zero counts. Leave the page open across a device-date change and confirm the requested date range refreshes.
+- [ ] At 375px and 1440px, check keyboard focus, readable counts, stacked preview cards on mobile and absence of page-wide horizontal overflow.
+
+The browser and focused checks use fixtures. Live authentication, database RLS and the database-backed suites remain unverified by these checks. Business-time display still waits for P17.
