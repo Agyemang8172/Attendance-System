@@ -236,12 +236,32 @@ export const shiftListQuerySchema = {
   }),
 };
 
+const minuteOfDay = z.preprocess(
+  (value) => {
+    // Only a number or a plain integer string is a minute of day. Anything
+    // else (empty string, null, false) becomes NaN so the number check below
+    // rejects it, because z.coerce would silently turn '' and false and null
+    // into midnight.
+    if (typeof value === "number") return value;
+    if (typeof value === "string" && /^-?\d+$/.test(value.trim())) return Number(value.trim());
+    return NaN;
+  },
+  z
+    .number({
+      invalid_type_error: "Shift times must be whole minutes between 0 and 1439",
+      required_error: "Shift times must be whole minutes between 0 and 1439",
+    })
+    .int("Shift times must be whole minutes between 0 and 1439")
+    .min(0, "Shift times must be whole minutes between 0 and 1439")
+    .max(1439, "Shift times must be whole minutes between 0 and 1439")
+);
+
 export const createShiftSchema = {
   body: z
     .object({
-      name: z.string().min(1, "Name is required").max(80, "Name must be at most 80 characters"),
-      startMinute: z.coerce.number().int("Must be a whole number").min(0).max(1439),
-      endMinute: z.coerce.number().int("Must be a whole number").min(0).max(1439),
+      name: z.string().trim().min(1, "Name is required").max(80, "Name must be at most 80 characters"),
+      startMinute: minuteOfDay,
+      endMinute: minuteOfDay,
       crossesMidnight: z.boolean().optional(),
     })
     .refine(
@@ -269,9 +289,9 @@ export const updateShiftSchema = {
     id: z.string().uuid("Invalid shift ID format"),
   }),
   body: z.object({
-    name: z.string().min(1).max(80).optional(),
-    startMinute: z.coerce.number().int("Must be a whole number").min(0).max(1439).optional(),
-    endMinute: z.coerce.number().int("Must be a whole number").min(0).max(1439).optional(),
+    name: z.string().trim().min(1, "Name is required").max(80, "Name must be at most 80 characters").optional(),
+    startMinute: minuteOfDay.optional(),
+    endMinute: minuteOfDay.optional(),
     crossesMidnight: z.boolean().optional(),
     isActive: z.boolean().optional(),
   }),

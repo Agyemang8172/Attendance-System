@@ -381,3 +381,17 @@ Verification: 8 focused frontend cases in `src/__tests__/hr-dashboard.test.tsx`;
 QA requested changes for a missing-today bucket and stale date after midnight; both are fixed and tested. QA's follow-up approved P09 with minor findings: the attempt preview cannot link to a specific attempt until P28, and the missing-bucket alert uses generic copy. The attempt link keeps the range and opens the exceptions queue. Security approved with a minor note that count reads fetch one full queue row, although the page does not display it. No route, permission, schema or write change; the page sends GET requests only and every read remains tenant-scoped in its handler. State: HUMAN_CHECKPOINT, empty staging index, no commit or push. Proposed message: `feat(hr): recover dashboard triage`.
 
 Residual risks: live authentication, database RLS, PostgreSQL concurrency and the database-backed suites remain unverified; the charts use at most the 100 most recent register rows and state that coverage; business-time display waits for P17; attempt rows link to the exceptions queue because Attempt Detail remains P28; the legacy frontend failures remain in untracked files. No next slice started.
+
+## P10 resumed — 2026-11-10
+
+Confirmed the active slice from the task board. P09 is committed at 129bc29 and P10 source and focused tests are already present. Resumed verification with Developer p10_developer_resume, Tester p10_tester_resume and QA p10_qa_resume. The current staging index contains a separate batch and is preserved. P10 remains at its implementation and verification checkpoint.
+
+## P10 verification checkpoint — 2026-11-10
+
+P10 Shift Definitions is implemented and verified at the owner checkpoint. QA approved with minor findings and no blockers. Security approved with two low findings and five informational notes. Verification passed 13 frontend cases, 12 mocked backend cases, two stateful viewport browser flows, both TypeScript checks and the scoped mechanical gates. The resume added session-bound reads and writes, response confirmation and duplicate-write protection to ShiftManagement.tsx, with focused regressions.
+
+This pass closed the review findings. Names are trimmed before validation, shift times validate as minute-of-day, a failed deactivate shows one alert, a page beyond the last one returns to a valid page, and the search field waits 300 ms before it queries. The contract suite asserts the tenant-scoped filter, the ordering and the paging window, and it covers rejected minute input. The shared legacy fixture gained the `success: true` flag the real API returns, which keeps the legacy shift case green against the stricter list check.
+
+The full frontend suite is 357 passing with four known legacy failures in untracked files, and the backend unit suite is 167 passing. Two items are deferred with reasons recorded in the task board: unescaped search metacharacters and the scheduling screen's thousand-row request.
+
+The original staged batch remains exactly as found. P10 is uncommitted and awaits review with proposed message fix(shifts): recover definition contracts and workflow. Its report records live authentication, RLS, database concurrency, TypeScript lint and mobile table limits. P09 remains committed at 129bc29. P08b2b and its business-time dependencies remain deferred. No next slice started. Evidence: docs/attendpro/P10-SHIFT-DEFINITIONS-VERIFICATION.md.

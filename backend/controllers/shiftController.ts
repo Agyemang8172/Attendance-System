@@ -47,18 +47,34 @@ export const listShifts = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const { isActive } = req.query as { isActive?: string };
-    const where: Record<string, unknown> = { businessId };
-    if (isActive === "true") where.isActive = true;
-    else if (isActive === "false") where.isActive = false;
+    const { isActive, search, page, limit } = req.query as unknown as {
+      isActive?: "true" | "false";
+      search?: string;
+      page: number;
+      limit: number;
+    };
+    const where = {
+      businessId,
+      ...(isActive !== undefined ? { isActive: isActive === "true" } : {}),
+      ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
+    };
 
-    const shifts = await prisma.shift.findMany({
-      where,
-      orderBy: { name: "asc" },
-      select: shiftSelect,
+    const [shifts, total] = await Promise.all([
+      prisma.shift.findMany({
+        where,
+        orderBy: [{ name: "asc" }, { id: "asc" }],
+        skip: (page - 1) * limit,
+        take: limit,
+        select: shiftSelect,
+      }),
+      prisma.shift.count({ where }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: shifts,
+      pagination: { currentPage: page, totalPages: Math.ceil(total / limit), totalRecords: total },
     });
-
-    res.status(200).json({ success: true, data: shifts });
   } catch (error) {
     if (error instanceof Error) {
       res.status(500).json({ success: false, message: "Server error" });

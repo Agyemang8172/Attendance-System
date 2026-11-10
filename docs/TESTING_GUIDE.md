@@ -2141,3 +2141,25 @@ Browser and backend checks use fixtures. Live authentication, database RLS and t
 - [ ] At 375px and 1440px, check keyboard focus, readable counts, stacked preview cards on mobile and absence of page-wide horizontal overflow.
 
 The browser and focused checks use fixtures. Live authentication, database RLS and the database-backed suites remain unverified by these checks. Business-time display still waits for P17.
+
+## P10 — Shift Definitions
+
+### Focused verification
+
+- Run `node node_modules/vitest/vitest.mjs run --configLoader runner src/__tests__/shift-definitions.test.tsx` from the repository root.
+- Run `node node_modules/vitest/vitest.mjs run --config vitest.unit.config.ts --configLoader runner tests/unit/shiftDefinitions.contract.test.ts` from `backend/`. This suite mounts the real shift router with mocked authentication, tenant lookup and persistence.
+- With the frontend available on port 5173, run `node node_modules/@playwright/test/cli.js test src/__tests__/e2e/sa/shift-definitions.spec.ts --project chromium --workers 1 --reporter line`.
+
+The browser cases use isolated fixture sessions and intercept every fetch or XHR response, including create, update and deactivate responses. They exercise 375px and 1440px layouts. The tests create no actual accounts, credentials or database rows. The installed agent-browser skill is absent, so these checks use the existing Playwright and Chromium packages.
+
+### Human checklist
+
+- [ ] Open Shift Definitions in an existing authorized Superadmin session. Confirm shift names, minute-based start and end times, overnight indication and active state render from the response.
+- [ ] Search by part of an existing shift name. The list refreshes a moment after you stop typing, so wait for the results to settle. Combine the term with Active or Inactive and verify both filters apply. Change the search or status and confirm pagination returns to page one.
+- [ ] Clear the filters and move through a later page where existing records permit it. Confirm the server total and page indicator agree.
+- [ ] Use the intercepted browser fixture for write checks. Try an end time earlier than the start with Overnight off and verify an inline validation message appears before any request. Select Overnight and verify the outgoing request uses minute fields and the matching overnight flag.
+- [ ] In the stateful fixture, verify the created shift appears with its submitted times. Activate an inactive shift through PATCH and confirm it moves into the Active filter. Deactivate an active shift through its confirmation dialog, confirm the existing deactivate endpoint is used, then find the row in Inactive with an Activate action. Historical attendance remains preserved by the existing lifecycle.
+- [ ] Use the focused tests for name conflicts, failed mutation retry, malformed responses, pending session replacement and duplicate confirmation. A stale session or unconfirmed response must not produce a success notice.
+- [ ] At 375px and 1440px, check keyboard focus, labelled controls and no page-wide overflow. On narrow screens, scroll within the shift table to reach the remaining columns and actions.
+
+Live authenticated verification and database RLS remain unverified by these fixture checks. The existing browser URL-policy limitation remains recorded. Business-time policy semantics and assignments are separate slices. The browser server used for this verification was started with the existing Vite runner loader after the read-only health check found port 5173 unavailable.
