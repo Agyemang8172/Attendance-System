@@ -35,8 +35,18 @@ type GuardOptions = {
 
 const DEFAULT_PORT = "5432";
 
-const parseTarget = (rawUrl: string): TestTarget => {
+const parseTarget = (rawUrl: string, testUrl = false): TestTarget => {
   const url = new URL(rawUrl);
+  // Connection parsers can use query parameters to override the URL's target.
+  // Only schema is safe to pass through for the test URL; the development URL
+  // is parsed separately for collision detection, not used as a test target.
+  if (testUrl) {
+    for (const key of url.searchParams.keys()) {
+      if (key !== "schema") {
+        throw new Error("Unsupported test database URL query parameter.");
+      }
+    }
+  }
   const database = decodeURIComponent(url.pathname.replace(/^\//, ""));
   return {
     host: url.hostname,
@@ -70,7 +80,7 @@ export const assertSafeTestDatabase = (
 
   let target: TestTarget;
   try {
-    target = parseTarget(rawUrl.trim());
+    target = parseTarget(rawUrl.trim(), true);
   } catch {
     return refuse("TEST_DATABASE_URL is not a valid connection URL.");
   }

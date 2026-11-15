@@ -212,6 +212,7 @@ model User {
   kiosksRevoked        KioskTerminal[]      @relation("KioskRevoker")
 
   @@unique([businessId, employeeCode])
+  @@unique([businessId, id])
   @@index([businessId])
   @@index([businessId, isActive])
   @@index([businessId, department])
@@ -243,6 +244,7 @@ model Shift {
   policies      WorkplacePolicy[]
 
   @@unique([businessId, name])
+  @@unique([businessId, id])
   @@index([businessId, isActive])
   @@map("shifts")
 }
@@ -255,13 +257,13 @@ model ShiftAssignment {
   userId         String   @map("user_id")
   shiftId        String   @map("shift_id")
   effectiveFrom  DateTime @map("effective_from") @db.Timestamptz(3)
-  effectiveTo    DateTime? @map("effective_to") @db.Timestamptz(3) // null = current
+  effectiveTo    DateTime? @map("effective_to") @db.Timestamptz(3) // null = tail of the assignment chain
   assignedByUserId String? @map("assigned_by_user_id")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   business Business @relation(fields: [businessId], references: [id], onDelete: Restrict)
-  user     User     @relation(fields: [userId], references: [id], onDelete: Restrict)
-  shift    Shift    @relation(fields: [shiftId], references: [id], onDelete: Restrict)
+  user     User     @relation(fields: [businessId, userId], references: [businessId, id], onDelete: Restrict)
+  shift    Shift    @relation(fields: [businessId, shiftId], references: [businessId, id], onDelete: Restrict)
 
   @@index([businessId, userId, effectiveFrom])
   @@index([businessId, shiftId])

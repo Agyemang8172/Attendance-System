@@ -10,13 +10,14 @@ const mocks = vi.hoisted(() => {
   return {
     user, queryRaw: vi.fn(), auditCreate: vi.fn(), expireSessions: vi.fn(),
     transaction: vi.fn(), compare: vi.fn(), hash: vi.fn(), sign: vi.fn(),
-    shiftFindFirst: vi.fn(),
+    shiftFindFirst: vi.fn(), assignmentFindMany: vi.fn(), assignmentUpdateMany: vi.fn(),
   };
 });
 
 const tx = {
   user: mocks.user,
   shift: { findFirst: mocks.shiftFindFirst },
+  shiftAssignment: { findMany: mocks.assignmentFindMany, updateMany: mocks.assignmentUpdateMany },
   $queryRaw: mocks.queryRaw,
   $executeRaw: mocks.queryRaw,
   auditLog: { create: mocks.auditCreate },
@@ -49,6 +50,7 @@ vi.mock("../../controllers/correctionController.js", () => ({
 }));
 
 const controller = await import("../../controllers/userController.js");
+const { createUserSchema, updateUserSchema } = await import("../../validators/index.js");
 const businessId = "business-one";
 const staff = {
   id: "staff-one", businessId, role: "STAFF", isActive: true,
@@ -81,7 +83,10 @@ beforeEach(() => {
   vi.resetAllMocks();
   currentActor = operator;
   mocks.transaction.mockImplementation(async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx));
-  mocks.queryRaw.mockResolvedValue([{ id: businessId }]);
+  mocks.queryRaw.mockImplementation(async (strings: TemplateStringsArray) =>
+    strings.join("?").includes("clock_timestamp()") ? [{ now: new Date() }] : [{ id: businessId }]);
+  mocks.assignmentFindMany.mockResolvedValue([]);
+  mocks.assignmentUpdateMany.mockResolvedValue({ count: 1 });
   const lookup = async (args: { where: { id?: string } }) =>
     args.where.id === currentActor.id ? currentActor : { ...staff, id: args.where.id ?? staff.id };
   mocks.user.findUnique.mockImplementation(lookup);
@@ -350,15 +355,50 @@ describe("account controller contracts without a database", () => {
     expect(mocks.user.create).not.toHaveBeenCalled();
   });
 
-  it("refuses a shift that is not an active shift in the caller business", async () => {
-    mocks.shiftFindFirst.mockResolvedValue(null);
+  it("rejects a shift sent on the account endpoints", async () => {
     const { res, result } = response();
     await controller.createUser(request("SUPERADMIN", {
       firstName: "Nova", lastName: "Park", email: "nova@example.test",
       department: "Operations", shiftId: "00000000-0000-4000-8000-0000000000aa",
     }), res);
     expect(result.statusCode).toBe(400);
+    expect((result.body as { message: string }).message).toMatch(/legacy shift pointer cannot be set/i);
     expect(mocks.user.create).not.toHaveBeenCalled();
+    expect(mocks.shiftFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("rejects a shift sent on the update endpoint", async () => {
+    const { res, result } = response();
+    await controller.updateUser(request("HR", {
+      department: "Field Ops", shiftId: "00000000-0000-4000-8000-0000000000aa",
+    }, staff.id), res);
+    expect(result.statusCode).toBe(400);
+    expect((result.body as { message: string }).message).toMatch(/legacy shift pointer cannot be set/i);
+    expect(mocks.user.update).not.toHaveBeenCalled();
+    expect(mocks.auditCreate).not.toHaveBeenCalled();
+    expect(mocks.shiftFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("neither account schema accepts the legacy pointer", async () => {
+    const pointer = "00000000-0000-4000-8000-0000000000aa";
+    const created = createUserSchema.body.safeParse({
+      firstName: "Nova", lastName: "Park", email: "nova@example.test",
+      department: "Operations", shiftId: pointer,
+    });
+    expect(created.success).toBe(false);
+    if (!created.success) {
+      expect(created.error.issues[0]?.path).toEqual(["shiftId"]);
+      expect(created.error.issues[0]?.message).toMatch(/legacy shift pointer cannot be set/i);
+    }
+    // An account request without the pointer is unaffected.
+    const withoutPointer = createUserSchema.body.safeParse({
+      firstName: "Nova", lastName: "Park", email: "nova@example.test", department: "Operations",
+    });
+    expect(withoutPointer.success).toBe(true);
+    const updated = updateUserSchema.body.safeParse({
+      department: "Field Ops", shiftId: pointer,
+    });
+    expect(updated.success).toBe(false);
   });
 
   it("deactivates softly and revokes sessions instead of deleting history", async () => {

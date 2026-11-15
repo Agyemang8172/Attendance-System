@@ -49,3 +49,34 @@ Each entry follows this structure:
 - **Root cause:** Each feature was reviewed at its surface. The schema field, the RLS migration, the lockout constant, the filter controls, the API call, and the spec files all existed, and no check traced the full runtime path from input to effect. Documentation then repeated the surface claim, which made the gaps harder to see.
 - **Resolution:** The M9 security review records each gap with file evidence and a severity. The testing guide now states the real filter, seed, kiosk, route, and API-prefix behaviour. The five e2e specs were renamed to `*.spec.ts`, and a live run passes 5 of 5 runnable tests. The new tests exposed four production defects and the API-prefix bug; those five were fixed with regression cover (M9-B1..B4, SEC-20). The remaining session, RLS, lockout, filter, and seed gaps stay visible in the review instead of being quietly patched.
 - **Prevention rule:** Verify a control by following its runtime path, not by finding its declaration. A schema field, migration, constant, form control, or test file proves intent, not effect. Run the test runner's discovery command before claiming a suite exists, and make documentation repeat only what the code actually does.
+
+## PIN mutation review — 2026-11-02
+
+Credential comparisons outside a transaction need observed attempt/lock state in the write guard, not only a hash/salt guard. Required audit writes must propagate failure. Isolated contract tests reproduced four missing paths; they do not establish PostgreSQL concurrency or rollback.
+
+---
+
+### 2026-11-14 — P11.2 Constraint Exposed an Inverted-Period Write in Assignment Close
+- **Domain:** Database, Assignments, Testing
+- **What went wrong:** Applying the P11.2 integrity migration dropped the full DB-backed suite from 805/805: cancelling a future-dated assignment returned 500 with `23514 shift_assignments_period_ck`.
+- **Root cause:** `deactivateAssignment` in `backend/controllers/assignmentController.ts` closed every row at `new Date()` without reading `effectiveFrom`. For a future assignment that wrote `effective_to < effective_from` — an inverted interval the old schema tolerated silently, so the test had been passing on corrupted data.
+- **Resolution:** The owner authorized a minimal close-path repair outside the P11.2 lifecycle slice: a future row closes onto its own `effectiveFrom`, a row in force closes at `now`, which is the already-approved DELETE contract. Typecheck clean, focused suites 24/24, and the full suite restored.
+- **Prevention rule:** A new CHECK or exclusion constraint is a live bug detector. Before applying one, probe every write path that touches the constrained columns for impossible values, and treat any test that passed with impossible data (`to < from`) as a red flag, not a green one.
+
+---
+
+### 2026-11-14 — Shared Seeded Staff Account Causes Intermittent Parallel 401s
+- **Domain:** Testing, Auth
+- **What went wrong:** One full-suite run failed `accountEdges.test.ts` twice with 401 on `change-password` for a `staffToken` issued seconds earlier. Both tests passed in isolation and in a second full run.
+- **Root cause:** More than fourteen test files share the seeded `staff@test.attendpro.com` account, and several write its auth state — `accountEdges` itself rotates the password and revokes the old token, its `beforeAll` sets `mustChangePassword`, and admin/security flows elsewhere send active-flag and credential changes. Tokens die when the account's auth state moves, so a parallel file can invalidate a token another file is holding. The exact racer in that run was not isolated.
+- **Resolution:** Confirmed not migration-caused: the checkpoint never touches JWT/auth code, the file passes in isolation, and a full re-run was green apart from the separately fixed constraint failure. Reported to the owner as a pre-existing parallel-isolation race.
+- **Prevention rule:** Never share a mutable credential-bearing account across parallel test files. A file that mutates auth state should use its own fixture user, or the suite must serialize the files that share one.
+
+---
+
+### 2026-11-15 — A Forward Reschedule Exposed a Contract Conflict
+- **Domain:** Assignment lifecycle, Design, Testing
+- **What went wrong:** An approved PATCH rule left preceding rows unchanged. Moving a future replacement later then left a gap where the current shift was no longer effective.
+- **Root cause:** The PATCH row-level instruction conflicted with the approved requirement to preserve current coverage until a future replacement begins. Tests originally asserted the row remained unchanged but did not check coverage in the gap.
+- **Resolution:** The owner approved an amendment after QA and Security raised the conflict. A contiguous predecessor may move only its future end to the amended start, with before/after audit evidence. Its start and realized span remain unchanged; a true pre-existing gap stays unscheduled.
+- **Prevention rule:** Test timeline-wide coverage when an effective date moves, including the interval between the old and new dates. Reconcile row-level instructions with business continuity before treating a design as settled.

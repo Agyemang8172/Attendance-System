@@ -1,9 +1,12 @@
 # AttendPro — Decision Register and M1 Design-Review Record
 
+> Current authority update, 2026-10-31: section G records the owner's final product and information-architecture approvals. It supersedes earlier pending/open statements for those decisions, including E.4, E.6 and F.2. Earlier sections remain dated evidence. Implementation is not authorized by this documentation session.
+
 - **Owner review:** 2026-10-16
 - **Baseline commit:** `f87ce1d`
-- **Repository state:** M0 is committed as `c4ee602`. The M1 documents are written but uncommitted, nothing is pushed, and no history has been merged.
-- **Status:** M1 pending review. M2 implementation is not authorized.
+- **Historical repository snapshot (2026-10-16):** M0 was committed as `c4ee602`; the M1 documents were uncommitted. These are historical facts, not a current Git-status report.
+- **Current status (2026-10-27):** M1 approval and later owner rulings supersede the original pending-review status. REC-01 through REC-05 are accepted and CLOSED. Section F distinguishes current requirements, implemented behavior, gaps and unresolved decisions. REC-06 documentation reconciliation is authorized; acceptance is pending.
+- **2026-10-21 design reconciliation:** D-01 to D-05 in §E.3 settle design authority and landing scope. They do not authorise a landing restyle, application code change, commit, or push.
 
 This register carries the owner's decisions from the M1 design review of 2026-10-16. A
 confirmed row replaces the earlier recommendation and is the input the design documents
@@ -106,7 +109,7 @@ truthfully. The owner ruled all four on 2026-10-17:
 |-----|--------|---------|
 | M8-R1 | Staff self-service change-PIN | **Build.** Add `POST /api/staff/profile/change-pin` (additive, no schema change): requires the current PIN, sets a new 4-digit PIN (R5), audited like the HR reset. Brings the approved `/profile/change-pin` screen alive. |
 | M8-R2 | Staff schedule and off-days data | **Build staff read endpoints.** Additive staff-scoped reads for the caller's own shift assignments and off-day configuration, tenant-scoped like every other lane. No schema change. |
-| M8-R3 | Plan defaults | **All four confirmed as-is:** the landing page ships fictional static constants with no backend endpoint; employee management moves to the `/api/hr/employees` lane; no "forgot access" link appears (email recovery, O6, remains unbuilt and deferred); the Super Admin admin screens (shifts, policies, calendars, sites, devices) ship as clearly labelled stubs in M8. |
+| M8-R3 | Plan defaults | **All four confirmed as-is:** the landing page ships fictional static constants with no backend endpoint; employee management moves to the `/api/hr/employees` lane; no "forgot access" link appears (email recovery, O6, remains unbuilt and deferred); the Super Admin admin screens (shifts, policies, calendars, sites, devices) ship as clearly labelled stubs in M8. **Supersession:** the admin-stub default was amended by M8-R11; retain the other recorded scope decisions. |
 | M8-R4 | Generic audit listing | **Build the listing endpoint.** Additive tenant-scoped audit listing per the already-designed contract rows, unlocking the HR audit-history screen and the Super Admin audit-log screen. No schema change. |
 
 All three endpoint additions stay inside the zero-migration footprint; M8 remains audit-approved
@@ -139,6 +142,214 @@ criteria fold into review, permission-denied screens must remain usable (the 403
 built), and fixtures/exports never substitute for backend authorization. The setup-health card on
 the SA home keeps the walkthrough default: a read-only checklist from existing GETs.
 
+## E.3 Design reconciliation decisions (owner, 2026-10-21)
+
+The owner approved the design-reconciliation direction with conditions. These decisions settle
+the design-authority and landing-scope conflict without authorising a landing restyle.
+
+| Ref | Decision | Consequence |
+|---|---|---|
+| D-01 | Root `DESIGN.md` is the single authoritative design contract. | Superseded proposals and historical plans cannot override it. `docs/DESIGN_PROPOSAL.md` remains the approved source and rationale. |
+| D-02 | Paper & Brass remains the governing design system. The Linear dark/indigo system is archived reference. | The landing page is paper. The old dark landing tokens are not a target. No palette change is authorised before the status proposal is reviewed. |
+| D-03 | AttendPro is a general-purpose attendance management system. The landing page uses `Example Organisation` and industry-neutral sample data. | `Finest Supermarket`, `Accra`, and single-industry landing copy are superseded. Static sample data remains per M8-R3. |
+| D-04 | The landing page has explicit required, removed, and deferred elements plus measurable acceptance criteria. | `docs/attendpro/LANDING-PAGE-SPEC.md` governs the landing page. Visual verification must cover 375, 390, 768, 1280, and 1440 widths. |
+| D-05 | Documentation reconciliation happens before implementation. Status colours are proposed for review before any token change. | `docs/attendpro/STATUS-PALETTE-PROPOSAL.md` is the review artefact. No application code, database configuration, production setting, or colour token changes until the owner reviews the result. |
+
+The documentation reconciliation is not a landing restyle. The restyle begins only after the owner
+reviews the final design contract, landing specification, change list, and verification plan.
+
+## E.4 Proposed screen-plan decisions (pending owner approval, 2026-10-21)
+
+These rows preserve the screen-level proposals from 2026-10-21. D-07 below is
+HISTORICAL/SUPERSEDED by its approved decision in E.5. D-06/D-08/D-09/D-10/D-11
+remain UNRESOLVED DECISION unless a separate explicit approval is recorded. U-06
+approves the walkthrough medium; it does not approve every detail of D-09.
+
+| Ref | Proposal | Consequence if approved |
+|---|---|---|
+| D-06 | `docs/attendpro/DESIGN-PLAN.md` is the single screen-level design plan. Root `DESIGN.md` remains the visual contract; `LANDING-PAGE-SPEC.md` remains the landing annex. | Historical M1 routes, PIN copy, and navigation are evidence, not target authority. A screen without a contract in the plan is not ready to implement. |
+| D-07 | The kiosk verification conflict must be resolved before either the kiosk UI or the SMS OTP walkthrough is built. The implemented v1 flow is QR + PIN (O2). PRD §10/§22 and the 2026-10-21 brief ask for QR + SMS OTP. | Recommended: keep QR + PIN for v1 and correct the PRD and walkthrough to PIN. If SMS OTP is required, add a separate phase for provider, consent, phone verification, OTP storage, send/resend, expiry, attempts, rate limits, audit, cost, and tests. No SMS OTP depiction ships before that. |
+| D-08 | HR PIN reset visibility is unresolved. The backend returns the generated PIN, the route comment says it does not, and the M1 screen says HR never sees it. | Recommended: one-time display to the authorized operator, audited, with a warning that it cannot be retrieved again. The alternative is a one-time employee set-PIN flow. The API response, route comment, and screen copy must agree. |
+| D-09 | The landing hero includes a silent, captioned, 24-second product walkthrough with a static fallback and a transcript. It is not a second CTA and uses only fictional data. | The walkthrough is a required landing element, gated by D-07, the status palette, and the owner's medium choice. |
+| D-10 | v1 corrections change proposed clock-in and clock-out only. The backend recalculates status after approval. | The staff correction form drops its status field. The detail shows status as an outcome, not a proposal. |
+| D-11 | The current exception dismiss control is removed in v1. | Exceptions clear when the underlying record is corrected, auto-closed, or reviewed. Reintroducing dismiss requires an audited review action and a clear business rule. |
+
+## E.5 Approved implementation decisions (owner, 2026-10-21)
+
+| Ref | Decision | Consequence |
+|---|---|---|
+| D-07 | The v1 kiosk verification workflow is QR badge plus 4-digit PIN. SMS one-time codes are not used for routine kiosk clock-in. | The landing walkthrough uses the PIN variant only. No SMS OTP scene, provider, or backend flow is implemented. The PRD wording that says QR + SMS OTP must be corrected before release. |
+| U-06 | The landing walkthrough is built as a lightweight DOM/SVG scene player using existing design tokens. | No animation library is added. The player keeps pause, replay, transcript, static fallback, and reduced-motion behaviour. |
+| U-07 | Privacy, Terms, and Contact links remain deferred until real pages exist. | No placeholder legal links are added to the landing page. |
+
+## E.6 Open implementation decisions (recorded 2026-10-21)
+
+| Ref | Status | Decision or next step |
+|---|---|---|
+| U-02 | Open | Review and approve, amend, or reject the proposed status palette before any colour token changes. |
+| U-03 | Open | Define kiosk actions from the approved QR + PIN and clock-in/clock-out workflow before implementing kiosk UI. |
+| U-05 | Proposed | `/manage-staff/:id` is proposed as the canonical employee-detail route; awaiting approval. |
+| U-06 | Approved | The landing walkthrough is implemented as a lightweight DOM/SVG scene player. |
+| U-07 | Deferred | Legal links remain absent until real pages exist. |
+
+
+## F. Current reconciliation record (2026-10-27)
+
+The owner accepted the REC-06 audit and authorized documentation reconciliation only.
+This section applies later approved decisions without changing their requirements.
+Earlier dated findings and superseded proposals remain evidence of their own period.
+
+### F.1 Authority and classification
+
+Owner-confirmed rows and later explicit approvals govern. The approved M10 plan
+(`docs/superpowers/plans/2026-10-21-attendpro-m10-release-hardening.md`)
+selects the standard PostgreSQL 16 private-pilot path. Root DESIGN.md remains the
+visual contract (D-01); unapproved screen or palette proposals remain unresolved.
+Current procedures are in README.md, TESTING_GUIDE.md and DEPLOYMENT-RUNBOOK.md.
+CURRENT_STATE.md holds the dated recovery evidence; TASK_BOARD.md tracks execution.
+DevOS architecture/setup documents describe tooling, not AttendPro product architecture.
+
+| Classification | Meaning |
+|---|---|
+| APPROVED CURRENT REQUIREMENT | An explicitly approved obligation, whether or not all implementation is complete. |
+| IMPLEMENTED CURRENT BEHAVIOR | Observed code or accepted verification evidence; it does not override an approved obligation. |
+| APPROVED BUT NOT YET IMPLEMENTED | An approved obligation with identified missing implementation. |
+| PLANNED/FUTURE | Deferred delivery or proposed future work; approval is stated separately where known. |
+| HISTORICAL/SUPERSEDED | A dated record or earlier direction replaced by an identified later decision. |
+| UNRESOLVED DECISION | Required approval or evidence is absent; no option is chosen by this reconciliation. |
+
+### F.2 Current product and engineering truth
+
+| Subject | Classification | Governing decision or evidence |
+|---|---|---|
+| Purpose and roles | APPROVED CURRENT REQUIREMENT | General-purpose attendance for businesses; STAFF, HR and business-scoped SUPERADMIN; no v1 platform-operator login or public self-registration (O1/O11/D-03). |
+| Routine kiosk verification | APPROVED CURRENT REQUIREMENT | QR badge plus 4-digit PIN, 10 wrong attempts, 5-minute lockout; kiosk-only routine punches (O2/O20/R5/approved D-07). Routine SMS OTP and six-digit kiosk defaults are HISTORICAL/SUPERSEDED. |
+| Persistence and tenancy | APPROVED CURRENT REQUIREMENT | PostgreSQL/Prisma; restricted application connection and existing RLS policies under approved M10. The old hosted role/grant exception does not replace this pilot requirement. |
+| Tenant execution | IMPLEMENTED CURRENT BEHAVIOR | Authenticated request tenant context, Prisma query/interactive transaction with transaction-local app.business_id, restricted app connection when configured; narrowly explicit privileged workflows remain. Production requires DATABASE_URL_APP and a different URL username from the owner. That startup check alone does not prove role attributes or deployed enforcement. |
+| Lookup and passwords | IMPLEMENTED CURRENT BEHAVIOR | REC-04A reuses authoritative bcrypt cost for unknown accounts; REC-04B removes owner-client lookup fallback. A successful empty lookup remains unknown-account handling; unexpected errors reach generic authentication failure. No constant-time claim. |
+| Local restricted-path verification | IMPLEMENTED CURRENT BEHAVIOR | REC-04C accepted local request/tenant/Prisma/restricted-role/RLS and cleanup evidence on localhost:5432/attendpro_test. Temporary attendpro_test_app login/membership/credential removed. Local proof does not establish production deployment validation. |
+| Swagger | IMPLEMENTED CURRENT BEHAVIOR | REC-05 defers the entire Swagger import/generation until an enabled documentation request; existing UI/JSON URLs remain. Production documentation is disabled. |
+| Business-timezone calculations | APPROVED BUT NOT YET IMPLEMENTED | O15 remains required. Current status/window arithmetic uses UTC; stored timezoneSnapshot does not implement the business-local calculations or settle all effective-date/cross-midnight behavior. |
+| Schedule/calendar-aware no-shows | APPROVED BUT NOT YET IMPLEMENTED | O16 remains required. The documented closeDay job is absent; current report no-row approximation is not schedule/calendar-aware enforcement. |
+| Email account recovery | APPROVED BUT NOT YET IMPLEMENTED | O6 approved the recovery requirements; request/verify endpoints are absent and delivery was deferred in M8. Administrator password reset is implemented separately. |
+| Later delivery | PLANNED/FUTURE | Kiosk frontend with U-03 actions unresolved; leave/allocation/timetable in v2; real legal pages/links when available (O16/U-07). |
+| PIN reset visibility | UNRESOLVED DECISION | D-08 approval remains UNKNOWN. Current reset response returns the new PIN once; historical matrix/screen/route comments disagree. Neither visibility option is approved by this documentation edit. |
+| Other proposals | UNRESOLVED DECISION | D-06/D-09/D-10/D-11, U-02/U-03/U-05 and other proposals lacking explicit approval remain pending. In particular, correction-status field removal and exception-dismiss removal are not authorized here. |
+| Node support | UNRESOLVED DECISION | CI config selects Node 20; accepted local recovery used Node 26. Historical Node 23 requirements do not settle a current supported-version policy. |
+
+### F.3 Accepted recovery status and evidence limits
+
+REC-01 preservation, REC-02 frontend storage correction, REC-03 backend baseline,
+REC-04A/B/C and REC-05 are owner-accepted and CLOSED. See CURRENT_STATE.md for the
+ledger and recorded test/startup samples. REC-06 is documentation-only and awaits
+owner acceptance; REC-07 is not authorized by this record.
+
+The REC-04 non-blocking backlog retains the owner credential in the API process for
+explicit privileged workflows, reproducible restricted-role verification beyond the
+ordinary owner-mode suite, and deployment-specific role/provisioning validation.
+These limitations do not reopen accepted REC-04 local verification or prove a reachable
+unauthorized outcome. No persistent restricted test login was retained.
+
+The historical roughly 38-second startup was not reproduced. Its historical cause
+remains UNKNOWN. The measured REC-05 improvement is a local observation, not proof
+of that historical cause. GitHub CI execution, production deployment validation and
+historical MongoDB credential-rotation completion remain UNKNOWN without evidence.
+
+
+### F.4 Reading retained keyword matches
+
+These classifications apply when searching older documents. They do not rewrite
+historical evidence or authorize the proposals those documents contain.
+
+| Retained occurrence | Verification classification | Current reading |
+|---|---|---|
+| Routine SMS OTP in M0 reports, dated forensic inputs, earlier plans and E.4 D-07 | HISTORICAL | Superseded by O2 and approved E.5 D-07. Current statements excluding routine SMS OTP are CURRENT. |
+| M8-GAP-REGISTER L12 and the older DESIGN-PLAN SMS-conflict discussion | HISTORICAL | The conflict existed in the dated review; E.5 D-07 settled it. These passages do not reopen the PIN/SMS choice. Other genuinely pending design decisions remain UNRESOLVED. |
+| Six-digit kiosk defaults in retained M1 API/security text and old M5 plans | HISTORICAL | R5 governs four-digit kiosk PINs. Six-digit O6 email recovery codes are PLANNED delivery of an approved unimplemented requirement, not kiosk PINs. |
+| MongoDB/Mongoose in the original audit, requirements snapshot and old board | HISTORICAL | PostgreSQL/Prisma is CURRENT persistence. Historical credential-rotation completion is UNRESOLVED/UNKNOWN; migration does not prove credentials were rotated. |
+| Owner-only production runtime, unread app URL, pending local RLS and public production Swagger in prior snapshots | HISTORICAL | Current operating docs and accepted REC-04/REC-05 supersede those descriptions. Development/test owner fallback is CURRENT behavior with stated proof limits. |
+| Old incomplete task/status records now under historical notices | HISTORICAL | REC-01 through REC-05 are accepted and closed. REC-06 acceptance and production deployment evidence remain separate. |
+| D-08, D-10, D-11 and other proposals lacking explicit approval | UNRESOLVED | Preserve pending decisions; an implemented response or control does not approve a design option. |
+
+The current operating documents must not instruct routine SMS OTP, six-digit kiosk
+PINs, owner-only production runtime or production Swagger exposure. Any newly found
+active instruction of that kind is ERROR and requires correction, not reclassification
+as an approved requirement.
+
+## G. Final delivery and information-architecture approvals - 2026-10-31
+
+Authority: Godfred's explicit approvals in the current planning chat, including the final corrections and phased implementation-plan request. These decisions are recorded now; they do not imply source implementation, current tests passing, or deployment verification.
+
+### G.1 Product decisions now locked
+
+| Ref | Approved decision | Delivery consequence |
+|---|---|---|
+| D-06 | The reviewed Master Gap and Requirements Plan is the current delivery baseline, subordinate to approved decisions and root DESIGN.md. | Persisted as [MASTER-GAP-REQUIREMENTS.md](MASTER-GAP-REQUIREMENTS.md); [the phased plan](PHASED-IMPLEMENTATION-PLAN.md) schedules delivery without reducing scope. |
+| R4 / O15 | A running attendance session retains its starting policy across midnight. | Preserve historical/session snapshots; complete business-timezone, global grace and next-business-midnight behavior without reclassifying history. |
+| D-08 / U-04 | An authorized resetting operator sees the replacement four-digit PIN once. | Reconcile response, UI and comments; preserve target-role restrictions; no later PIN retrieval or secret logging. |
+| D-10 | Staff propose corrected punch times; AttendPro derives classification. | Repair proposal payloads and remove status-as-proposal UI; retain independent review and original/proposed/approved evidence. |
+| D-11 | Exceptions remain factual. No fake Dismiss workflow. | Remove misleading dismissal from the operational experience; do not introduce an acknowledgement lifecycle. |
+| R3 | V1 uses a paired workplace terminal camera for QR scanning. | Standalone terminal capture; no personal-phone routine punching. |
+| U-03 | QR, four-digit PIN and successful verification automatically execute the latest backend-permitted Clock In/Clock Out action. | No post-verification confirmation button; no employee JWT punch lane; clear sensitive state before the next employee. |
+| U-05 | Use dedicated Employee Detail, conceptually /manage-staff/:id. | Overview, Attendance, Schedule, Account & Credentials; contextual actions remain role restricted. |
+| U-02 | Preserve current root DESIGN.md status tokens until later refinement. | Existing alternate palette proposal is not authorization for a token change. |
+| D-09 / U-06 | Preserve the DOM/SVG landing walkthrough direction; refine later. | Do not reopen medium or QR/PIN; preserve working player and fictional sample boundaries. |
+| Runtime policy | Initially support one compatibility-verified Node runtime. | Numeric version requires bounded compatibility evidence and recorded selection; CI20 and recovery26 are observations, not that selection. |
+
+O6 recovery, all three O9 CSV reports, O15 timing, O16 schedule/calendar-aware absence and M8-R5 withdrawal remain required. PostgreSQL/Prisma, tenant isolation/RLS, no self-approval, kiosk-only routine punches and accepted REC-01 through REC-05 remain binding. This approval does not create leave/timetable, maps, automatic retention deletion, routine SMS, biometrics or public registration scope.
+
+### G.2 Final navigation and placement
+
+| Area | Approved hierarchy |
+|---|---|
+| STAFF primary | Dashboard; Attendance; Schedule (Work Schedule, Off-days); Requests (Help Requests, Corrections). Visible label is Attendance, not My Attendance. |
+| HR primary | Dashboard; Attendance (Register, Exceptions); Manage Staff; Requests (Help Requests, Corrections); Reports. |
+| HR secondary | Persistent Audit History. Correction Trail is contextual. |
+| SUPERADMIN | One shared operational navigation set, own readiness Dashboard, secondary Audit History and expandable/local Configuration. No duplicated HR/SA operational entries. |
+| Configuration | Workforce: Shifts, Assignments, Calendars. Attendance Rules: Policies. Workplace: Sites, Devices. Business: Business Settings. No automatic /configuration or category overview pages. |
+| Account | Profile; Security (Change Password, Change kiosk PIN for STAFF only); Sign Out. Business Settings belongs to Configuration, not Account. This final IA supersedes O23's earlier generic Settings placement for business administration. |
+| Employee Detail | Overview, Attendance, Schedule, Account & Credentials. Identity/account/attendance/assignment context and authorized reset/QR actions do not become separate sidebar pages. HR gains no SA-only QR/configuration privileges. |
+| Attendance evidence | Register to Attendance Detail; factual Exceptions to either the same Attendance Detail or distinct Attempt Detail. No fabricated successful punch or direct attendance-attempt relationship. |
+| Location | Sites configures centre/radius; Devices manages terminals; Attendance/Attempt Detail inspects available evidence; Dashboard shows important awareness only. No Geofencing sidebar or external map provider. |
+| Kiosk | Standalone /kiosk outside portal shell/navigation; paired-camera QR to PIN to automatic permitted punch to result and private reset. |
+
+Requests keeps distinct workflows; no combined request inbox or extra landing page is approved. Dashboards provide awareness, concise metrics, alerts and links rather than duplicate complete registers/queues.
+
+### G.3 Shared route strategy and authority
+
+Prefer /hr-attendance, /hr-reports and /hr-audit as shared canonical destinations. /admin-attendance, /reports and /audit-log may remain temporarily as compatibility aliases. Preserve authorized record/filter context and role guards. Avoid cosmetic URL migrations.
+
+Read in this order: owner-approved decisions / this register; root DESIGN.md for visuals; the approved Master Plan; [the final IA](INFORMATION-ARCHITECTURE.md); current source/tests for implementation evidence; older plans as historical context. Dated plans cannot reopen these choices.
+
+The remaining work is engineering specification, repair, completion and verification. The documentation-only task records approvals and proposes bounded execution phases. No phase is started, no code/database change is authorized here, and no commit or deployment is performed.
+
+### G.4 Landing refinement and attendance feedback - 2026-11-01
+
+The owner requested inclusion of the UI Designer's Landing Page proposal and a current-versus-target screen review in the implementation plan. The landing direction is accepted for planning; the execution plan and unreviewed screen-level visual details still await owner review.
+
+| Ref | Approved direction | Plan acceptance |
+|---|---|---|
+| LP-01 | Refine the existing landing: Paper & Brass, headline, asymmetric hero, DOM/SVG player, fictional preview, two Sign in actions and brief footer. | No replacement design system, new conversion sections, maps, signup, pricing or fabricated portal screenshots. |
+| LP-02 | Show paired workplace camera reading a badge, four-digit PIN, automatic permitted punch, accepted result and private reset. | No phone scanning a portal QR, post-verification confirmation, routine SMS or deployment-readiness claim. |
+| LP-03 | Coherent illustrated times/session state; an open sample session has clock-in and blank clock-out. | Separate immediate management result from full-day examples; terminal uses first name. |
+| LP-04 | Preview figures: Recorded sessions, Completed sessions, Open sessions, Late arrivals; no Expected tile. | Illustrative 42 recorded, 39 completed, 3 open, 5 late; lateness overlaps session counts; five rows are a subset. |
+| LP-05 | Current tokens, plain captions, viewport-aware motion and meaningful reduced-motion behavior. | Preserve player direction near its current 24-second duration; reconcile stale SMS/medium wording without reopening choices. |
+| UI-RESULTS-01 | Remove all attendance result overlays, including auto-clock-out alerts; keep inline feedback. | Explicit owner clarification. Success/failure/load errors and auto-close warnings stay visible within the owning page or kiosk result region, not floating toasts or automatic modals. |
+
+UI-RESULTS-01 changes presentation, not attendance writes, jobs, validation or audit. Do not hide failures, claim an unconfirmed punch succeeded, automatically dismiss factual exceptions, or remove unrelated password/PIN/QR reveal and deliberate confirmation dialogs. Keep the global toast host for unrelated features. Deliberate record-detail drill-down is not an attendance result overlay.
+
+Source trace: legacy `src/pages/Dashboard.tsx` contains punch toasts and an auto-clock-out toast/dismiss request, but App mounts StaffDashboard instead. Mounted attendance pages also use load-error toasts. The actual deployed popup origin was not observed; verify the mounted origin before changing it and never restore legacy portal punching. No popup was disabled in this planning session.
+
+## H. Scheduling authority and the legacy shift pointer - 2026-11-10
+
+Authority: the owner's approval of the P11 and P11a scheduling decisions on 2026-11-10. These rows record approved product and technical direction. They authorise no code, schema, migration, RLS policy, commit or deployment on their own.
+
+| Ref | Decision | Confirmed outcome |
+|---|---|---|
+| O25 | Scheduling authority and the legacy shift pointer | **HR may create and manage employee-specific weekly schedules only; Superadmin has full scheduling authority.** HR cannot change business-wide shift definitions, calendar policies or general shift assignments. An employee-specific schedule may cover days outside the business's default working calendar. Official business holidays follow the holiday policy unless Superadmin authorizes an exception. An all-days-off schedule is allowed with a required reason and audit evidence. The database must support multiple working periods per day; split-shift attendance behaviour is deferred to P16 and split-shift scheduling must not be enabled for production until its calculations are verified. `users.shift_id` is deprecated from now: it leaves the employee create and update schemas, the controller writes and the public projection in phase 1, it stays a compatibility cache afterwards, it stops being written once the retirement signal shows it unused, and the database column is not removed without a separate owner-approved destructive migration. Assignment and schedule history become authoritative, and attendance snapshots preserve the resolved working-time values together with their source. |
+| O26 | P11.2 assignment lifecycle rules | **An assignment may begin on any future business-local date, at that date's midnight in the business's configured zone. An overnight shift belongs to the business date it starts on. Historical backdating is refused, and a same-day change begins at one `clock_timestamp()` captured after the employee advisory lock is acquired so that realized attendance and a completed period are never rewritten. An active assignment is replaced by closing it and inserting an audited successor; its historical start is never rewritten. Cancelling a future assignment restores the predecessor's coverage through the next non-empty successor's start, or reopens it when there is no later successor, and keeps durable cancellation evidence. Stored instants survive a business timezone change, and new assignments use the currently configured zone.** Replacements append successors, no assignment row is ever deleted, cancellation may alter only the predecessor's future end, and the append-only audit row is written inside the same transaction as the write it describes. |
+
+**O26 PATCH clarification — owner approved 2026-11-15.** A forward reschedule must not leave the in-force shift uncovered until the amended future start. Where the future target follows a contiguous predecessor, PATCH may move only that predecessor's future end to the amended start; an earlier amended start likewise shortens only that future end to prevent overlap. The predecessor's start and realized span never change. Record its actual before/after state in the same `assignment.rescheduled` audit row. This supersedes the earlier PATCH instruction to leave all preceding rows untouched; it does not authorize other history rewrites or UI work.
 
 ## Execution checkpoint — latest owner authorization
 
@@ -147,3 +358,5 @@ The owner approved the remaining screen compositions, kiosk brass-on-dark action
 Phased execution is now authorized with a stop for review after each bounded slice. QA, Tester, Security and secret-scanning evidence precede the human commit checkpoint; commits use `.agents/scripts/commit.sh`. No automatic commit or push, database/schema/migration change, installation or deployment is implied.
 
 P01 has existing compatibility evidence ready for review. Concrete Node 26.12.1 selection remains at HUMAN_CHECKPOINT under the plan's explicit numeric-runtime gate. P02 remains BACKLOG until that prerequisite is accepted. No production source was changed during this checkpoint.
+
+Owner runtime selection: Node 26.12.1 is approved as the single initial runtime. Existing compatibility limitations remain; no clean-install, Linux CI or production verification is implied.

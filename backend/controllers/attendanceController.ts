@@ -87,6 +87,13 @@ const resolveEffectiveShift = async (
   if (assignment) return assignment.shift;
 
   if (legacyShiftId) {
+    // The pointer is only a compatibility source for employees who have never
+    // had an assignment; a gap after deactivation must stay unscheduled.
+    const existingAssignment = await prisma.shiftAssignment.findFirst({
+      where: { userId: employeeId, businessId },
+      select: { id: true },
+    });
+    if (existingAssignment) return null;
     // A stale pointer could name another business's shift, so the lookup
     // stays business-scoped; a miss simply falls through to null.
     const legacyShift = await prisma.shift.findFirst({

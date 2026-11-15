@@ -20,6 +20,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import app from "../server.js";
 import prisma from "../config/prismaClient.js";
+import { createTempStaff } from "./kioskFixtures.js";
 import {
   ensureTestAccounts,
   TEST_PASSWORD,
@@ -38,6 +39,7 @@ async function tokenFor(email: string): Promise<string> {
 
 const unique = (prefix: string) => `${prefix} ${Date.now()}${Math.floor(Math.random() * 10000)}`;
 const iso = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86_400_000).toISOString();
+const businessDate = (offsetDays = 0) => iso(offsetDays).slice(0, 10);
 
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 
@@ -55,6 +57,7 @@ const policyIds: string[] = [];
 const siteIds: string[] = [];
 const shiftIds: string[] = [];
 const assignmentIds: string[] = [];
+const assignmentStaffIds: string[] = [];
 
 beforeAll(async () => {
   await ensureTestAccounts();
@@ -108,6 +111,9 @@ beforeAll(async () => {
 afterAll(async () => {
   if (assignmentIds.length) {
     await prisma.shiftAssignment.deleteMany({ where: { id: { in: assignmentIds } } });
+  }
+  if (assignmentStaffIds.length) {
+    await prisma.user.deleteMany({ where: { id: { in: assignmentStaffIds } } });
   }
   if (staffUserId) {
     await prisma.user
@@ -411,6 +417,8 @@ describe("Sites", () => {
 
 describe("Shift assignments", () => {
   it("assigns a staff member, closes the previous assignment and keeps the user pointer in sync", async () => {
+    const employee = await createTempStaff(businessId);
+    assignmentStaffIds.push(employee.id);
     const shift = await request(app)
       .post("/api/business/shifts")
       .set(auth(saToken))
@@ -422,17 +430,17 @@ describe("Shift assignments", () => {
     const first = await request(app)
       .post(`/api/business/shifts/${shiftId}/assignments`)
       .set(auth(saToken))
-      .send({ employeeId: staffUserId, effectiveFrom: iso(0) });
+      .send({ employeeId: employee.id, effectiveFrom: businessDate(0), reason: "Start scheduled coverage" });
     expect(first.status).toBe(201);
     assignmentIds.push(first.body.data.id);
 
-    const user = await prisma.user.findUnique({ where: { id: staffUserId }, select: { shiftId: true } });
+    const user = await prisma.user.findUnique({ where: { id: employee.id }, select: { shiftId: true } });
     expect(user?.shiftId).toBe(shiftId);
 
     const second = await request(app)
       .post(`/api/business/shifts/${shiftId}/assignments`)
       .set(auth(saToken))
-      .send({ employeeId: staffUserId, effectiveFrom: iso(1) });
+      .send({ employeeId: employee.id, effectiveFrom: businessDate(1), reason: "Schedule replacement" });
     expect(second.status).toBe(201);
     assignmentIds.push(second.body.data.id);
 
@@ -441,9 +449,10 @@ describe("Shift assignments", () => {
       select: { effectiveTo: true },
     });
     expect(previous?.effectiveTo).not.toBeNull();
+    expect((await prisma.user.findUnique({ where: { id: employee.id }, select: { shiftId: true } }))?.shiftId).toBe(shiftId);
 
     const listed = await request(app)
-      .get(`/api/business/assignments?employeeId=${staffUserId}`)
+      .get(`/api/business/assignments?employeeId=${employee.id}`)
       .set(auth(hrToken));
     expect(listed.status).toBe(200);
     expect(listed.body.data.some((row: { id: string }) => row.id === second.body.data.id)).toBe(true);
@@ -451,7 +460,50 @@ describe("Shift assignments", () => {
     expect((await request(app).get("/api/business/assignments").set(auth(staffToken))).status).toBe(403);
   });
 
+  it("keeps the legacy pointer with the assignment path and out of the account endpoints", async () => {
+    const before = await prisma.user.findUnique({ where: { id: staffUserId }, select: { shiftId: true } });
+
+    // HR cannot move the pointer through the employee endpoint. The body
+    // carries only the pointer, so the shared fixture account is not mutated
+    // in any other way.
+    const patched = await request(app)
+      .patch(`/api/hr/employees/${staffUserId}`)
+      .set(auth(hrToken))
+      .send({ shiftId: policyShiftId });
+    expect(patched.status).toBe(400);
+    const patchedErrors = (patched.body.errors ?? []) as Array<{ field: string; message: string }>;
+    expect(patchedErrors.some((issue) =>
+      issue.field === "shiftId" && /legacy shift pointer cannot be set/i.test(issue.message))).toBe(true);
+    const after = await prisma.user.findUnique({ where: { id: staffUserId }, select: { shiftId: true } });
+    expect(after?.shiftId).toBe(before?.shiftId);
+
+    // A shift sent on the create endpoint is refused rather than honoured.
+    const email = `pointer-${Date.now()}@example.test`;
+    const created = await request(app)
+      .post("/api/users")
+      .set(auth(hrToken))
+      .send({
+        firstName: "Nova", lastName: "Park", email,
+        department: "Operations", shiftId: policyShiftId,
+      });
+    expect(created.status).toBe(400);
+    const createdErrors = (created.body.errors ?? []) as Array<{ field: string; message: string }>;
+    expect(createdErrors.some((issue) =>
+      issue.field === "shiftId" && /legacy shift pointer cannot be set/i.test(issue.message))).toBe(true);
+    const createdRow = await prisma.user.findUnique({
+      where: { email }, select: { shiftId: true },
+    });
+    expect(createdRow).toBeNull();
+
+    // The public projection no longer exposes the pointer.
+    const fetched = await request(app).get(`/api/users/${staffUserId}`).set(auth(hrToken));
+    expect(fetched.status).toBe(200);
+    expect(Object.keys(fetched.body.data)).not.toContain("shiftId");
+  });
+
   it("soft-closes an assignment once and reports the second close", async () => {
+    const employee = await createTempStaff(businessId);
+    assignmentStaffIds.push(employee.id);
     const shift = await request(app)
       .post("/api/business/shifts")
       .set(auth(saToken))
@@ -463,21 +515,23 @@ describe("Shift assignments", () => {
     const created = await request(app)
       .post(`/api/business/shifts/${shiftId}/assignments`)
       .set(auth(saToken))
-      .send({ employeeId: staffUserId, effectiveFrom: iso(2) });
+      .send({ employeeId: employee.id, effectiveFrom: businessDate(2), reason: "Future coverage to cancel" });
     expect(created.status).toBe(201);
     const id = created.body.data.id;
     assignmentIds.push(id);
 
-    const closed = await request(app).delete(`/api/business/assignments/${id}`).set(auth(saToken));
+    const closed = await request(app).delete(`/api/business/assignments/${id}`).set(auth(saToken))
+      .send({ reason: "Withdraw future coverage" });
     expect(closed.status).toBe(200);
     expect(closed.body.data.effectiveTo).not.toBeNull();
 
-    const again = await request(app).delete(`/api/business/assignments/${id}`).set(auth(saToken));
+    const again = await request(app).delete(`/api/business/assignments/${id}`).set(auth(saToken))
+      .send({ reason: "Attempt repeated withdrawal" });
     expect(again.status).toBe(400);
 
     const missing = await request(app)
       .delete("/api/business/assignments/00000000-0000-4000-8000-000000000096")
-      .set(auth(saToken));
+      .set(auth(saToken)).send({ reason: "Unknown coverage" });
     expect(missing.status).toBe(404);
   });
 
@@ -492,7 +546,7 @@ describe("Shift assignments", () => {
     const res = await request(app)
       .post(`/api/business/shifts/${shift.body.data.id}/assignments`)
       .set(auth(saToken))
-      .send({ employeeId: "not-a-uuid", effectiveFrom: iso(0) });
+      .send({ employeeId: "not-a-uuid", effectiveFrom: businessDate(0), reason: "Reject malformed employee" });
     expect(res.status).toBe(400);
   });
 });

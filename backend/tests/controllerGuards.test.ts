@@ -7,10 +7,11 @@
  * defence if a future route is mounted without the gate, so this file calls
  * the exported handlers directly with a fake req/res and asserts the refusal.
  *
- * These are unit tests by design: no database rows are created, and the only
- * Prisma call is the tenant lookup, stubbed to return a business-less account.
+ * Most cases are unit tests and stub the tenant lookup. The account-controller
+ * tenant-boundary cases read one existing administrator so they can prove that
+ * changing only the business changes a 200 into a 401.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeAll } from "vitest";
 import type { Request, Response } from "express";
 import prisma from "../config/prismaClient.js";
 import assignmentController from "../controllers/assignmentController.js";
@@ -28,6 +29,11 @@ import siteController from "../controllers/siteController.js";
 import staffProfileController from "../controllers/staffProfileController.js";
 import staffScheduleController from "../controllers/staffScheduleController.js";
 import userController from "../controllers/userController.js";
+
+// Stub the application client that the tenant proxy delegates to. Spying on
+// the outer proxy is unsafe because it creates a new wrapper on every access.
+const appPrisma = (globalThis as unknown as { prismaApp?: typeof prisma }).prismaApp;
+if (!appPrisma) throw new Error("Prisma application client is unavailable");
 import * as attendanceController from "../controllers/attendanceController.js";
 
 type Handler = (req: Request, res: Response) => Promise<unknown> | unknown;
@@ -192,10 +198,96 @@ const noBusinessHandlers: Array<[string, Handler]> = [
   ["site.deactivateSite", siteController.deactivateSite],
   ["staffSchedule.getMySchedule", staffScheduleController.getMySchedule],
   ["staffSchedule.getMyOffDays", staffScheduleController.getMyOffDays],
+  // The account controller is absent from this list on purpose. It resolves
+  // its tenant by looking the caller up with both the account id and the
+  // business the request names, so it has no "account with no business" state
+  // to refuse: the business column is not nullable, and a caller whose
+  // request names a business the account does not belong to is refused with
+  // 401 by that lookup instead. The list below covers the controllers that
+  // do resolve the business separately.
+];
+
+/**
+ * The account controller refuses a caller whose request names a business the
+ * account does not belong to. The lookup requires both the id and the
+ * business, so a mismatched tenant finds no account and the request is
+ * refused as unauthenticated rather than reaching the body check.
+ */
+const tenantMismatchHandlers: Array<[string, Handler]> = [
   ["user.getAllUsers", userController.getAllUsers],
+  ["user.getUserById", userController.getUserById],
   ["user.createUser", userController.createUser],
+  ["user.updateUser", userController.updateUser],
+  ["user.deleteUser", userController.deleteUser],
+  ["user.resetPassword", userController.resetPassword],
   ["user.resetPin", userController.resetPin],
 ];
+
+/**
+ * A body that could not pass validation, so a handler that reads the body
+ * before it settles the caller would answer 400 instead of 401.
+ */
+const malformedBodies: Record<string, Record<string, unknown>> = {
+  "user.createUser": { firstName: "Only", lastName: "One", email: "not-an-email", department: "Operations" },
+  "user.updateUser": { email: "not-an-email" },
+  "user.resetPin": {},
+};
+
+describe("the account controller refuses a caller from another business", () => {
+  let account: { id: string; businessId: string } | null = null;
+
+  beforeAll(async () => {
+    // `findMany` rather than `findFirst`: the failure-path suite spies on
+    // `findFirst` and `findUnique` on the shared client, and this lookup must
+    // not be the call that a spy intercepts.
+    const rows = await prisma.user.findMany({
+      where: { isActive: true, role: { in: ["HR", "SUPERADMIN"] } },
+      select: { id: true, businessId: true },
+      take: 1,
+    });
+    account = rows[0] ?? null;
+  });
+
+  it.each(tenantMismatchHandlers)("%s answers 401", async (_name, handler) => {
+    const res = fakeRes();
+    await handler(
+      fakeReq({
+        user: {
+          userId: account?.id,
+          role: "SUPERADMIN",
+          businessId: "00000000-0000-0000-0000-0000000000ff",
+        },
+        body: { reason: "guard test" },
+        params: { id: account?.id },
+      }),
+      res
+    );
+    expect(res.statusCode).toBe(401);
+  });
+
+  it("finds the same account when the request names its own business", async () => {
+    const res = fakeRes();
+    await userController.getAllUsers(
+      fakeReq({
+        user: { userId: account?.id, role: "SUPERADMIN", businessId: account?.businessId },
+        query: {},
+      }),
+      res
+    );
+    // The refusal above is about the business, not about a missing account.
+    expect(res.statusCode).toBe(200);
+  });
+});
+
+describe("a caller is settled before the request body is judged", () => {
+  it.each(Object.entries(malformedBodies))("%s answers 401 for an anonymous caller", async (name, body) => {
+    const handler = tenantMismatchHandlers.find(([handlerName]) => handlerName === name)?.[1];
+    expect(handler).toBeDefined();
+    const res = fakeRes();
+    await handler?.(fakeReq({ body }), res);
+    expect(res.statusCode).toBe(401);
+  });
+});
 
 describe("user.changePassword with a body but no session", () => {
   it("answers 401 only after the body check", async () => {
@@ -210,8 +302,8 @@ describe("user.changePassword with a body but no session", () => {
 
 describe("handlers refuse an account with no business", () => {
   it.each(noBusinessHandlers)("%s answers 400", async (_name, handler) => {
-    const original = prisma.user.findUnique;
-    const spy = vi.spyOn(prisma.user, "findUnique").mockResolvedValue({ businessId: null } as never);
+    const original = appPrisma.user.findUnique;
+    const spy = vi.spyOn(appPrisma.user, "findUnique").mockResolvedValue({ businessId: null } as never);
     try {
       const res = fakeRes();
       const req = fakeReq({
@@ -224,7 +316,7 @@ describe("handlers refuse an account with no business", () => {
       expect(res.body).toEqual({ success: false, message: "Account has no business" });
     } finally {
       spy.mockRestore();
-      (prisma.user as unknown as { findUnique: typeof original }).findUnique = original;
+      appPrisma.user.findUnique = original;
     }
   });
 });

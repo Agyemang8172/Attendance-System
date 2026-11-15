@@ -71,6 +71,14 @@ export const loginSchema = {
   }),
 };
 
+/**
+ * The legacy `users.shift_id` pointer is a compatibility cache written by the
+ * assignment path. An account request may not set it, and a caller that tries
+ * is told so plainly.
+ */
+const LEGACY_POINTER_MESSAGE =
+  "The legacy shift pointer cannot be set here. Assign a shift to the employee instead.";
+
 export const createUserSchema = {
   body: z.object({
     firstName: z.string().min(1, "First name is required").max(100),
@@ -80,7 +88,11 @@ export const createUserSchema = {
     role: z.enum(["STAFF", "HR", "SUPERADMIN"]).optional(),
     phoneNumber: z.string().max(20).optional(),
     jobTitle: z.string().max(100).optional(),
-    shiftId: z.string().uuid().optional(),
+    // The legacy pointer is declared only so a caller that sends it is told
+    // plainly that the field is gone, rather than having it stripped in
+    // silence. `never` refuses any value; `optional` keeps an absent field
+    // valid. The pointer itself is written by the assignment path.
+    shiftId: z.never({ invalid_type_error: LEGACY_POINTER_MESSAGE }).optional(),
   }),
 };
 
@@ -96,7 +108,8 @@ export const updateUserSchema = {
     role: z.enum(["STAFF", "HR", "SUPERADMIN"]).optional(),
     phoneNumber: z.string().max(20).optional(),
     jobTitle: z.string().max(100).optional(),
-    shiftId: z.string().uuid().optional(),
+    // See the note on `createUserSchema`: the pointer is not settable here.
+    shiftId: z.never({ invalid_type_error: LEGACY_POINTER_MESSAGE }).optional(),
     isActive: z.boolean().optional(),
   }),
 };
@@ -297,13 +310,20 @@ export const updateShiftSchema = {
   }),
 };
 
+const assignmentBusinessDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD")
+  .refine((value) => !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`)) &&
+    new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value,
+    "Invalid business date");
+const assignmentReason = z.string().trim().min(1, "A reason is required").max(500);
+
 export const createAssignmentSchema = {
   params: z.object({
     id: z.string().uuid("Invalid shift ID format"),
   }),
   body: z.object({
     employeeId: z.string().uuid("Invalid employee ID format"),
-    effectiveFrom: z.string().datetime("Invalid effective from date"),
+    effectiveFrom: assignmentBusinessDate,
+    reason: assignmentReason,
   }),
 };
 
@@ -316,7 +336,13 @@ export const assignmentIdSchema = {
 export const assignmentListQuerySchema = {
   query: z.object({
     employeeId: z.string().uuid("Invalid employee ID format").optional(),
-    page: z.coerce.number().int().positive().default(1),
+    shiftId: z.string().uuid("Invalid shift ID format").optional(),
+    status: z.enum(["CURRENT", "FUTURE", "ENDED"]).optional(),
+    search: z.string().trim().max(100).optional(),
+    from: assignmentBusinessDate.optional(),
+    to: assignmentBusinessDate.optional(),
+    page: z.coerce.number().int().positive()
+      .refine((page) => Number.isSafeInteger((page - 1) * 100), "Page number is too large").default(1),
     limit: z.coerce.number().int().positive().max(100).default(50),
   }),
 };
@@ -376,6 +402,21 @@ export const createPolicyVersionSchema = {
     observePublicHolidays: z.boolean().optional(),
     effectiveFrom: z.string().datetime("Invalid effective from date"),
   }),
+};
+
+export const cancelAssignmentSchema = {
+  ...assignmentIdSchema,
+  body: z.object({ reason: assignmentReason }),
+};
+
+export const rescheduleAssignmentSchema = {
+  ...assignmentIdSchema,
+  body: z.object({
+    effectiveFrom: assignmentBusinessDate.optional(),
+    shiftId: z.string().uuid("Invalid shift ID format").optional(),
+    reason: assignmentReason,
+  }).refine((body) => body.effectiveFrom !== undefined || body.shiftId !== undefined,
+    "Provide a date or shift to reschedule"),
 };
 // ── M4 — HR, sites, calendars, QR credentials ────────────────────────────────
 

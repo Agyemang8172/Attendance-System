@@ -38,6 +38,14 @@ type Failure = () => Error | string;
 
 const USER_ID = "00000000-0000-4000-8000-000000000001";
 const ROW_ID = "00000000-0000-4000-8000-000000000002";
+const BUSINESS_ID = "00000000-0000-0000-0000-0000000000b1";
+
+// Controllers call the tenant proxy, which delegates to this application
+// client in tests. Spy on the client rather than on the outer proxy: the proxy
+// creates a new wrapper on every property access, so spy restoration there is
+// not stable across files.
+const appPrisma = (globalThis as unknown as { prismaApp?: typeof prisma }).prismaApp;
+if (!appPrisma) throw new Error("Prisma application client is unavailable");
 
 function fakeRes() {
   const res = {
@@ -75,7 +83,7 @@ function fakeReq(): Request {
     url: "/test",
     ip: "127.0.0.1",
     headers: {},
-    user: { userId: USER_ID, role: "SUPERADMIN" },
+    user: { userId: USER_ID, role: "SUPERADMIN", businessId: BUSINESS_ID },
     kiosk: undefined,
     body: {
       reason: "failure injection",
@@ -161,47 +169,54 @@ const failures: Array<[string, Failure]> = [
 
 describe.each(failures)("controller failures on prisma.user.findUnique (%s arm)", (_label, makeFailure) => {
   it.each(userLookupHandlers)("%s answers 500", async (_name, handler) => {
-    const original = prisma.user.findUnique;
-    const spy = vi.spyOn(prisma.user, "findUnique").mockRejectedValueOnce(makeFailure());
+    // A handler's first user read may be a lookup by id or a search by id and
+    // tenant, so both are made to fail. The arm proves that the catch block
+    // answers, not which of the two queries the handler happened to issue.
+    const originalUnique = appPrisma.user.findUnique;
+    const originalFirst = appPrisma.user.findFirst;
+    const uniqueSpy = vi.spyOn(appPrisma.user, "findUnique").mockRejectedValueOnce(makeFailure());
+    const firstSpy = vi.spyOn(appPrisma.user, "findFirst").mockRejectedValueOnce(makeFailure());
     try {
       const res = fakeRes();
       await handler(fakeReq(), res);
       expect(res.statusCode).toBe(500);
     } finally {
-      spy.mockRestore();
-      // Single-fork runs share the Prisma client; restore the exact original
-      // so a spy cannot bleed into the next file.
-      (prisma.user as unknown as { findUnique: typeof original }).findUnique = original;
+      uniqueSpy.mockRestore();
+      firstSpy.mockRestore();
+      // Prisma's generated delegate does not reliably restore after repeated
+      // spies, so put back the exact raw methods rather than a tenant wrapper.
+      appPrisma.user.findUnique = originalUnique;
+      appPrisma.user.findFirst = originalFirst;
     }
   });
 });
 
 describe.each(failures)("controller failures on prisma.attendance.findMany (%s arm)", (_label, makeFailure) => {
   it.each(attendanceManyHandlers)("%s answers 500", async (_name, handler) => {
-    const original = prisma.attendance.findMany;
-    const spy = vi.spyOn(prisma.attendance, "findMany").mockRejectedValueOnce(makeFailure());
+    const original = appPrisma.attendance.findMany;
+    const spy = vi.spyOn(appPrisma.attendance, "findMany").mockRejectedValueOnce(makeFailure());
     try {
       const res = fakeRes();
       await handler(fakeReq(), res);
       expect(res.statusCode).toBe(500);
     } finally {
       spy.mockRestore();
-      (prisma.attendance as unknown as { findMany: typeof original }).findMany = original;
+      appPrisma.attendance.findMany = original;
     }
   });
 });
 
 describe.each(failures)("controller failures on prisma.attendance.findFirst (%s arm)", (_label, makeFailure) => {
   it.each(attendanceFirstHandlers)("%s answers 500", async (_name, handler) => {
-    const original = prisma.attendance.findFirst;
-    const spy = vi.spyOn(prisma.attendance, "findFirst").mockRejectedValueOnce(makeFailure());
+    const original = appPrisma.attendance.findFirst;
+    const spy = vi.spyOn(appPrisma.attendance, "findFirst").mockRejectedValueOnce(makeFailure());
     try {
       const res = fakeRes();
       await handler(fakeReq(), res);
       expect(res.statusCode).toBe(500);
     } finally {
       spy.mockRestore();
-      (prisma.attendance as unknown as { findFirst: typeof original }).findFirst = original;
+      appPrisma.attendance.findFirst = original;
     }
   });
 });

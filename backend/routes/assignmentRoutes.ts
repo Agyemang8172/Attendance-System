@@ -5,8 +5,9 @@ import authorizeRole from "../middleware/roleMiddleware.js";
 import { validate } from "../middleware/validate.js";
 import {
   createAssignmentSchema,
-  assignmentIdSchema,
   assignmentListQuerySchema,
+  cancelAssignmentSchema,
+  rescheduleAssignmentSchema,
 } from "../validators/index.js";
 
 const router = express.Router();
@@ -34,11 +35,19 @@ router.get(
   assignmentController.listAssignments
 );
 
+router.patch(
+  "/assignments/:id",
+  authMiddleware,
+  authorizeRole("SUPERADMIN"),
+  validate(rescheduleAssignmentSchema),
+  assignmentController.rescheduleAssignment
+);
+
 router.delete(
   "/assignments/:id",
   authMiddleware,
   authorizeRole("SUPERADMIN"),
-  validate(assignmentIdSchema),
+  validate(cancelAssignmentSchema),
   assignmentController.deactivateAssignment
 );
 

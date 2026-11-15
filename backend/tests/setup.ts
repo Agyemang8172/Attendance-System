@@ -12,9 +12,10 @@
  * Database isolation — the suite runs against TEST_DATABASE_URL, never the
  * development database. tests/dbGuard.ts verifies the target positively (exact
  * host and name) and fails closed before any fixture or test write. The value
- * is copied into DATABASE_URL because Prisma Client reads that name; dotenv
- * will not override a variable that is already set, so this assignment wins
- * over backend/.env.
+ * is copied into DATABASE_URL because Prisma Client reads that name. The app
+ * client prefers DATABASE_URL_APP, so that override is removed after verification
+ * to force both clients onto the guarded test target. No database connection is
+ * made before this setup runs; dotenv cannot restore a deleted override.
  *
  * None of these values is written back to .env.
  */
@@ -43,6 +44,9 @@ const target = assertSafeTestDatabase(testDatabaseUrl, {
 });
 
 process.env.DATABASE_URL = testDatabaseUrl;
+// An externally supplied DATABASE_URL_APP must not bypass the verified target.
+// Keep the test-only owner fallback; dedicated RLS checks use their own role.
+delete process.env.DATABASE_URL_APP;
 console.log(`[tests] Verified test database target: ${describeTarget(target)}`);
 
 /**
