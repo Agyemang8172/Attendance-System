@@ -27,6 +27,8 @@ vi.mock("../../controllers/attendanceController.js", () => ({
   dismissAlert: (_req: Request, res: Response) => res.json({ lane: "existing-alert" }),
 }));
 vi.mock("../../controllers/correctionController.js", () => ({
+  listMyCorrections: (_req: Request, res: Response) => res.json({ lane: "own-corrections" }),
+  getOwnCorrectionDetail: (_req: Request, res: Response) => res.json({ lane: "own-correction-detail" }),
   createCorrection: (_req: Request, res: Response) => res.status(202).json({ lane: "corrections" }),
 }));
 vi.mock("../../middleware/authMiddleware.js", () => ({
@@ -227,11 +229,12 @@ describe("attendance detail through real routes without a database", () => {
   });
 
   it("yields the corrections namespace without treating it as a record ID", async () => {
-    await request(app).get("/api/attendance/corrections").set("x-test-role", "STAFF").expect(404);
+    await request(app).get("/api/attendance/corrections").set("x-test-role", "STAFF")
+      .expect(200, { lane: "own-corrections" });
     await request(app).get(`/api/attendance/corrections/${RECORD_ID}`)
-      .set("x-test-role", "STAFF").expect(404);
+      .set("x-test-role", "STAFF").expect(200, { lane: "own-correction-detail" });
     await request(app).get("/api/attendance/corrections?status=SUBMITTED")
-      .set("x-test-role", "STAFF").expect(404);
+      .set("x-test-role", "STAFF").expect(200, { lane: "own-corrections" });
     await request(app).post("/api/attendance/corrections").set("x-test-role", "STAFF")
       .send({ attendanceId: RECORD_ID, reason: "Review the recorded punch time" })
       .expect(202, { lane: "corrections" });

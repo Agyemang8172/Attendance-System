@@ -52,6 +52,7 @@ let originalStaff: {
   pinLockedUntil: Date | null;
   pinLastFailedAt: Date | null;
   mustChangePin: boolean;
+  tokenVersion: number;
 };
 
 beforeAll(async () => {
@@ -76,6 +77,7 @@ beforeAll(async () => {
         pinLockedUntil: true,
         pinLastFailedAt: true,
         mustChangePin: true,
+        tokenVersion: true,
       },
     }),
   ]);
@@ -93,6 +95,7 @@ beforeAll(async () => {
     pinLockedUntil: staff.pinLockedUntil,
     pinLastFailedAt: staff.pinLastFailedAt,
     mustChangePin: staff.mustChangePin,
+    tokenVersion: staff.tokenVersion,
   };
 });
 
@@ -111,6 +114,10 @@ describe("PUT /api/users/change-password", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+
+    // SEC-08: the old token is revoked and a fresh one comes back.
+    expect(typeof res.body.token).toBe("string");
+    staffToken = res.body.token as string;
 
     const stored = await prisma.user.findUnique({
       where: { id: staffUserId },
@@ -175,7 +182,7 @@ describe("Administrative password and PIN resets", () => {
     expect(stored?.mustChangePassword).toBe(true);
   });
 
-  it("resets a staff PIN and never returns the PIN in the response", async () => {
+  it("resets a staff PIN and returns it once to the administrator", async () => {
     const res = await request(app)
       .post(`/api/hr/users/${staffUserId}/reset-pin`)
       .set(auth(saToken))
@@ -184,8 +191,15 @@ describe("Administrative password and PIN resets", () => {
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.data.userId).toBe(staffUserId);
-    expect(res.body.data.pin).toBeUndefined();
-    expect(res.body.pin).toBeUndefined();
+    expect(res.body.data.pin).toMatch(/^\d{4}$/);
+
+    // The PIN is shown to the caller, never written to the audit trail.
+    const audit = await prisma.auditLog.findFirst({
+      where: { entityId: staffUserId, action: "hr.reset_pin" },
+      orderBy: { createdAt: "desc" },
+    });
+    expect(audit?.reason).toBe("M9 coverage: staff forgot the kiosk PIN");
+    expect(JSON.stringify(audit)).not.toContain(res.body.data.pin);
 
     const stored = await prisma.user.findUnique({
       where: { id: staffUserId },
