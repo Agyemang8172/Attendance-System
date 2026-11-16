@@ -535,6 +535,63 @@ describe("POST /api/kiosk/verify-pin", () => {
     });
   });
 
+  it("locks the account cumulatively across separate verification sessions (SEC-13)", async () => {
+    try {
+      // Three independent sessions with five, four and one wrong PINs. Each
+      // session's own counter stays below ten, so only the user-level count
+      // can trip the lock.
+      for (const failures of [5, 4, 1]) {
+        const handle = await openSession(badge.token);
+        for (let attempt = 0; attempt < failures; attempt += 1) {
+          const res = await verifyPin(handle, "0000");
+          expect(res.status).toBe(400);
+          expect(res.body.message).toBe("That PIN is not correct. Try again.");
+        }
+      }
+
+      const afterTen = await prisma.user.findUnique({
+        where: { id: staffUser.id },
+        select: { pinFailedCount: true, pinLockedUntil: true },
+      });
+      expect(afterTen?.pinFailedCount).toBe(10);
+      expect(afterTen?.pinLockedUntil?.getTime()).toBeGreaterThan(Date.now());
+      expect((await latestAudit("pin.locked"))?.reason).toBe("pin attempt limit reached");
+
+      // A fresh session must not reset the lock: even the correct PIN is
+      // refused while the five-minute window holds.
+      const freshHandle = await openSession(badge.token);
+      const blocked = await verifyPin(freshHandle, PIN);
+      expect(blocked.status).toBe(429);
+      expect(blocked.body.message).toBe("Try again later or see HR.");
+      expect((await latestAttempt("pin_employee_locked"))?.outcome).toBe("REJECTED");
+
+      // Once the lock lapses, the correct PIN is accepted and clears the
+      // cumulative counter, so the employee is not locked out forever.
+      await prisma.user.update({
+        where: { id: staffUser.id },
+        data: { pinLockedUntil: new Date(Date.now() - 60_000) },
+      });
+      const recoveredHandle = await openSession(badge.token);
+      const recovered = await verifyPin(recoveredHandle, PIN);
+      expect(recovered.status).toBe(201);
+
+      const cleared = await prisma.user.findUnique({
+        where: { id: staffUser.id },
+        select: { pinFailedCount: true, pinLockedUntil: true, pinLastFailedAt: true },
+      });
+      expect(cleared).toEqual({
+        pinFailedCount: 0,
+        pinLockedUntil: null,
+        pinLastFailedAt: null,
+      });
+    } finally {
+      await prisma.user.update({
+        where: { id: staffUser.id },
+        data: { pinLockedUntil: null, pinFailedCount: 0, pinLastFailedAt: null },
+      });
+    }
+  });
+
   it("treats a never-set PIN as a mismatch without creating a lock", async () => {
     const handle = await openSession(noPinBadge.token);
     const res = await verifyPin(handle, "1234");

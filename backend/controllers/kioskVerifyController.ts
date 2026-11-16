@@ -397,11 +397,11 @@ export const verifyPin = async (req: Request, res: Response): Promise<void> => {
 
     /*
      * Limiting per §7 and §5.2: the kiosk-keyed limiter on the route bounds
-     * the device lane, and the employee lane is bounded here by the session's
-     * own pinAttemptCount plus the user's pinFailedCount/pinLockedUntil — the
-     * employee key only exists after the session lookup, so an in-memory
-     * employee table would be a second source of truth for what the session
-     * row already counts (documented choice, kiosk §5.2).
+     * the device lane. The employee lane is bound here by the session's own
+     * pinAttemptCount (second layer) and, cumulatively, by the user's
+     * pinFailedCount/pinLockedUntil — the employee key only exists after the
+     * session lookup, so the user row is the durable counter that survives a
+     * cancelled session (SEC-13).
      */
 
     const { sessionId, pin } = req.body as { sessionId: string; pin: string };
@@ -537,35 +537,56 @@ export const verifyPin = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Mismatch: one transaction bumps both counters, keeps the failure
-    // evidence, and at the limit locks the session and the employee's PIN.
-    // A PIN that was never set (no hash/salt row yet) just fails here too.
+    // evidence, and locks the session at its own limit. A PIN that was never
+    // set (no hash/salt row yet) just fails here too.
+    //
+    // SEC-13: the employee-level count is the cumulative lock, so a new
+    // verification session cannot reset the guessing budget. The session lock
+    // stays as the second layer, but the user row is what bounds an attacker
+    // who cancels and re-identifies after nine failures.
     const newAttemptCount = session.pinAttemptCount + 1;
-    const hitsLimit = newAttemptCount >= PIN_MAX_ATTEMPTS;
+    const sessionHitsLimit = newAttemptCount >= PIN_MAX_ATTEMPTS;
     const lockedUntil = new Date(
       now.getTime() + PIN_LOCK_MINUTES * 60 * 1000
     );
+
+    // A cumulative lock can trip on a session whose own counter is still low.
+    // The counter is read back from the database inside the transaction (not
+    // the value loaded before it) so concurrent failures cannot each believe
+    // they are below the limit.
+    let lockTriggered = false;
 
     await prisma.$transaction(async (tx) => {
       await tx.verificationSession.update({
         where: { id: session.id },
         data: {
           pinAttemptCount: { increment: 1 },
-          ...(hitsLimit ? { state: "LOCKED" as const, lockedAt: now } : {}),
+          ...(sessionHitsLimit ? { state: "LOCKED" as const, lockedAt: now } : {}),
         },
       });
-      await tx.user.update({
+      const failedUser = await tx.user.update({
         where: { id: employee.id },
         data: {
           pinFailedCount: { increment: 1 },
           pinLastFailedAt: now,
-          ...(hitsLimit ? { pinLockedUntil: lockedUntil } : {}),
         },
+        select: { pinFailedCount: true },
       });
+      const userHitsLimit = failedUser.pinFailedCount >= PIN_MAX_ATTEMPTS;
+      if (userHitsLimit) {
+        await tx.user.update({
+          where: { id: employee.id },
+          data: { pinLockedUntil: lockedUntil },
+        });
+      }
+
+      lockTriggered = sessionHitsLimit || userHitsLimit;
+
       await tx.attendanceAttempt.create({
         data: {
           ...attemptBase,
           outcome: "REJECTED",
-          reason: hitsLimit ? "pin_attempts_exhausted" : "pin_mismatch",
+          reason: lockTriggered ? "pin_attempts_exhausted" : "pin_mismatch",
         },
       });
       await writeAudit({
@@ -576,7 +597,7 @@ export const verifyPin = async (req: Request, res: Response): Promise<void> => {
         kioskId: kiosk.kioskId,
         reason: `pin attempt ${newAttemptCount} did not match`,
       }, tx);
-      if (hitsLimit) {
+      if (lockTriggered) {
         await writeAudit({
           businessId: kiosk.businessId,
           action: "pin.locked",
@@ -588,7 +609,7 @@ export const verifyPin = async (req: Request, res: Response): Promise<void> => {
       }
     });
 
-    if (hitsLimit) {
+    if (lockTriggered) {
       auditLog.pinLocked(session.id, employee.id, lockedUntil);
     } else {
       auditLog.pinVerifyFailed(session.id, employee.id, newAttemptCount);

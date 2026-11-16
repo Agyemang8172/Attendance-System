@@ -27,7 +27,9 @@ const router = express.Router();
  *   employee only becomes known after the session is resolved inside the
  *   handler, so the in-memory limiter here is keyed `pin:<kioskId>` and the
  *   per-employee bound rides on the session's own pinAttemptCount plus the
- *   user's pinFailedCount/pinLockedUntil (kiosk §5.2);
+ *   user's pinFailedCount/pinLockedUntil (kiosk §5.2). The user row is the
+ *   cumulative counter SEC-13 requires: it outlives a cancelled session, and
+ *   the session counter stays as the tighter second layer;
  * - cancel sits out the table on purpose: it writes nothing until a live
  *   session is found, so there is no guessing lane to bound.
  */
