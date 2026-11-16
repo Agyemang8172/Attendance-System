@@ -1,6 +1,7 @@
 import express from "express";
 import kioskDeviceController from "../controllers/kioskDeviceController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import requirePasswordChange from "../middleware/requirePasswordChange.js";
 import kioskAuthMiddleware from "../middleware/kioskAuthMiddleware.js";
 import authorizeRole from "../middleware/roleMiddleware.js";
 import { validate } from "../middleware/validate.js";
@@ -61,6 +62,7 @@ router.post("/pair", pairLimiter, validate(kioskPairSchema), kioskDeviceControll
 router.post(
   "/pairing-codes",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   pairingCodeLimiter,
   validate(createKioskPairingSchema),
@@ -77,6 +79,7 @@ router.post(
 router.get(
   "/devices",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(kioskDeviceListQuerySchema),
   kioskDeviceController.listDevices
@@ -85,6 +88,7 @@ router.get(
 router.post(
   "/devices/:id/revoke",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(kioskRevokeDeviceSchema),
   kioskDeviceController.revokeDevice

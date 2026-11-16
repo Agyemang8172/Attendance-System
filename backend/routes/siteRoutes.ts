@@ -1,6 +1,7 @@
 import express from "express";
 import siteController from "../controllers/siteController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import requirePasswordChange from "../middleware/requirePasswordChange.js";
 import authorizeRole from "../middleware/roleMiddleware.js";
 import { validate } from "../middleware/validate.js";
 import {
@@ -16,6 +17,7 @@ const router = express.Router();
 router.get(
   "/",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN", "HR"),
   validate(siteListQuerySchema),
   siteController.listSites
@@ -24,6 +26,7 @@ router.get(
 router.post(
   "/",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(createSiteSchema),
   siteController.createSite
@@ -32,6 +35,7 @@ router.post(
 router.patch(
   "/:id",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(updateSiteSchema),
   siteController.updateSite
@@ -40,6 +44,7 @@ router.patch(
 router.post(
   "/:id/deactivate",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(siteIdSchema),
   siteController.deactivateSite

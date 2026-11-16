@@ -1,6 +1,7 @@
 import express from "express";
 import assignmentController from "../controllers/assignmentController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import requirePasswordChange from "../middleware/requirePasswordChange.js";
 import authorizeRole from "../middleware/roleMiddleware.js";
 import { validate } from "../middleware/validate.js";
 import {
@@ -22,6 +23,7 @@ const router = express.Router();
 router.post(
   "/shifts/:id/assignments",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(createAssignmentSchema),
   assignmentController.createAssignment
@@ -30,6 +32,7 @@ router.post(
 router.get(
   "/assignments",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN", "HR"),
   validate(assignmentListQuerySchema),
   assignmentController.listAssignments
@@ -38,6 +41,7 @@ router.get(
 router.patch(
   "/assignments/:id",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(rescheduleAssignmentSchema),
   assignmentController.rescheduleAssignment
@@ -46,6 +50,7 @@ router.patch(
 router.delete(
   "/assignments/:id",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(cancelAssignmentSchema),
   assignmentController.deactivateAssignment

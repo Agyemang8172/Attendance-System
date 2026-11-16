@@ -1,6 +1,7 @@
 import express from "express";
 import policyController from "../controllers/policyController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import requirePasswordChange from "../middleware/requirePasswordChange.js";
 import authorizeRole from "../middleware/roleMiddleware.js";
 import { validate } from "../middleware/validate.js";
 import {
@@ -15,6 +16,7 @@ const router = express.Router();
 router.get(
   "/",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   policyController.listPolicies
 );
@@ -22,6 +24,7 @@ router.get(
 router.post(
   "/",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(createPolicySchema),
   policyController.createPolicy
@@ -30,6 +33,7 @@ router.post(
 router.post(
   "/:id/versions",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(createPolicyVersionSchema),
   policyController.createPolicyVersion

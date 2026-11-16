@@ -1,6 +1,7 @@
 import express from "express";
 import shiftController from "../controllers/shiftController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import requirePasswordChange from "../middleware/requirePasswordChange.js";
 import authorizeRole from "../middleware/roleMiddleware.js";
 import { validate } from "../middleware/validate.js";
 import {
@@ -19,6 +20,7 @@ const router = express.Router();
 router.get(
   "/",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN", "HR"),
   validate(shiftListQuerySchema),
   shiftController.listShifts
@@ -27,6 +29,7 @@ router.get(
 router.post(
   "/",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(createShiftSchema),
   shiftController.createShift
@@ -35,6 +38,7 @@ router.post(
 router.patch(
   "/:id",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(updateShiftSchema),
   shiftController.updateShift
@@ -43,6 +47,7 @@ router.patch(
 router.post(
   "/:id/deactivate",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(shiftIdSchema),
   shiftController.deactivateShift

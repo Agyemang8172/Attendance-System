@@ -1,6 +1,7 @@
 import express from "express";
 import calendarController from "../controllers/calendarController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import requirePasswordChange from "../middleware/requirePasswordChange.js";
 import authorizeRole from "../middleware/roleMiddleware.js";
 import { validate } from "../middleware/validate.js";
 import {
@@ -14,6 +15,7 @@ const router = express.Router();
 router.get(
   "/",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN", "HR"),
   calendarController.listCalendars
 );
@@ -21,6 +23,7 @@ router.get(
 router.patch(
   "/:id",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(updateCalendarSchema),
   calendarController.updateCalendar
@@ -29,6 +32,7 @@ router.patch(
 router.post(
   "/:id/exceptions",
   authMiddleware,
+  requirePasswordChange(),
   authorizeRole("SUPERADMIN"),
   validate(createCalendarExceptionSchema),
   calendarController.createCalendarException
