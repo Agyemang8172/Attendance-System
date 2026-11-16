@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import prisma from "../config/prismaClient.js";
+import prisma, { prismaUnscoped } from "../config/prismaClient.js";
 import { auditLog } from "../utils/logger.js";
 import { writeAudit } from "../utils/auditWriter.js";
 import { callerBusinessId } from "../utils/tenant.js";
+import { runWithTenant } from "../utils/tenantContext.js";
 import { generatePairingCode, generatePublicId } from "../utils/credentials.js";
 import { constantTimeEqual, hashDeviceToken, hashPairingCode } from "../utils/kioskKeys.js";
 
@@ -177,7 +178,10 @@ export const pair = async (req: Request, res: Response): Promise<void> => {
     // rows are all excluded by state. The expiry check in SQL removes the
     // expired rows from consideration, so a correct-but-expired code finds no
     // match and takes the same refusal as a wrong code (kiosk §10).
-    const pending = await prisma.kioskTerminal.findMany({
+    // Pairing is public: the tenant is what the matching code reveals. The
+    // scan is the one owner-connection read, and the version-guarded update
+    // below then runs as the matched business.
+    const pending = await prismaUnscoped.kioskTerminal.findMany({
       where: {
         state: "PENDING_PAIRING",
         pairingCodeHash: { not: null },
@@ -209,34 +213,39 @@ export const pair = async (req: Request, res: Response): Promise<void> => {
     const tokenExpiresAt = new Date(now.getTime() + dayMs(KIOSK_TOKEN_TTL_DAYS));
 
     try {
-      await prisma.$transaction(async (tx) => {
-        // Version-current is the optimistic guard: two shoppers submitting the
-        // same code race here and exactly one update wins; the loser finds no
-        // row matching the still-pending version and falls through to the
-        // same generic refusal below.
-        await tx.kioskTerminal.update({
-          where: { id: matched.id, tokenVersion: matched.tokenVersion },
-          data: {
-            state: "ACTIVE",
-            pairedAt: now,
-            pairingCodeHash: null,
-            pairingCodeExpiresAt: null,
-            tokenHash: hashDeviceToken(token),
-            tokenVersion: { increment: 1 },
-            tokenIssuedAt: now,
-            tokenExpiresAt,
-            lastSeenAt: now,
-          },
-        });
-        await writeAudit({
-          businessId: matched.businessId,
-          action: "kiosk.paired",
-          entityType: "kiosk",
-          entityId: matched.id,
-          kioskId: matched.id,
-          reason: "pairing code used",
-        }, tx);
-      });
+      await runWithTenant(matched.businessId, () =>
+        prisma.$transaction(async (tx) => {
+          // Version-current is the optimistic guard: two shoppers submitting
+          // the same code race here and exactly one update wins; the loser
+          // finds no row matching the still-pending version and falls through
+          // to the same generic refusal below.
+          await tx.kioskTerminal.update({
+            where: { id: matched.id, tokenVersion: matched.tokenVersion },
+            data: {
+              state: "ACTIVE",
+              pairedAt: now,
+              pairingCodeHash: null,
+              pairingCodeExpiresAt: null,
+              tokenHash: hashDeviceToken(token),
+              tokenVersion: { increment: 1 },
+              tokenIssuedAt: now,
+              tokenExpiresAt,
+              lastSeenAt: now,
+            },
+          });
+          await writeAudit(
+            {
+              businessId: matched.businessId,
+              action: "kiosk.paired",
+              entityType: "kiosk",
+              entityId: matched.id,
+              kioskId: matched.id,
+              reason: "pairing code used",
+            },
+            tx
+          );
+        })
+      );
     } catch {
       // Lost the race over the same code — refusal, not a second token.
       res.status(400).json(INVALID_PAIRING_CODE);

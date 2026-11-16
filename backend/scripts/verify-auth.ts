@@ -27,6 +27,7 @@ const target = assertSafeTestDatabase(testDatabaseUrl, {
   developmentHost: process.env.DEV_DB_HOST,
 });
 process.env.DATABASE_URL = testDatabaseUrl;
+delete process.env.DATABASE_URL_APP;
 process.env.DEV_DATABASE_URL = originalDevelopmentUrl;
 
 console.log(`[verify-auth] Verified test database target: ${describeTarget(target)}`);
@@ -35,7 +36,7 @@ const main = async (): Promise<void> => {
   const fixtures = await import("../tests/fixtures.js");
   const { default: request } = await import("supertest");
   const { default: app } = await import("../server.js");
-  const { default: prisma } = await import("../config/prismaClient.js");
+  const { prismaUnscoped: prisma } = await import("../config/prismaClient.js");
 
   await fixtures.ensureTestAccounts();
 

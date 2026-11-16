@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import prisma from "../config/prismaClient.js";
+import prisma, { prismaUnscoped } from "../config/prismaClient.js";
 import { callerBusinessId } from "../utils/tenant.js";
 import {
   AUTO_CLOCK_OUT_JOB_ACTIONS,
@@ -21,7 +21,10 @@ import {
  */
 export const runAutoClockOutJob = async (req: Request, res: Response): Promise<void> => {
   try {
-    const result = await runAutoClockOut(prisma, req.body.businessId);
+    // The sweep is a trusted cross-tenant job: it walks every active business
+    // inside one advisory-locked transaction. An app-role session has no single
+    // tenant to set, so the job lane uses the owner connection deliberately.
+    const result = await runAutoClockOut(prismaUnscoped, req.body.businessId);
 
     // The sweep's own sentinel answers for it: another worker holds the
     // advisory lock, so this caller is rejected rather than queued behind a
@@ -57,6 +60,9 @@ export const runAutoClockOutJob = async (req: Request, res: Response): Promise<v
 export const jobStatus = async (req: Request, res: Response): Promise<void> => {
   try {
     const isJobCaller = req.actorType === "job";
+    // The job token has no tenant; the session branch runs inside the tenant
+    // that authMiddleware established.
+    const client = isJobCaller ? prismaUnscoped : prisma;
     // The session branch filters to the SUPERADMIN's own business — resolved
     // from their account with the shared helper, because the session payload
     // carries userId, not businessId. The job token is a server secret with
@@ -69,7 +75,7 @@ export const jobStatus = async (req: Request, res: Response): Promise<void> => {
         ? { businessId: (await callerBusinessId(req.user.userId)) ?? "" }
         : undefined;
 
-    const latest = await prisma.auditLog.findFirst({
+    const latest = await client.auditLog.findFirst({
       where: {
         actorType: "SYSTEM",
         action: { in: [...AUTO_CLOCK_OUT_JOB_ACTIONS] },
@@ -93,7 +99,7 @@ export const jobStatus = async (req: Request, res: Response): Promise<void> => {
       // an approximation on purpose: a concurrent run's rows could share the
       // same millisecond, and at the 15-minute cadence the latest batch is
       // the just-finished run in practice.
-      const batch = await prisma.auditLog.groupBy({
+      const batch = await client.auditLog.groupBy({
         by: ["action"],
         where: {
           actorType: "SYSTEM",

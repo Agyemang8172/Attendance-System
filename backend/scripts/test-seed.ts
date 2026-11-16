@@ -29,7 +29,7 @@ const target = assertSafeTestDatabase(testDatabaseUrl, {
 // the client module is evaluated.
 process.env.DATABASE_URL = testDatabaseUrl!;
 
-const { default: prisma } = await import("../config/prismaClient.js");
+const { prismaUnscoped: prisma } = await import("../config/prismaClient.js");
 const {
   ensureTestAccounts,
   TEST_PASSWORD,

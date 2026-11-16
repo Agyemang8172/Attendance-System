@@ -1,5 +1,6 @@
-import prisma from "../config/prismaClient.js";
+import prisma, { prismaUnscoped } from "../config/prismaClient.js";
 import { Prisma } from "../generated/prisma/index.js";
+import { currentTenant } from "./tenantContext.js";
 import { logger } from "./logger.js";
 
 /**
@@ -60,15 +61,21 @@ const actorTypeFor = (entry: AuditEntry): AuditActorTypeValue =>
 /**
  * Persist one audit row. Transaction callers pass their `tx` so the audit row
  * commits or rolls back with the business write it describes; everything else
- * uses `prisma` itself. Failures are swallowed onto stdout — auditing must
- * never break the request it is describing.
+ * uses the tenant-scoped client. A rejection raised before a tenant exists
+ * (a bad kiosk token, for example) still has a business id in the entry, so
+ * that narrow case uses the owner connection rather than losing the row.
+ * Failures are swallowed onto stdout — auditing must never break the request
+ * it is describing.
  */
 export const writeAudit = async (
   entry: AuditEntry,
-  client: Prisma.TransactionClient = prisma
+  client?: Prisma.TransactionClient
 ): Promise<void> => {
+  const target =
+    client ?? (currentTenant() ? prisma : prismaUnscoped);
+
   try {
-    await client.auditLog.create({
+    await target.auditLog.create({
       data: {
         businessId: entry.businessId,
         actorType: actorTypeFor(entry),

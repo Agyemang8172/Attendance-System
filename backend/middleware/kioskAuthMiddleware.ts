@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import prisma from "../config/prismaClient.js";
+import prisma, { prismaUnscoped } from "../config/prismaClient.js";
 import { constantTimeEqual, hashDeviceToken } from "../utils/kioskKeys.js";
 import { writeAudit } from "../utils/auditWriter.js";
+import { runWithTenant } from "../utils/tenantContext.js";
 
 /**
  * Device-token middleware (kiosk spec §2.5 — the server rechecks the row on
@@ -59,7 +60,10 @@ const kioskAuthMiddleware = async (
       return;
     }
 
-    const terminal = await prisma.kioskTerminal.findUnique({
+    // The device token is what names the tenant, so this single row is read
+    // through the owner connection. Every later statement in the request runs
+    // as the terminal's business once the row has been verified.
+    const terminal = await prismaUnscoped.kioskTerminal.findUnique({
       where: { id: decoded.kioskId },
       select: {
         id: true,
@@ -72,10 +76,14 @@ const kioskAuthMiddleware = async (
       },
     });
 
-    // Unknown device, cross-reference device, or non-ACTIVE state all answer
-    // the same refusal so the response confirms nothing to an attacker.
+    if (!terminal) {
+      res.status(401).json({ success: false, message: "Invalid token" });
+      return;
+    }
+
+    // A cross-reference device or a non-ACTIVE state answers the same refusal
+    // so the response confirms nothing to an attacker.
     if (
-      !terminal ||
       terminal.businessId !== decoded.businessId ||
       terminal.state !== "ACTIVE"
     ) {
@@ -159,22 +167,26 @@ const kioskAuthMiddleware = async (
       return;
     }
 
-    req.kiosk = {
-      kioskId: terminal.id,
-      businessId: terminal.businessId,
-    };
+    // From here on the request runs as the terminal's business: the update
+    // below and every handler behind `next()` see `app.business_id`.
+    runWithTenant(terminal.businessId, () => {
+      req.kiosk = {
+        kioskId: terminal.id,
+        businessId: terminal.businessId,
+      };
 
-    // Best effort: the request is already authenticated, so a failed uptime
-    // write must not fail the punch. The renewal window moves only on
-    // POST /token/renew (§2.4), never as a side effect here.
-    prisma.kioskTerminal
-      .update({
-        where: { id: terminal.id },
-        data: { lastSeenAt: new Date() },
-      })
-      .catch(() => {});
+      // Best effort: the request is already authenticated, so a failed uptime
+      // write must not fail the punch. The renewal window moves only on
+      // POST /token/renew (§2.4), never as a side effect here.
+      prisma.kioskTerminal
+        .update({
+          where: { id: terminal.id },
+          data: { lastSeenAt: new Date() },
+        })
+        .catch(() => {});
 
-    next();
+      next();
+    });
   } catch {
     // jwt.verify throws on a bad signature or expired token; that is a 401.
     res.status(401).json({ success: false, message: "Invalid token" });
