@@ -88,7 +88,7 @@ function StaffAttendance() {
           label="Search attendance"
           value={filters.search}
           onChange={v => handleFilterChange('search', v)}
-          placeholder="Employee code, shift, remarks…"
+          placeholder="Remarks or closure reason…"
           className="w-full sm:w-64"
         />
         <div className="flex items-center gap-2">

@@ -846,12 +846,24 @@ export const getMyAttendance = async (req: Request, res: Response) => {
       return;
     }
 
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, status, sessionStatus, search } = req.query;
     const page = parseInt((req.query.page as string) || "1") || 1;
     const limit = parseInt((req.query.limit as string) || "50") || 50;
     const skip = (page - 1) * limit;
 
     const where: Record<string, unknown> = { userId };
+
+    // SEC-19: the staff screen has always offered these filters; the query
+    // schema used to strip them silently, so the list never changed. They are
+    // scalar columns on the caller's own rows, so no extra tenant surface.
+    if (status) where.status = status;
+    if (sessionStatus) where.sessionStatus = sessionStatus;
+    if (search) {
+      where.OR = [
+        { remarks: { contains: search as string, mode: "insensitive" } },
+        { requiresReviewReason: { contains: search as string, mode: "insensitive" } },
+      ];
+    }
 
     if (startDate && endDate) {
       where.clockIn = {

@@ -206,6 +206,20 @@ export const getMyAttendanceSchema = {
   query: z.object({
     startDate: z.string().datetime().optional(),
     endDate: z.string().datetime().optional(),
+    sessionStatus: z.enum(["OPEN", "CLOSED"]).optional(),
+    status: z
+      .enum([
+        "EARLY",
+        "ON_TIME",
+        "LATE",
+        "OPEN_SESSION",
+        "CLOCK_OUT_MISSING",
+        "AUTO_CLOSED",
+        "ABSENT",
+        "REQUIRES_REVIEW",
+      ])
+      .optional(),
+    search: z.string().trim().max(100).optional(),
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(50),
   }),
@@ -244,7 +258,10 @@ export const shiftIdSchema = {
 export const shiftListQuerySchema = {
   query: z.object({
     isActive: z.enum(["true", "false"]).optional(),
-    page: z.coerce.number().int().positive().default(1),
+    search: z.string().trim().max(100).optional(),
+    page: z.coerce.number().int().positive()
+      .refine((page) => Number.isSafeInteger((page - 1) * 100), "Page number is too large")
+      .default(1),
     limit: z.coerce.number().int().positive().max(100).default(50),
   }),
 };

@@ -273,6 +273,47 @@ describe("GET /api/attendance/my-attendance", () => {
     expect(res.body.success).toBe(true);
   });
 
+  it("applies the status, session and search filters (SEC-19)", async () => {
+    const all = await request(app)
+      .get("/api/attendance/my-attendance?limit=100")
+      .set("Authorization", `Bearer ${staffToken}`);
+    expect(all.status).toBe(200);
+    const sample = all.body.data[0] as { status: string; sessionStatus: string };
+
+    const byStatus = await request(app)
+      .get(`/api/attendance/my-attendance?status=${encodeURIComponent(sample.status)}&limit=100`)
+      .set("Authorization", `Bearer ${staffToken}`);
+    expect(byStatus.status).toBe(200);
+    expect(
+      (byStatus.body.data as Array<{ status: string }>).every(
+        (row) => row.status === sample.status
+      )
+    ).toBe(true);
+
+    const bySession = await request(app)
+      .get(`/api/attendance/my-attendance?sessionStatus=${sample.sessionStatus}&limit=100`)
+      .set("Authorization", `Bearer ${staffToken}`);
+    expect(bySession.status).toBe(200);
+    expect(
+      (bySession.body.data as Array<{ sessionStatus: string }>).every(
+        (row) => row.sessionStatus === sample.sessionStatus
+      )
+    ).toBe(true);
+
+    const noMatch = await request(app)
+      .get("/api/attendance/my-attendance?search=zzz-no-such-remark")
+      .set("Authorization", `Bearer ${staffToken}`);
+    expect(noMatch.status).toBe(200);
+    expect(noMatch.body.total).toBe(0);
+  });
+
+  it("rejects an unknown status filter with 400", async () => {
+    const res = await request(app)
+      .get("/api/attendance/my-attendance?status=PRESENT")
+      .set("Authorization", `Bearer ${staffToken}`);
+    expect(res.status).toBe(400);
+  });
+
   it("rejects unauthenticated requests with 401", async () => {
     const res = await request(app).get("/api/attendance/my-attendance");
     expect(res.status).toBe(401);
