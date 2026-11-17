@@ -41,6 +41,11 @@ function Devices() {
   const [page, setPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
 
+  // Two modals share this lane: the form (open first) and the result that
+  // replaces it once the code exists. M9-B6: the form used to render with
+  // open={false} behind the same flag as the result, so the header button
+  // could never reach it and no pairing code could be generated at all.
+  const [showPairingForm, setShowPairingForm] = useState(false)
   const [showPairingModal, setShowPairingModal] = useState(false)
   const [newPairingCode, setNewPairingCode] = useState('')
   const [pairingCodeExpires, setPairingCodeExpires] = useState('')
@@ -99,6 +104,7 @@ function Devices() {
       const res = await api.post('/kiosk/pairing-codes', pairingForm)
       setNewPairingCode(res.data.data.pairingCode)
       setPairingCodeExpires(res.data.data.expiresAt)
+      setShowPairingForm(false)
       setShowPairingModal(true)
       setPairingForm({ label: '', siteId: '' })
       fetchDevices(page)
@@ -138,7 +144,7 @@ function Devices() {
         eyebrow={formatTodayLong()}
         title="Kiosk Devices"
         actions={
-          <button onClick={() => setShowPairingModal(true)} className="btn-primary">
+          <button onClick={() => setShowPairingForm(true)} className="btn-primary">
             <FaPlus className="mr-2" /> Generate Pairing Code
           </button>
         }
@@ -295,10 +301,14 @@ function Devices() {
       )}
 
       {/* Generate Pairing Code Form Modal */}
-      {!showPairingModal && (
+      {showPairingForm && (
         <ModalShell
-          open={false}
-          onClose={() => {}}
+          open={true}
+          onClose={() => {
+            setShowPairingForm(false)
+            setPairingForm({ label: '', siteId: '' })
+            setFormError('')
+          }}
           label="Generate Pairing Code"
           maxWidth="md"
         >
@@ -350,7 +360,7 @@ function Devices() {
 
           <div className="flex justify-end gap-3">
             <button
-              onClick={() => { setShowPairingModal(false); setPairingForm({ label: '', siteId: '' }); setFormError(''); }}
+              onClick={() => { setShowPairingForm(false); setPairingForm({ label: '', siteId: '' }); setFormError(''); }}
               disabled={submitting}
               className="px-4 py-2 text-chrome-ink-muted hover:text-chrome-ink text-sm font-sans disabled:opacity-50"
             >

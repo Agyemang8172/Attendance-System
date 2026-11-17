@@ -70,6 +70,8 @@ function ManageStaff() {
   const [pinResetUser, setPinResetUser] = useState<StaffUser | null>(null)
   const [pinResetReason, setPinResetReason] = useState('')
   const [pinResetting, setPinResetting] = useState(false)
+  const [issuedPin, setIssuedPin] = useState<{ name: string; pin: string } | null>(null)
+  const [pinCopied, setPinCopied] = useState(false)
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -197,8 +199,15 @@ function ManageStaff() {
     }
     setPinResetting(true)
     try {
-      await api.post(`/hr/users/${pinResetUser.id}/reset-pin`, { reason: pinResetReason.trim() })
-      toast.success(`PIN reset for ${pinResetUser.firstName} ${pinResetUser.lastName}. The new PIN has been sent to them.`)
+      const response = await api.post(`/hr/users/${pinResetUser.id}/reset-pin`, { reason: pinResetReason.trim() })
+      const pin = response.data?.data?.pin
+      const name = `${pinResetUser.firstName} ${pinResetUser.lastName}`
+      if (typeof pin === 'string' && pin.length === 4) {
+        setIssuedPin({ name, pin })
+        setPinCopied(false)
+      } else {
+        toast.success(`PIN reset for ${name}.`)
+      }
       setPinResetUser(null)
       setPinResetReason('')
     } catch (error: unknown) {
@@ -432,6 +441,54 @@ function ManageStaff() {
           isHr={isHr}
         />
       )}
+
+      {/* The PIN is shown once, to the administrator who performed the reset. */}
+      {issuedPin && (
+        <ModalShell
+          open={true}
+          onClose={() => setIssuedPin(null)}
+          label="New kiosk PIN"
+          maxWidth="sm"
+        >
+          <p className="text-eyebrow text-brass-chrome opacity-70 mb-3">One-time PIN</p>
+          <h2 className="text-display-sm text-chrome-ink font-serif leading-tight mb-3">
+            Kiosk PIN for {issuedPin.name}
+          </h2>
+          <p className="text-chrome-ink-muted text-sm font-sans mb-4">
+            Give this PIN to the employee now. It will not be shown again.
+          </p>
+          <div className="flex items-stretch gap-2">
+            <p className="flex-1 font-mono text-3xl tracking-[0.35em] text-chrome-ink bg-chrome-elevated border border-chrome-line rounded-md px-4 py-3 text-center">
+              {issuedPin.pin}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (!navigator.clipboard) {
+                  toast.error('Copy is not available in this browser.')
+                  return
+                }
+                navigator.clipboard
+                  .writeText(issuedPin.pin)
+                  .then(() => setPinCopied(true))
+                  .catch(() => toast.error('Could not copy the PIN.'))
+              }}
+              className="btn bg-chrome-elevated text-chrome-ink border border-chrome-line px-[14px] py-[8px] rounded-md transition-all duration-150 active:scale-[0.98]"
+            >
+              {pinCopied ? 'Copied' : 'Copy PIN'}
+            </button>
+          </div>
+          <div className="flex justify-end mt-8">
+            <button
+              type="button"
+              onClick={() => setIssuedPin(null)}
+              className="btn bg-brass-chrome text-ink px-[14px] py-[8px] rounded-md transition-all duration-150 active:scale-[0.98]"
+            >
+              I have written it down
+            </button>
+          </div>
+        </ModalShell>
+      )}
     </Layout>
   )
 }
@@ -566,7 +623,7 @@ const PinResetDialog = ({
     body={
       <>
         <p>You are about to reset the kiosk PIN for <span className="font-medium">{user.firstName} {user.lastName}</span>.</p>
-        <p className="mt-2">A new 4-digit PIN will be generated and sent to the employee.</p>
+        <p className="mt-2">A new 4-digit PIN will be generated. It is shown to you once, so you can pass it to the employee.</p>
         <div className="mt-4">
           <label htmlFor="pin-reset-reason" className="text-caption text-ink-muted block mb-1">
             Reason (required)

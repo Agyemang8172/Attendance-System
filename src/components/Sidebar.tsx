@@ -182,21 +182,9 @@ const allNavItems: NavItem[] = [
     roles: ['SUPERADMIN'],
   },
   {
-    label: 'Help & Corrections',
-    path: '/admin-help-corrections',
-    icon: <FaBell />,
-    roles: ['SUPERADMIN'],
-  },
-  {
     label: 'Reports',
     path: '/reports',
     icon: <FaChartBar />,
-    roles: ['SUPERADMIN'],
-  },
-  {
-    label: 'Audit Log',
-    path: '/audit-log',
-    icon: <FaClockRotateLeft />,
     roles: ['SUPERADMIN'],
   },
   {
