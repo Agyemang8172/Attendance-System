@@ -20,6 +20,7 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "db:bootstrap": "tsx scripts/bootstrap.ts",
     "test:db:check": "tsx scripts/test-db.ts check",
     "test:db:deploy": "tsx scripts/test-db.ts deploy",
     "test:db:reset": "tsx scripts/test-db.ts reset"
