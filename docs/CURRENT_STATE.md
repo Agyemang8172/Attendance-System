@@ -2,7 +2,7 @@
 
 ## Platform recovery — committed results 2026-11-17 (HUMAN_CHECKPOINT)
 
-- **Branch:** `codex/attendpro-phased-delivery`; authorized commits created on the detached Phase 3 worktree and the branch fast-forwarded after final review. `origin/main` remains `acc0ff5`; nothing pushed.
+- **Branch:** `codex/attendpro-phased-delivery`; authorized commits created on the detached Phase 3 worktree and the branch fast-forwarded after final review. Final code tip is `268f02c` (Group 10); this governance commit adds the Phase 4 record. `origin/main` remains `acc0ff5`; nothing pushed.
 - **Recovery refs (preserved):** `recovery/p112-backend-ed6410c` → `ed6410c815ad3225b00ff2e45131b70b49122675`, `recovery/platform-snapshot-d89133f` → `d89133fe38d246f99e78e8520a829c943614a622`, `recovery/m10-committed-baseline` → `18045823cc64eecfbac4b48d9dab4cf497c7fa0e`.
 - **Backups:** `C:/Users/USER/AppData/Local/Temp/opencode/p11-phase1-backup/` (SHA-256 verified); pre-correction `.../phase2-pre-g2-correction/`. Full record: `docs/attendpro/PHASE3-RECOVERY-RECORD-2026-11-17.md`.
 
@@ -22,13 +22,24 @@
 | G9 | `436b27b` | `170265c1…` | Admin flow, screen and modal coverage suites |
 | Harness | `72b6a2b` | `af5b093f…` | Prisma delegate mock-leak correction (test files only) |
 | G11 tooling | `405988a` | `eef501f3…` | 33 Dev-OS platform files (Arc K) |
+| Governance (Phase 3) | `9d8407d` | `cbdec821…` | Arc O + recovery/reconciliation records |
+| G10 dependencies | `016b56c` | `73085f94…` | Prisma 6.19.3 pin, dependency-category moves, `deepmerge-ts` override, both lockfiles |
+| G10 bootstrap | `268f02c` | `08bef3b4…` | `db:bootstrap`, `backend/scripts/bootstrap.ts`, `backend/.env.example` (closes SEC-16), `.gitignore` |
 
-- **Verification after commits:** G6 12/12, G7 29/29 + root `tsc` clean, G8 32/32, G9 61/61; combined seven-suite P11.2 run 304/304 at harness commit (8/8 consecutive prior runs, individual files all pass); frontend battery 102/102, `vite build` pass (~1.08 MB chunk warning), UI taste check pass (70 files).
-- **124-path reconciliation:** 31 committed (G1–5) + 53 approved (G6–G9/prereq/G11 tooling/governance) + 32 deferred documentation paths (arcs L/M/N/P, excluded from authorized scope) + 8 G10 = 124; no unresolved paths. See the Phase 3 recovery record.
+- **Verification after commits:** G6 12/12, G7 29/29 + root `tsc` clean, G8 32/32, G9 61/61; combined seven-suite P11.2 run 304/304 at harness commit (8/8 consecutive prior runs, individual files all pass).
+- **124-path reconciliation:** 31 committed (G1–5) + 53 approved (G6–G9/prereq/G11 tooling/governance) + 32 deferred documentation paths (arcs L/M/N/P, excluded from authorized scope) + 8 G10 = 124; no unresolved paths. G10 is now committed as its own two units. See the Phase 3 and Phase 4 records.
+
+### Group 10 finalization (this phase)
+
+- **Task 1 — deployment compatibility:** confirmed, no blocker. CI and the documented manual deployment both run `npm ci` (devDependencies included) before `prisma generate`/`migrate deploy`; the Vercel target is the Vite frontend only. `prisma`, `tsx`, `@prisma/client`, `@prisma/adapter-pg` and `dotenv` are direct declarations (not transitive); runtime install keeps only what `node dist/server.js` needs. Bootstrap guards check the same `DATABASE_URL` the client connects with, and secrets are validated, bcrypt-12 hashed and never printed.
+- **Task 3 — 305 to 304:** there was no real change. The authoritative P11.2 total is 304 (all preserved logs and both pre/post-fix measurements agree); "305" was a transcription error. The harness fix removed no test and no assertion; the only test-declaration change in the range is a count-neutral, tightening rename in `accountEdges.test.ts`.
+- **Task 4 — integrated verification (final tip):** frontend 25 files / 361 tests pass; backend 39 files / 843 tests pass on the guarded isolated DB; P11.2 304/304; frontend and backend `tsc --noEmit` clean; `vite build` and backend build pass; gitleaks 0 over the 51-commit `origin/main..HEAD` range; `git fsck` clean; recovery refs intact; worktrees intact.
+- **Task 5 — publication readiness:** remote has only `main` (`acc0ff5`), no branch conflict. CI runs on `pull_request` and `push` to `main` only; no deploy workflow exists. Command (not run): `git push -u origin codex/attendpro-phased-delivery`. Confirm Vercel dashboard preview settings before pushing.
+- **Residual risk (documented, not fixed here):** dependency audits remain non-clean (production non-breaking fixes available: backend `body-parser`/`fast-uri`/`ip-address`/`qs`, root `follow-redirects`; production breaking-only: backend `zod`; dev-only: `vitest`/`tinypool` and Prisma 6 transitive). The backend `deepmerge-ts` override resolves the dev advisory there; root keeps `7.1.5` (dev-only, transitive). The Prisma 7 warning is accepted as future maintenance. `DEPLOYMENT-RUNBOOK.md` still describes the pre-G10 state and is a recommended documentation follow-up. Full detail in `docs/attendpro/PHASE4-G10-FINALIZATION-2026-11-17.md` §7.
 
 ### Remaining (blocked) work
 
-- **Group 10 — committed by nobody, stays uncommitted:** dependency category moves, Prisma `6.19.3` pin and `deepmerge-ts` override, `db:bootstrap` script and env templates. Verified in an isolated sandbox (clean installs, Prisma validate/generate without migrations, CLI in CI, bootstrap guards, env parity) but requires separate owner approval before any commit. See §5 of the Phase 3 recovery record for approval requirements.
+- **Publication:** push and pull request remain blocked pending explicit human go-ahead. Nothing pushed; `origin/main` is still `acc0ff5`.
 - No test-harness leakage remains (corrected in `72b6a2b`). No other known regressions.
 
 ## P11 Tester follow-up - 2026-11-15

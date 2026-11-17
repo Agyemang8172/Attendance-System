@@ -2,7 +2,7 @@
 
 ## Platform recovery — 2026-11-17 (HUMAN_CHECKPOINT)
 
-- **Branch:** `codex/attendpro-phased-delivery`; authorized commits landed via `commit.sh` and branch fast-forwarded after review. Recovery refs: `recovery/p112-backend-ed6410c`→`ed6410c`, `recovery/platform-snapshot-d89133f`→`d89133f`, `recovery/m10-committed-baseline`→`1804582`. Backups: `C:/Users/USER/AppData/Local/Temp/opencode/p11-phase1-backup/` (SHA-256 verified), `.../phase2-pre-g2-correction/`. Full record: `docs/attendpro/PHASE3-RECOVERY-RECORD-2026-11-17.md`.
+- **Branch:** `codex/attendpro-phased-delivery`; authorized commits landed via `commit.sh` and branch fast-forwarded after review. Final code tip is `268f02c` (Group 10); this governance commit adds the Phase 4 record. `origin/main` remains `acc0ff5`; nothing pushed. Recovery refs: `recovery/p112-backend-ed6410c`→`ed6410c`, `recovery/platform-snapshot-d89133f`→`d89133f`, `recovery/m10-committed-baseline`→`1804582`. Backups: `C:/Users/USER/AppData/Local/Temp/opencode/p11-phase1-backup/` (SHA-256 verified), `.../phase2-pre-g2-correction/`. Records: `docs/attendpro/PHASE3-RECOVERY-RECORD-2026-11-17.md` (recovery) and `docs/attendpro/PHASE4-G10-FINALIZATION-2026-11-17.md` (Group 10 finalization).
 
 | Unit | State | Commit / tree | Verification / notes |
 |---|---|---|---|
@@ -18,10 +18,13 @@
 | G9 M10 frontend coverage | DONE (committed) | `436b27b` `170265c1…` | 61/61; contracts aligned to P10 parsers |
 | Harness mock-leak correction | DONE (committed) | `72b6a2b` `af5b093f…` | Combined 7-suite 304/304 (8/8 runs) |
 | G11 Dev-OS platform (Arc K) | DONE (committed) | `405988a` `eef501f3…` | 33 files; git commit-gate controls intact |
-| Governance / current-state records | IN PROGRESS (this commit) | — | Arc O + recovery/reconciliation records |
-| G10 Dependency + SSB-2 bootstrap | BLOCKED (uncommitted) | — | Verified isolated; needs separate owner approval |
+| Governance / current-state records (Phase 3) | DONE (committed) | `9d8407d` | Arc O + recovery/reconciliation records |
+| G10 Dependency remediation | DONE (committed) | `016b56c` `73085f94…` | Prisma 6.19.3 pin, category moves, `deepmerge-ts` override, lockfiles |
+| G10 Bootstrap + env templates | DONE (committed) | `268f02c` `08bef3b4…` | `db:bootstrap`, `backend/.env.example` (closes SEC-16), `.gitignore` |
+| Finalization / publication prep | DONE (this governance commit) | — | Phase 4 record + CURRENT_STATE + this board |
 
-- **Verification:** focused 188/188, P11.2 304/304 combined, frontend 102/102, root tsc/build/taste pass. **124-path accounting:** 31 + 53 + 32 deferred docs + 8 G10 = 124, none unresolved. No push performed.
+- **Verification (final committed tip):** frontend 361/361, backend 843/843 (guarded isolated DB), combined P11.2 304/304, both typechecks clean, both production builds pass, gitleaks 0 over the 51-commit unpublished range, git fsck clean. **124-path accounting:** 31 + 53 + 32 deferred docs + 8 G10 = 124, none unresolved; G10 now committed as its own two units.
+- **Publication readiness:** remote has only `main` (`acc0ff5`); no remote conflict. CI triggers on `pull_request` and `push` to `main` only; no deploy workflow. Command (not run): `git push -u origin codex/attendpro-phased-delivery`. Vercel dashboard settings need owner confirmation. Push/PR remains blocked pending explicit go-ahead.
 
 ## Current execution - 2026-11-01
 
