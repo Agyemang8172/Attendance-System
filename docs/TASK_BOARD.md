@@ -1,5 +1,28 @@
 # Dev-OS Task Board & DAG Workflow State
 
+## Platform recovery — 2026-11-17 (HUMAN_CHECKPOINT)
+
+- **Branch:** `codex/attendpro-phased-delivery`; authorized commits landed via `commit.sh` and branch fast-forwarded after review. Recovery refs: `recovery/p112-backend-ed6410c`→`ed6410c`, `recovery/platform-snapshot-d89133f`→`d89133f`, `recovery/m10-committed-baseline`→`1804582`. Backups: `C:/Users/USER/AppData/Local/Temp/opencode/p11-phase1-backup/` (SHA-256 verified), `.../phase2-pre-g2-correction/`. Full record: `docs/attendpro/PHASE3-RECOVERY-RECORD-2026-11-17.md`.
+
+| Unit | State | Commit / tree | Verification / notes |
+|---|---|---|---|
+| G1 Test alignment | DONE (committed) | `2b8a164` `78496e2c…` | Focused battery 188/188 |
+| G2 SEC-07 lane routing | DONE (committed) | `689f6c1` `22c03693…` | Retains `delete process.env.DATABASE_URL_APP` in `verify-auth.ts` |
+| G3 SEC-13 kiosk PIN | DONE (committed) | `a4016bb` `26ddde31…` | Cumulative lockout |
+| G4 SEC-19 filters | DONE (committed) | `6c12720` `62f9362e…` | Staff/shift validation |
+| G5 SEC-10/11/12/14+SEC-09 | DONE (committed) | `64a967b` `29d79eef…` | Assignment password-change gate |
+| Prereq JSDOM localStorage | DONE (committed) | `c9f4dc5` `3395fb2a…` | Required by G6/7 (baseline fails 41 tests) |
+| G6 Landing reconciliation | DONE (committed) | `35c6829` `e9b9775b…` | 12/12; landing-copy test hunk only |
+| G7 SEC-08 token storage | DONE (committed) | `9c1061e` `497cd1b4…` | 29/29; root tsc clean; fresh-token hunks |
+| G8 SEC-15/SEC-18/M9-B6 | DONE (committed) | `8a665de` `09a9fbfb…` | 32/32 screen fixes |
+| G9 M10 frontend coverage | DONE (committed) | `436b27b` `170265c1…` | 61/61; contracts aligned to P10 parsers |
+| Harness mock-leak correction | DONE (committed) | `72b6a2b` `af5b093f…` | Combined 7-suite 304/304 (8/8 runs) |
+| G11 Dev-OS platform (Arc K) | DONE (committed) | `405988a` `eef501f3…` | 33 files; git commit-gate controls intact |
+| Governance / current-state records | IN PROGRESS (this commit) | — | Arc O + recovery/reconciliation records |
+| G10 Dependency + SSB-2 bootstrap | BLOCKED (uncommitted) | — | Verified isolated; needs separate owner approval |
+
+- **Verification:** focused 188/188, P11.2 304/304 combined, frontend 102/102, root tsc/build/taste pass. **124-path accounting:** 31 + 53 + 32 deferred docs + 8 G10 = 124, none unresolved. No push performed.
+
 ## Current execution - 2026-11-01
 
 The owner instructed the Orchestrator to proceed with the phased plan and per-phase Security/commit.sh gates. This authorizes starting dependency-eligible work, not bypassing concrete phase checkpoints, protected database/security actions, or commit review. P01 is the only active phase. Its explicit runtime-selection checkpoint still precedes runtime configuration/install changes. No push is authorized here.

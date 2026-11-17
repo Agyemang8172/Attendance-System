@@ -134,3 +134,24 @@ repeating it.
   HR-assisted override); "expected today" and client-side "Attendance Rate" dropped; the
   deactivation lane stays on the audited legacy endpoint.
 
+## Post-approval addendum (2026-10-21)
+
+The owner approved the design-reconciliation direction with conditions. This plan is historical.
+It remains the approved implementation plan for the M8 portals, but the landing page is now
+governed by `docs/attendpro/LANDING-PAGE-SPEC.md` and root `DESIGN.md`.
+
+Where this plan conflicts with the landing specification, the landing specification wins. The
+current differences are:
+
+- The landing page is paper, not the dark Linear surface.
+- The sample organisation is `Example Organisation`, not `Finest Supermarket, Accra`.
+- The landing copy is general-purpose, not shift-business or Ghana-specific.
+- The landing keeps one Sign in action. Registration, recovery, pricing, trial, demo, and
+  dashboard links are removed or deferred as recorded in the landing specification.
+- The eight-state status palette is required. The five-tone mapping is not acceptable.
+- The `/#preview` anchor and the corner-bracket frame are required.
+- Visual verification must cover 375, 390, 768, 1280, and 1440 widths.
+
+No landing restyle or colour-token change is authorised until the owner reviews the reconciled
+documents and the proposed status palette. This addendum is documentation only.
+

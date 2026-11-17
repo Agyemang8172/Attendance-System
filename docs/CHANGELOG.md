@@ -37,6 +37,7 @@ Dev-OS release numbers below.
 - **Staff portal**: Removed the dead clock buttons, streak, and attendance-rate card. Rebuilt the dashboard around weekly hours, the current day, and recent history; added functional attendance, schedule, off-days, help-request, correction, profile, and change-PIN screens.
 - **HR and SUPERADMIN portals**: Completed the HR dashboard, attendance register, exceptions, staff management, help queue, corrections queue, reports, and audit history. Added the SUPERADMIN setup screens for shifts, scheduling, policies, calendars, sites, and kiosk devices.
 - **Responsive and accessible behaviour**: Verified 375, 768, and 1440 widths, added focus management to dialogs, labelled controls, text-plus-colour status, and inline error states. Recorded the remaining defects in `docs/attendpro/M8-GAP-REGISTER.md`.
+  - **Correction (2026-10-21):** The viewport-verification claim above is not supported by landing-specific screenshots or visual-regression artefacts. The landing page has open gaps L1 to L9 in `docs/attendpro/M8-GAP-REGISTER.md` section C. The current acceptance contract is `docs/attendpro/LANDING-PAGE-SPEC.md`.
 
 ## [4.3.0] — 2026-10-01
 

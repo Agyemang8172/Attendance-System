@@ -1,5 +1,36 @@
 # Project State
 
+## Platform recovery — committed results 2026-11-17 (HUMAN_CHECKPOINT)
+
+- **Branch:** `codex/attendpro-phased-delivery`; authorized commits created on the detached Phase 3 worktree and the branch fast-forwarded after final review. `origin/main` remains `acc0ff5`; nothing pushed.
+- **Recovery refs (preserved):** `recovery/p112-backend-ed6410c` → `ed6410c815ad3225b00ff2e45131b70b49122675`, `recovery/platform-snapshot-d89133f` → `d89133fe38d246f99e78e8520a829c943614a622`, `recovery/m10-committed-baseline` → `18045823cc64eecfbac4b48d9dab4cf497c7fa0e`.
+- **Backups:** `C:/Users/USER/AppData/Local/Temp/opencode/p11-phase1-backup/` (SHA-256 verified); pre-correction `.../phase2-pre-g2-correction/`. Full record: `docs/attendpro/PHASE3-RECOVERY-RECORD-2026-11-17.md`.
+
+### Committed units after `ed6410c` (tree shown for each)
+
+| Unit | Commit | Tree | Scope |
+|---|---|---|---|
+| G1 | `2b8a164` | `78496e2c…` | Test alignment (Arc E) |
+| G2 | `689f6c1` | `22c03693…` | SEC-07 two-role Prisma lane routing; retains security-critical `delete process.env.DATABASE_URL_APP` in `verify-auth.ts` |
+| G3 | `a4016bb` | `26ddde31…` | SEC-13 kiosk PIN cumulative lockout |
+| G4 | `6c12720` | `62f9362e…` | SEC-19 staff/shift list filter validation |
+| G5 | `64a967b` | `29d79eef…` | SEC-10/11/12/14 + SEC-09 hardening; assignment password-change gate |
+| Prereq | `c9f4dc5` | `3395fb2a…` | JSDOM `localStorage` stub (G6/7 test dependency) |
+| G6 | `35c6829` | `e9b9775b…` | Landing page + walkthrough + M8 copy; landing-copy test hunk |
+| G7 | `9c1061e` | `497cd1b4…` | Fresh-token storage + role route guards; fresh-token test hunks |
+| G8 | `8a665de` | `09a9fbfb…` | Staff management, device scoping, sidebar visibility |
+| G9 | `436b27b` | `170265c1…` | Admin flow, screen and modal coverage suites |
+| Harness | `72b6a2b` | `af5b093f…` | Prisma delegate mock-leak correction (test files only) |
+| G11 tooling | `405988a` | `eef501f3…` | 33 Dev-OS platform files (Arc K) |
+
+- **Verification after commits:** G6 12/12, G7 29/29 + root `tsc` clean, G8 32/32, G9 61/61; combined seven-suite P11.2 run 304/304 at harness commit (8/8 consecutive prior runs, individual files all pass); frontend battery 102/102, `vite build` pass (~1.08 MB chunk warning), UI taste check pass (70 files).
+- **124-path reconciliation:** 31 committed (G1–5) + 53 approved (G6–G9/prereq/G11 tooling/governance) + 32 deferred documentation paths (arcs L/M/N/P, excluded from authorized scope) + 8 G10 = 124; no unresolved paths. See the Phase 3 recovery record.
+
+### Remaining (blocked) work
+
+- **Group 10 — committed by nobody, stays uncommitted:** dependency category moves, Prisma `6.19.3` pin and `deepmerge-ts` override, `db:bootstrap` script and env templates. Verified in an isolated sandbox (clean installs, Prisma validate/generate without migrations, CLI in CI, bootstrap guards, env parity) but requires separate owner approval before any commit. See §5 of the Phase 3 recovery record for approval requirements.
+- No test-harness leakage remains (corrected in `72b6a2b`). No other known regressions.
+
 ## P11 Tester follow-up - 2026-11-15
 
 On `codex/attendpro-phased-delivery`, the Tester corrected the account-controller transaction mock and added two isolated PostgreSQL HTTP tests for SUPERADMIN PUT account deactivation and audit-failure rollback. The focused backend run passed 211/211 tests across five files; `npx tsc --noEmit` passed. Tests verify current-period closure, future cancellation, pointer clearing, both durable audit actions, and unchanged account, assignments, pointer and audit count after a scoped assignment-audit failure. No production files, schema or migrations were modified in this follow-up. Changes remain unstaged and await parent review; no commit or push.

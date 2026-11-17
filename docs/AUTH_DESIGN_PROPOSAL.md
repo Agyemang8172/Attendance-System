@@ -1,3 +1,5 @@
+> **Historical unapproved authentication proposal (2026-10-08).** Retained for rationale, not current implementation or approval status. Later approved decisions and REC-04 supersede findings about account checks, revocation, roles, bcrypt work factors, and lookup fallback. Matching bcrypt work factors does not establish constant-time authentication; consult `attendpro/M10-RLS-DESIGN.md` for the current lookup boundary.
+
 # AUTH_DESIGN_PROPOSAL.md — Authentication & User Management
 
 > **Status: PROPOSED — NOT APPROVED. No implementation performed.**
