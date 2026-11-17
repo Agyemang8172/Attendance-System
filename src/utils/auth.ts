@@ -13,6 +13,13 @@ export const logout = (): void => {
     localStorage.removeItem('user');
 };
 
+// Replace the stored token after a password change. The server revokes the
+// old one and returns a fresh token for this device; the other sessions stay
+// revoked.
+export const updateToken = (token: string): void => {
+    localStorage.setItem('token', token);
+};
+
 // Returns true only when a token AND a user with a known role are stored.
 // A leftover token on its own is not a session: without a role the guards
 // cannot decide a destination, so it must be treated as signed out.

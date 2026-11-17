@@ -292,7 +292,7 @@ describe('setting the first password', () => {
 
   it('clears the flag locally and lands on the role home after a valid change', async () => {
     seedSession('STAFF', { mustChangePassword: true })
-    api.put.mockResolvedValue({ data: { success: true } })
+    api.put.mockResolvedValue({ data: { success: true, token: 'fresh-token' } })
     visit('/set-password')
 
     const user = userEvent.setup()
@@ -303,6 +303,8 @@ describe('setting the first password', () => {
 
     await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
     expect(JSON.parse(localStorage.getItem('user')).mustChangePassword).toBe(false)
+    // The server revoked the old token and returned a fresh one.
+    expect(localStorage.getItem('token')).toBe('fresh-token')
     expect(api.put).toHaveBeenCalledWith('/users/change-password', {
       currentPassword: 'TempPass9!',
       newPassword: 'Adifferent0ne!',

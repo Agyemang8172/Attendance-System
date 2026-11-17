@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCurrentUser, updateCurrentUser, roleHome } from '../utils/auth'
+import { getCurrentUser, updateCurrentUser, updateToken, roleHome } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import { FaEye, FaEyeSlash } from 'react-icons/fa6'
@@ -16,8 +16,8 @@ import { validatePassword } from '../utils/passwordPolicy'
 //  Shows when: mustChangePassword === true on login (and S15 bounces anyone
 //  here whose flag is already clear).
 //  Calls: PUT /users/change-password (same endpoint as Settings).
-//  After success: the server clears the flag with a 200 that carries no user,
-//  so the stored session is patched locally before the role home is shown.
+//  After success: the server clears the flag and returns a fresh token (the
+//  old one is revoked), so both are stored before the role home is shown.
 //
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -105,10 +105,11 @@ const SetPassword = () => {
 
     setLoading(true)
     try {
-      await api.put('/users/change-password', {
+      const response = await api.put('/users/change-password', {
         currentPassword: tempPassword,
         newPassword,
       })
+      if (response.data?.token) updateToken(response.data.token)
 
       toast.success('Password set! Welcome to AttendPro.')
       updateCurrentUser({ mustChangePassword: false })
