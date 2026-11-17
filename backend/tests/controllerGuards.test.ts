@@ -34,6 +34,16 @@ import userController from "../controllers/userController.js";
 // the outer proxy is unsafe because it creates a new wrapper on every access.
 const appPrisma = (globalThis as unknown as { prismaApp?: typeof prisma }).prismaApp;
 if (!appPrisma) throw new Error("Prisma application client is unavailable");
+
+/**
+ * Snapshot the raw delegate method before any spy exists. Vitest's
+ * `mockRestore()` on a Prisma delegate leaves the property undefined, so a
+ * per-test `original` capture can promote a leaked `undefined` into the shared
+ * client and break login in later files (single-fork runner). This reference is
+ * captured while modules load, before any suite injects a mock, and is restored
+ * after the one local delegate mock below.
+ */
+const rawUserFindUnique = appPrisma.user.findUnique;
 import * as attendanceController from "../controllers/attendanceController.js";
 
 type Handler = (req: Request, res: Response) => Promise<unknown> | unknown;
@@ -302,8 +312,7 @@ describe("user.changePassword with a body but no session", () => {
 
 describe("handlers refuse an account with no business", () => {
   it.each(noBusinessHandlers)("%s answers 400", async (_name, handler) => {
-    const original = appPrisma.user.findUnique;
-    const spy = vi.spyOn(appPrisma.user, "findUnique").mockResolvedValue({ businessId: null } as never);
+    appPrisma.user.findUnique = vi.fn(rawUserFindUnique).mockResolvedValue({ businessId: null } as never) as typeof appPrisma.user.findUnique;
     try {
       const res = fakeRes();
       const req = fakeReq({
@@ -315,8 +324,9 @@ describe("handlers refuse an account with no business", () => {
       expect(res.statusCode).toBe(400);
       expect(res.body).toEqual({ success: false, message: "Account has no business" });
     } finally {
-      spy.mockRestore();
-      appPrisma.user.findUnique = original;
+      // Restore to the raw reference captured at module load. vi.fn is not a
+      // registered spy, so Vitest cannot re-null the delegate between files.
+      appPrisma.user.findUnique = rawUserFindUnique;
     }
   });
 });

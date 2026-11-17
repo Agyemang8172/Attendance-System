@@ -13,7 +13,7 @@
  * and restored immediately; a dynamic spy on the delegate proxy leaks into
  * later files in the single-fork runner.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterAll } from "vitest";
 import type { Request, Response } from "express";
 import prisma from "../config/prismaClient.js";
 import assignmentController from "../controllers/assignmentController.js";
@@ -46,6 +46,30 @@ const BUSINESS_ID = "00000000-0000-0000-0000-0000000000b1";
 // not stable across files.
 const appPrisma = (globalThis as unknown as { prismaApp?: typeof prisma }).prismaApp;
 if (!appPrisma) throw new Error("Prisma application client is unavailable");
+
+/**
+ * Single-fork leakage guard. `vi.spyOn` on a generated Prisma delegate leaves
+ * the method `undefined` after `mockRestore()` and Vitest's spy registry can
+ * re-null it between files, leaking a rejecting/undefined delegate into later
+ * suites (login 500s in the combined run). Instead, snapshot the raw methods
+ * ONCE while modules load (before any test runs), inject failures with plain
+ * `vi.fn` functions assigned directly, and always restore by direct assignment
+ * to these exact references. `vi.fn` is not a spy and is never touched by
+ * Vitest's restore registry; `afterAll` is a final net for thrown assertions.
+ */
+const rawUserFindUnique = appPrisma.user.findUnique;
+const rawUserFindFirst = appPrisma.user.findFirst;
+const rawAttendanceFindMany = appPrisma.attendance.findMany;
+const rawAttendanceFindFirst = appPrisma.attendance.findFirst;
+const restoreRawDelegates = () => {
+  appPrisma.user.findUnique = rawUserFindUnique;
+  appPrisma.user.findFirst = rawUserFindFirst;
+  appPrisma.attendance.findMany = rawAttendanceFindMany;
+  appPrisma.attendance.findFirst = rawAttendanceFindFirst;
+};
+afterAll(() => {
+  restoreRawDelegates();
+});
 
 function fakeRes() {
   const res = {
@@ -172,51 +196,42 @@ describe.each(failures)("controller failures on prisma.user.findUnique (%s arm)"
     // A handler's first user read may be a lookup by id or a search by id and
     // tenant, so both are made to fail. The arm proves that the catch block
     // answers, not which of the two queries the handler happened to issue.
-    const originalUnique = appPrisma.user.findUnique;
-    const originalFirst = appPrisma.user.findFirst;
-    const uniqueSpy = vi.spyOn(appPrisma.user, "findUnique").mockRejectedValueOnce(makeFailure());
-    const firstSpy = vi.spyOn(appPrisma.user, "findFirst").mockRejectedValueOnce(makeFailure());
+    appPrisma.user.findUnique = vi.fn(rawUserFindUnique).mockRejectedValueOnce(makeFailure()) as typeof appPrisma.user.findUnique;
+    appPrisma.user.findFirst = vi.fn(rawUserFindFirst).mockRejectedValueOnce(makeFailure()) as typeof appPrisma.user.findFirst;
     try {
       const res = fakeRes();
       await handler(fakeReq(), res);
       expect(res.statusCode).toBe(500);
     } finally {
-      uniqueSpy.mockRestore();
-      firstSpy.mockRestore();
-      // Prisma's generated delegate does not reliably restore after repeated
-      // spies, so put back the exact raw methods rather than a tenant wrapper.
-      appPrisma.user.findUnique = originalUnique;
-      appPrisma.user.findFirst = originalFirst;
+      // Restore to the raw methods snapshotted before any injection. vi.fn
+      // mocks are not registered spies, so no restore registry can leak them.
+      restoreRawDelegates();
     }
   });
 });
 
 describe.each(failures)("controller failures on prisma.attendance.findMany (%s arm)", (_label, makeFailure) => {
   it.each(attendanceManyHandlers)("%s answers 500", async (_name, handler) => {
-    const original = appPrisma.attendance.findMany;
-    const spy = vi.spyOn(appPrisma.attendance, "findMany").mockRejectedValueOnce(makeFailure());
+    appPrisma.attendance.findMany = vi.fn(rawAttendanceFindMany).mockRejectedValueOnce(makeFailure()) as typeof appPrisma.attendance.findMany;
     try {
       const res = fakeRes();
       await handler(fakeReq(), res);
       expect(res.statusCode).toBe(500);
     } finally {
-      spy.mockRestore();
-      appPrisma.attendance.findMany = original;
+      restoreRawDelegates();
     }
   });
 });
 
 describe.each(failures)("controller failures on prisma.attendance.findFirst (%s arm)", (_label, makeFailure) => {
   it.each(attendanceFirstHandlers)("%s answers 500", async (_name, handler) => {
-    const original = appPrisma.attendance.findFirst;
-    const spy = vi.spyOn(appPrisma.attendance, "findFirst").mockRejectedValueOnce(makeFailure());
+    appPrisma.attendance.findFirst = vi.fn(rawAttendanceFindFirst).mockRejectedValueOnce(makeFailure()) as typeof appPrisma.attendance.findFirst;
     try {
       const res = fakeRes();
       await handler(fakeReq(), res);
       expect(res.statusCode).toBe(500);
     } finally {
-      spy.mockRestore();
-      appPrisma.attendance.findFirst = original;
+      restoreRawDelegates();
     }
   });
 });
