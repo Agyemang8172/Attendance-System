@@ -156,7 +156,7 @@ describe('the root path lands each role on its own home', () => {
 
     // M8 §6: "/" is the public site when signed out; it does not bounce to
     // /login. The sign-in link lives in the landing header.
-    await screen.findByText(/AttendPro records attendance at a shared kiosk/i)
+    await screen.findByText(/AttendPro helps businesses record staff attendance/i)
     expect(window.location.pathname).toBe('/')
   })
 
