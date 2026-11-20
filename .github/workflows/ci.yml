@@ -1,0 +1,171 @@
+name: CI
+
+# Runs on every pull request and on pushes to main. This repository has no
+# deploy workflow: M9 documents the deployment path in
+# docs/attendpro/DEPLOYMENT-RUNBOOK.md, and real deployments stay a manual
+# owner action.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# The backend job starts a throwaway Postgres 16 service container and runs the
+# real migrations and suite against it. No database secret is required.
+# tests/dbGuard.ts refuses the development database, a hosted Prisma host, and
+# any target that does not exactly match TEST_DB_HOST / TEST_DB_NAME.
+#
+# The Playwright e2e suite is excluded from CI on purpose. The specs sign in
+# against a live backend with fixture accounts, which the backend job creates
+# inside its service container and then discards. Run `npx playwright test`
+# locally after `scripts/test-seed.ts` has written the fixtures.
+
+jobs:
+  frontend:
+    name: Frontend — lint, typecheck, unit, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      # Staged ratchet (owner decision 2026-10-20). The floor lives in
+      # vitest.config.ts and rises every milestone until it reaches 90/85.
+      - name: Coverage ratchet
+        run: npm run test:coverage
+
+      - name: Production build
+        run: npm run build
+
+  backend:
+    name: Backend — generate, typecheck, migrate, coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: attendpro_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      NODE_ENV: test
+      # tests/dbGuard.ts requires an exact host/name match, a `_test` suffix,
+      # and a target that differs from the development URL. The CI database is
+      # a throwaway service container, never a hosted instance.
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/attendpro_test
+      TEST_DB_HOST: localhost
+      TEST_DB_NAME: attendpro_test
+      DEV_DATABASE_URL: postgresql://ci:ci@ci-dev.invalid:5432/ci_dev
+      DEV_DB_HOST: ci-dev.invalid
+      # The Prisma CLI and Client read DATABASE_URL. tests/setup.ts re-asserts
+      # the verified test target before any fixture or test write.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/attendpro_test
+      # Test-only value. The suite signs tokens with it; it guards no real data.
+      JWT_SECRET: ci-only-test-secret-not-for-deployment
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Apply migrations
+        run: npx prisma migrate deploy
+
+      # Enforces the 90/85 thresholds configured in backend/vitest.config.ts.
+      - name: Backend coverage (90 statements / 85 branches)
+        run: npm run test:coverage
+
+  docs:
+    name: Docs — humanizer audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Humanizer audit — top-level docs
+        run: bash .agents/scripts/humanize-check.sh docs
+
+      - name: Humanizer audit — attendpro records
+        run: bash .agents/scripts/humanize-check.sh docs/attendpro
+
+      - name: Humanizer audit — README
+        run: bash .agents/scripts/humanize-check.sh README.md
+
+  security:
+    name: Security — secret scan and dependency report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out (full history for the secret scan)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secret scan
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks detect --source . --no-banner --redact
+
+      # Open advisories at the time of writing: 9 high in the frontend
+      # production tree and 4 high in the backend tree (SEC-01 through SEC-06).
+      # These steps report until the owner rules on the upgrades; they become
+      # blocking once a `--audit-level=high` run exits clean.
+      - name: Frontend dependency report (advisory)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
+
+      - name: Backend dependency report (advisory)
+        working-directory: backend
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true

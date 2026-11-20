@@ -9,7 +9,11 @@
  * accounts this suite signs in as — see tests/fixtures.ts. No password is
  * written in this file.
  */
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
+import bcrypt from "bcrypt";
+import { PASSWORD_HASH_ROUNDS } from "../utils/passwords.js";
+import * as tenantLookup from "../utils/tenantLookup.js";
+import * as logging from "../utils/logger.js";
 import request from "supertest";
 import app from "../server.js";
 import {
@@ -88,9 +92,63 @@ describe("POST /api/auth/login — failed sign-in", () => {
     // Statuses must match, otherwise 401 vs 404 enumerates valid emails.
     expect(unknownAccount.status).toBe(wrongPassword.status);
     // Messages must match, otherwise the wording enumerates valid emails.
-    expect(unknownAccount.body.message).toBe(wrongPassword.body.message);
+    expect(unknownAccount.body).toEqual(wrongPassword.body);
+    expect(unknownAccount.body).toEqual({ success: false, message: "Invalid email or password" });
     expect(unknownAccount.body.token).toBeUndefined();
     expect(wrongPassword.body.token).toBeUndefined();
+  });
+});
+
+describe("authentication lookup failures", () => {
+  it.each([SUPERADMIN_EMAIL, UNKNOWN_EMAIL])(
+    "returns a generic error without a token when lookup fails for %s",
+    async (email) => {
+      const failure = new Error("Synthetic private lookup diagnostic");
+      const lookup = vi.spyOn(tenantLookup, "authenticateLookup").mockRejectedValueOnce(failure);
+      const log = vi.spyOn(logging, "logError").mockImplementation(() => {});
+      try {
+        const response = await signIn(email, WRONG_PASSWORD);
+        expect(response.status).toBe(500);
+        expect(response.body).toEqual({ success: false, message: "Login failed" });
+        expect(response.body.token).toBeUndefined();
+        expect(log).toHaveBeenCalledWith(failure, expect.objectContaining({ method: "POST" }));
+      } finally {
+        lookup.mockRestore();
+        log.mockRestore();
+      }
+    },
+  );
+});
+
+describe("password verification work and inactive accounts", () => {
+  it("verifies unknown accounts with the account password work factor", async () => {
+    const compare = vi.spyOn(bcrypt, "compare");
+    try {
+      const response = await signIn(UNKNOWN_EMAIL, WRONG_PASSWORD);
+      expect(response.status).toBe(401);
+      expect(compare).toHaveBeenCalledTimes(1);
+      const dummyHash = compare.mock.calls[0][1] as string;
+      expect(bcrypt.getRounds(dummyHash)).toBe(PASSWORD_HASH_ROUNDS);
+    } finally {
+      compare.mockRestore();
+    }
+  });
+
+  it("reveals inactive status only after a valid password", async () => {
+    const lookup = vi.spyOn(tenantLookup, "authenticateLookup").mockResolvedValue({
+      id: "inactive-account", business_id: "inactive-business", role: "STAFF",
+      password: await bcrypt.hash(TEST_PASSWORD, PASSWORD_HASH_ROUNDS), is_active: false,
+    });
+    try {
+      const rejected = await signIn(STAFF_EMAIL, WRONG_PASSWORD);
+      expect(rejected.status).toBe(401);
+      expect(rejected.body).toEqual({ success: false, message: "Invalid email or password" });
+      const inactive = await signIn(STAFF_EMAIL, TEST_PASSWORD);
+      expect(inactive.status).toBe(403);
+      expect(inactive.body).toEqual({ success: false, message: "Account deactivated" });
+    } finally {
+      lookup.mockRestore();
+    }
   });
 });
 

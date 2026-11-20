@@ -62,6 +62,13 @@ export interface AttendanceRecord {
   updatedAt: string
   autoClosedOut?: boolean
   alertDismissed?: boolean
+  shiftSnapshot?: {
+    name: string
+    startMinute: number
+    endMinute: number
+  }
+  closureReason?: string
+  locationFlag?: string
 }
 
 // What the login API sends back on success

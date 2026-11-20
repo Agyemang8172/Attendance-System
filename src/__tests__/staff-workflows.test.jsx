@@ -210,7 +210,7 @@ describe('ManageStaff — view toggle and account actions', () => {
     renderManageStaff('SUPERADMIN')
 
     await vi.waitFor(() => {
-      expect(get).toHaveBeenCalledWith('/users', {
+      expect(get).toHaveBeenCalledWith('/hr/employees', {
         params: { page: 1, limit: 10 },
       })
     })
@@ -218,7 +218,7 @@ describe('ManageStaff — view toggle and account actions', () => {
     await userEvent.click(screen.getByRole('tab', { name: /inactive/i }))
 
     await vi.waitFor(() => {
-      expect(get).toHaveBeenCalledWith('/users', {
+      expect(get).toHaveBeenCalledWith('/hr/employees', {
         params: { page: 1, limit: 10, isActive: false },
       })
     })
@@ -248,7 +248,7 @@ describe('ManageStaff — view toggle and account actions', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: /inactive/i }))
     await vi.waitFor(() => {
-      expect(get).toHaveBeenCalledWith('/users', {
+      expect(get).toHaveBeenCalledWith('/hr/employees', {
         params: { page: 1, limit: 10, isActive: false },
       })
     })
@@ -271,7 +271,7 @@ describe('ManageStaff — view toggle and account actions', () => {
 
     await userEvent.click(screen.getByRole('tab', { name: /inactive/i }))
     await vi.waitFor(() => {
-      expect(get).toHaveBeenCalledWith('/users', {
+      expect(get).toHaveBeenCalledWith('/hr/employees', {
         params: { page: 1, limit: 10, isActive: false },
       })
     })

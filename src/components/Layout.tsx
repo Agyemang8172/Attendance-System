@@ -6,7 +6,7 @@ interface LayoutProps {
   children: ReactNode
 }
 
-const Layout = ({ children }) => {
+const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
@@ -31,14 +31,19 @@ const Layout = ({ children }) => {
         </span>
       </div>
 
-      {/* Page content — offset for sidebar on desktop */}
+      {/* Page content — offset for sidebar on desktop. max-w-7xl (1280px)
+          caps the working width so tables and charts stop stretching
+          full-bleed on 1440px+ monitors; mx-auto recentres once the
+          viewport passes the cap. */}
       <main className="lg:ml-64 min-h-screen flex flex-col">
 
         {/* Accent strip — runs across the top of every authenticated page */}
         <div className="h-0.5 w-full bg-accent" />
 
         <div className="flex-1 p-6 lg:p-10">
-          {children}
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
         </div>
 
       </main>

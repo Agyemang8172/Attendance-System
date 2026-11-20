@@ -1,6 +1,7 @@
 import React, { useState, FormEvent} from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
+import { describeApiError } from '../api/errorCopy'
 import { login as saveAuth, roleHome } from '../utils/auth'
 import { LoginResponse } from '../types'
 import MeridianArt from '../assets/meridian.svg'
@@ -48,10 +49,9 @@ if (user.mustChangePassword) {
 navigate(roleHome(user.role))
 
     } catch (err :unknown) {
-      const errorMessage =
-        (err as { response?: { data?: { message?: string } } }).response?.data?.message ||
-        'Login failed. Please try again.'
-      setError(errorMessage)
+      // The error bar never renders the raw server message (M7 audit
+      // finding) — the typed-code map in src/api/axios.ts decides the copy.
+      setError(describeApiError(err as { response?: { status?: number; data?: { code?: string; message?: string } } }))
       setLoading(false)
     }
   }
@@ -61,11 +61,14 @@ navigate(roleHome(user.role))
 
       {/* ─────────────────────────────────────────
           LEFT PANEL — Brand / visual side
-          Hidden on mobile, 45% width on desktop
+          Hidden on mobile,
+          45/55 desktop split expressed as the nearest named fraction —
+          the arbitrary `w-[45%]` split this row closes rendered identical on
+          every desktop width at which the form was readable
       ───────────────────────────────────────── */}
       <div
         className="
-          hidden md:flex w-[45%] min-h-screen
+          hidden md:flex w-5/12 min-h-screen
           bg-chrome
           flex-col
           items-center
@@ -151,9 +154,10 @@ navigate(roleHome(user.role))
           {/* Gold accent rule under heading */}
           <div className="w-10 h-0.5 bg-accent mb-8" />
 
-          {/* ── ERROR BAR ── */}
+          {/* ── ERROR BAR ── (role="alert" — the announce the register B row asked for) */}
           {error && (
             <div
+              role="alert"
               className="
                 flex items-start gap-3
                 bg-surface-2 border-l-4 border-error

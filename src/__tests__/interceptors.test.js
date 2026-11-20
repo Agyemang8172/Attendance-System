@@ -91,3 +91,29 @@ describe('other failures', () => {
     expect(localStorage.getItem('token')).toBe('still-here')
   })
 })
+describe('wrong current password versus expired session', () => {
+  function unauthorized(url, message = 'Invalid current password') {
+    localStorage.setItem('token', 'current-session')
+    localStorage.setItem('user', '{"id":"own-account","role":"STAFF"}')
+    return { config: { url }, response: { status: 401, data: { message } } }
+  }
+
+  it.each(['/users/change-password', '/users/change-password?source=profile', '/users/change-password/'])('keeps the session for the exact own-password refusal at %s', (url) => {
+      expect(handleApiError(unauthorized(url))).toBeNull()
+      expect(localStorage.getItem('token')).toBe('current-session')
+      expect(localStorage.getItem('user')).not.toBeNull()
+    })
+
+  it('still logs out for an expired token on the password endpoint', () => {
+    expect(handleApiError(unauthorized('/users/change-password', 'Token expired'))).toBe('/login')
+    expect(localStorage.getItem('token')).toBeNull()
+    expect(localStorage.getItem('user')).toBeNull()
+  })
+
+  it.each(['/attendance/my-attendance', '/users/change-password-extra', '/other/users/change-password',
+    'https://untrusted.example/users/change-password'])('does not exempt a different endpoint with the same message: %s', (url) => {
+      expect(handleApiError(unauthorized(url))).toBe('/login')
+      expect(localStorage.getItem('token')).toBeNull()
+      expect(localStorage.getItem('user')).toBeNull()
+    })
+})

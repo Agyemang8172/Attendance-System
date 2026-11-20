@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getCurrentUser } from '../utils/auth'
+import { getCurrentUser, updateToken } from '../utils/auth'
 import api from '../api/axios'
 import toast from 'react-hot-toast'
 import Layout from '../components/Layout'
@@ -89,10 +89,11 @@ function Settings() {
 
     setLoading(true)
     try {
-      await api.put('/users/change-password', {
+      const response = await api.put('/users/change-password', {
         currentPassword,
         newPassword,
       })
+      if (response.data?.token) updateToken(response.data.token)
       toast.success('Password changed successfully.')
       setCurrentPassword('')
       setNewPassword('')

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="paper">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AttendPro — Stage 3 design comparison (preview, not production code)</title>
+<!--
+  DESIGN PREVIEW ONLY.
+  This file is a Stage 3 artefact of the M1 workflow. It is not application code.
+  It imports nothing from src/, calls no API, and reads no configuration.
+  Every value below is copied from DESIGN.md (System A) or docs/DESIGN_PROPOSAL.md (System B)
+  so the two can be compared on identical screens with identical fictional data.
+  Delete freely: removing this file breaks nothing.
+-->
+<style>
+  :root, [data-theme="paper"] {
+    --canvas: #fafaf9;  --raised: #ffffff;  --sunken: #f5f5f4;
+    --line: #e7e5e4;    --line-strong: #d6d3d1;
+    --ink: #0f172a;     --muted: #44403c;   --subtle: #78716c;  --tertiary: #a8a29e;
+    --accent: #eab308;  --accent-ink: #b45309;
+    --chrome: #0f172a;  --chrome-elev: #1e293b; --chrome-line: #334155; --chrome-ink: #f1f5f9;
+    --st-on_time-bg: #dcfce7;   --st-on_time-fg: #166534;
+    --st-late-bg: #fef3c7;      --st-late-fg: #92400e;
+    --st-absent-bg: #fee2e2;    --st-absent-fg: #991b1b;
+    --st-open-bg: #e7e5e4;      --st-open-fg: #44403c;
+    --st-review-bg: #ede9fe;    --st-review-fg: #5b21b6;
+    --st-missing-bg: #ffedd5;   --st-missing-fg: #9a3412;
+    --radius: 6px;
+    --shadow: 0 1px 2px rgb(15 23 42 / .05), 0 1px 3px rgb(15 23 42 / .06);
+  }
+  [data-theme="console"] {
+    --canvas: #010102;  --raised: #0f1011;  --sunken: #141516;
+    --line: #23252a;    --line-strong: #34343a;
+    --ink: #f7f8f8;     --muted: #d0d6e0;   --subtle: #8a8f98;  --tertiary: #62666d;
+    --accent: #5e6ad2;  --accent-ink: #828fff;
+    --chrome: #010102;  --chrome-elev: #0f1011; --chrome-line: #23252a; --chrome-ink: #f7f8f8;
+    --st-on_time-bg: #172d21;   --st-on_time-fg: #4ade80;
+    --st-late-bg: #302914;      --st-late-fg: #fbbf24;
+    --st-absent-bg: #302526;    --st-absent-fg: #fca5a5;
+    --st-open-bg: #212932;      --st-open-fg: #93c5fd;
+    --st-review-bg: #2b2732;    --st-review-fg: #d8b4fe;
+    --st-missing-bg: #30281f;   --st-missing-fg: #fdba74;
+    --radius: 4px;
+    --shadow: none;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #e7e5e4; color: #0f172a;
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  /* ── Preview chrome (not part of either design system) ─────────────── */
+  .preview-bar {
+    position: sticky; top: 0; z-index: 50;
+    background: #1e293b; color: #f1f5f9;
+    padding: 10px 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    border-bottom: 2px solid #0f172a;
+  }
+  .preview-bar strong { font-size: 13px; letter-spacing: .01em; }
+  .preview-bar .note { font-size: 12px; color: #94a3b8; }
+  .switch { display: inline-flex; border: 1px solid #475569; border-radius: 999px; overflow: hidden; }
+  .switch button {
+    border: 0; background: transparent; color: #cbd5e1; cursor: pointer;
+    padding: 6px 14px; font: inherit; font-size: 12.5px;
+  }
+  .switch button[aria-pressed="true"] { background: #eab308; color: #0f172a; font-weight: 600; }
+  .switch button:focus-visible { outline: 2px solid #eab308; outline-offset: -2px; }
+
+  .stage { padding: 22px; display: grid; gap: 22px; max-width: 1360px; margin: 0 auto; }
+  .screen-label {
+    font: 600 11px/1 system-ui; letter-spacing: .12em; text-transform: uppercase;
+    color: #57534e; margin: 0 0 8px;
+  }
+
+  /* ── The two systems under comparison ─────────────────────────────── */
+  .app {
+    background: var(--canvas); color: var(--ink);
+    border-radius: var(--radius); border: 1px solid var(--line-strong);
+    box-shadow: var(--shadow); overflow: hidden;
+    display: grid; grid-template-columns: 216px 1fr; min-height: 560px;
+  }
+
+  /* Sidebar — chrome polarity in both systems */
+  .side {
+    background: var(--chrome); color: var(--chrome-ink);
+    border-right: 1px solid var(--chrome-line); padding: 16px 12px;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; padding: 4px 8px 16px; }
+  .brand .mark {
+    width: 26px; height: 26px; border-radius: 5px; flex: none;
+    background: var(--accent); color: #0f172a;
+    display: grid; place-items: center; font-weight: 800; font-size: 13px;
+  }
+  [data-theme="console"] .brand .mark { color: #010102; }
+  .brand b { font-size: 14.5px; letter-spacing: -.01em; }
+  .brand span { display: block; font-size: 10.5px; color: #94a3b8; font-weight: 400; }
+
+  .nav-group { margin-top: 12px; }
+  .nav-group > p {
+    margin: 0 0 5px; padding: 0 8px;
+    font: 600 10px/1 system-ui; letter-spacing: .13em; text-transform: uppercase;
+    color: #64748b;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 7px 8px; border-radius: 5px;
+    color: #cbd5e1; text-decoration: none; font-size: 13.5px;
+    border-left: 2px solid transparent;
+  }
+  .nav-item .dot { width: 14px; text-align: center; opacity: .75; font-size: 12px; }
+  .nav-item:hover { background: var(--chrome-elev); color: #fff; }
+  .nav-item[aria-current="page"] {
+    background: var(--chrome-elev); color: #fff; font-weight: 600;
+    border-left-color: var(--accent);
+  }
+  .nav-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .nav-count {
+    margin-left: auto; font-size: 10.5px; font-weight: 700;
+    background: #b91c1c; color: #fff; border-radius: 999px; padding: 1px 6px;
+  }
+  .side-foot {
+    margin-top: auto; padding: 10px 8px 2px; border-top: 1px solid var(--chrome-line);
+    display: flex; align-items: center; gap: 8px; font-size: 12px; color: #94a3b8;
+  }
+  .avatar {
+    width: 24px; height: 24px; border-radius: 999px; flex: none;
+    background: var(--chrome-elev); border: 1px solid var(--chrome-line);
+    display: grid; place-items: center; font-size: 10.5px; font-weight: 700; color: #e2e8f0;
+  }
+
+  /* Main */
+  .main { padding: 22px 24px 26px; min-width: 0; }
+  .crumbs { font-size: 12px; color: var(--subtle); margin: 0 0 6px; }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .page-head h1 { margin: 0; font-size: 21px; letter-spacing: -.02em; font-weight: 650; }
+  .page-head p { margin: 4px 0 0; font-size: 13px; color: var(--muted); max-width: 62ch; }
+  .actions { display: flex; gap: 8px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border-radius: var(--radius); border: 1px solid transparent;
+    font: 500 13px/1 system-ui; cursor: pointer; background: transparent; color: var(--ink);
+  }
+  .btn:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+  .btn-primary { background: var(--accent); color: #0f172a; font-weight: 600; }
+  [data-theme="console"] .btn-primary { color: #ffffff; }
+  .btn-primary:focus-visible { outline-color: var(--accent); }
+  .btn-ghost { border-color: var(--line-strong); color: var(--ink); }
+  .btn-ghost:hover { background: var(--sunken); }
+
+  /* KPI row */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0 6px; }
+  .kpi {
+    background: var(--raised); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 12px 13px; box-shadow: var(--shadow);
+  }
+  .kpi dt { font-size: 11px; color: var(--subtle); margin: 0 0 6px; letter-spacing: .02em; }
+  .kpi dd { margin: 0; font-size: 24px; font-weight: 650; letter-spacing: -.02em; line-height: 1.05; }
+  .kpi .sub { display: block; margin-top: 5px; font-size: 11.5px; color: var(--muted); }
+  .kpi.attention { border-color: #b91c1c; }
+  [data-theme="console"] .kpi.attention { border-color: #7f1d1d; }
+
+  /* Panels */
+  .cols { display: grid; grid-template-columns: 1.15fr .85fr; gap: 12px; margin-top: 14px; }
+  .panel {
+    background: var(--raised); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+  }
+  .panel > header {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 11px 13px; border-bottom: 1px solid var(--line);
+  }
+  .panel > header h2 { margin: 0; font-size: 13.5px; font-weight: 620; letter-spacing: -.005em; }
+  .panel > header .hint { font-size: 11.5px; color: var(--subtle); }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  caption { text-align: left; padding: 0 13px 10px; font-size: 12px; color: var(--subtle); }
+  th, td { padding: 8px 13px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  thead th {
+    background: var(--sunken); font-size: 11px; font-weight: 620;
+    color: var(--muted); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--sunken); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .who { display: flex; align-items: center; gap: 9px; }
+  .who .avatar { background: var(--sunken); border-color: var(--line-strong); color: var(--ink); }
+  .who b { display: block; font-weight: 560; font-size: 13px; }
+  .who span { display: block; font-size: 11.5px; color: var(--subtle); }
+  .mono { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+  /* Status badges — the measured layer */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 600; white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .badge::before { content: ""; width: 5px; height: 5px; border-radius: 999px; background: currentColor; }
+  .b-ontime  { background: var(--st-on_time-bg);  color: var(--st-on_time-fg); }
+  .b-late    { background: var(--st-late-bg);     color: var(--st-late-fg); }
+  .b-absent  { background: var(--st-absent-bg);   color: var(--st-absent-fg); }
+  .b-open    { background: var(--st-open-bg);     color: var(--st-open-fg); }
+  .b-review  { background: var(--st-review-bg);   color: var(--st-review-fg); }
+  .b-missing { background: var(--st-missing-bg);  color: var(--st-missing-fg); }
+
+  /* Setup checklist */
+  .checks { list-style: none; margin: 0; padding: 0; }
+  .checks li {
+    display: grid; grid-template-columns: 18px 1fr auto; gap: 10px; align-items: start;
+    padding: 10px 13px; border-bottom: 1px solid var(--line); font-size: 13px;
+  }
+  .checks li:last-child { border-bottom: 0; }
+  .checks .tick {
+    width: 16px; height: 16px; border-radius: 999px; margin-top: 1px;
+    display: grid; place-items: center; font-size: 10px; font-weight: 800;
+  }
+  .tick.done { background: #15803d; color: #fff; }
+  [data-theme="console"] .tick.done { background: #27a644; color: #010102; }
+  .tick.todo { background: var(--sunken); color: var(--subtle); border: 1px solid var(--line-strong); }
+  .checks b { font-weight: 560; display: block; }
+  .checks span { font-size: 11.5px; color: var(--subtle); }
+  .checks .go { font-size: 12px; color: var(--accent-ink); font-weight: 600; text-decoration: none; white-space: nowrap; }
+  [data-theme="console"] .checks .go { color: var(--accent-ink); }
+  .checks .go:hover { text-decoration: underline; }
+
+  /* Filters */
+  .filters { display: flex; gap: 8px; padding: 11px 13px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .field {
+    display: flex; align-items: center; gap: 7px;
+    border: 1px solid var(--line-strong); border-radius: var(--radius);
+    background: var(--sunken); padding: 6px 10px; font-size: 13px; color: var(--subtle);
+  }
+  .field.search { flex: 1 1 220px; min-width: 180px; }
+  .field input { border: 0; background: transparent; color: var(--ink); font: inherit; width: 100%; outline: none; }
+  .chips { display: flex; gap: 6px; padding: 0 13px 11px; flex-wrap: wrap; }
+  .chip {
+    border: 1px solid var(--line-strong); border-radius: 999px; background: transparent;
+    padding: 3px 10px; font-size: 12px; color: var(--muted); cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--canvas); border-color: var(--ink); font-weight: 600; }
+  .chip .n { font-weight: 700; margin-left: 3px; }
+
+  /* Pagination */
+  .pager {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 13px; border-top: 1px solid var(--line); font-size: 12px; color: var(--subtle);
+  }
+  .pager .btns { display: flex; gap: 6px; }
+  .pager button {
+    border: 1px solid var(--line-strong); background: transparent; color: var(--ink);
+    border-radius: 5px; padding: 4px 9px; font: inherit; font-size: 12px; cursor: pointer;
+  }
+  .pager button[disabled] { color: var(--tertiary); cursor: not-allowed; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .side { display: none; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .cols { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="preview-bar">
+  <strong>Stage 3 preview — AttendPro</strong>
+  <div class="switch" role="group" aria-label="Design system">
+    <button type="button" id="t-paper"  aria-pressed="true"  onclick="setTheme('paper')">System B · Paper &amp; Brass</button>
+    <button type="button" id="t-console" aria-pressed="false" onclick="setTheme('console')">System A · Operations Console</button>
+  </div>
+  <span class="note">Same screens, same fictional data. Design artefact only — not application code.</span>
+</div>
+
+<div class="stage">
+
+  <!-- ══════════════ SCREEN 1 — SUPERADMIN OVERVIEW ══════════════ -->
+  <section>
+    <p class="screen-label">Screen 1 — Super Admin · Overview (setup health and operational readiness)</p>
+    <div class="app">
+      <nav class="side" aria-label="Super Admin">
+        <div class="brand">
+          <div class="mark" aria-hidden="true">A</div>
+          <div><b>AttendPro</b><span>Sakumono Logistics</span></div>
+        </div>
+
+        <div class="nav-group">
+          <p>Workspace</p>
+          <a class="nav-item" href="#" aria-current="page"><span class="dot" aria-hidden="true">▦</span>Overview</a>
+        </div>
+        <div class="nav-group">
+          <p>Attendance</p>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">≣</span>Attendance</a>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">!</span>Help and Corrections<span class="nav-count">4</span></a>
+        </div>
+        <div class="nav-group">
+          <p>People</p>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">◉</span>Employees</a>
+        </div>
+        <div class="nav-group">
+          <p>Scheduling</p>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">▤</span>Shifts</a>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">▦</span>Schedules</a>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">□</span>Calendar</a>
+        </div>
+        <div class="nav-group">
+          <p>Operations</p>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">◎</span>Sites</a>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">▭</span>Devices<span class="nav-count">1</span></a>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">§</span>Attendance Policies</a>
+        </div>
+        <div class="nav-group">
+          <p>Reporting and Audit</p>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">◫</span>Reports</a>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">≡</span>Audit Log</a>
+        </div>
+
+        <div class="side-foot">
+          <div class="avatar" aria-hidden="true">KA</div>
+          <div>Kofi Asante<br /><span style="font-size:10.5px">Super Admin</span></div>
+        </div>
+      </nav>
+
+      <main class="main">
+        <p class="crumbs">Sakumono Logistics · Overview</p>
+        <div class="page-head">
+          <div>
+            <h1>Setup is 6 of 8 complete</h1>
+            <p>Two items are unfinished. Until Devices and Attendance Policies are configured, kiosk punches cannot be verified against a shift.</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" type="button">Export</button>
+            <button class="btn btn-primary" type="button">Finish setup</button>
+          </div>
+        </div>
+
+        <dl class="kpis">
+          <div class="kpi">
+            <dt>Clocked in today</dt><dd>38</dd>
+            <span class="sub">of 46 scheduled</span>
+          </div>
+          <div class="kpi">
+            <dt>Late today</dt><dd>5</dd>
+            <span class="sub">after the 10 minute grace</span>
+          </div>
+          <div class="kpi attention">
+            <dt>Needs review</dt><dd>4</dd>
+            <span class="sub">2 outside a geo-fence, 2 no clock-out</span>
+          </div>
+          <div class="kpi">
+            <dt>Devices online</dt><dd>2 / 3</dd>
+            <span class="sub">Tema Warehouse last seen 6h ago</span>
+          </div>
+        </dl>
+
+        <div class="cols">
+          <div class="panel">
+            <header>
+              <h2>Needs your attention</h2>
+              <span class="hint">Today, 16 Oct</span>
+            </header>
+            <table>
+              <caption>Queue ordered by how long each item has waited. Opening an item runs its own workflow.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Employee</th>
+                  <th scope="col">Site</th>
+                  <th scope="col">Issue</th>
+                  <th scope="col">Status</th>
+                  <th scope="col" class="num">Waiting</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><div class="who"><div class="avatar" aria-hidden="true">YM</div><div><b>Yaw Owusu</b><span>Dispatch</span></div></div></td>
+                  <td>Tema Warehouse</td>
+                  <td>Punched 410 m outside the fence</td>
+                  <td><span class="badge b-review">Requires review</span></td>
+                  <td class="num mono">5h 20m</td>
+                </tr>
+                <tr>
+                  <td><div class="who"><div class="avatar" aria-hidden="true">AA</div><div><b>Abena Asante</b><span>Front desk</span></div></div></td>
+                  <td>Sakumono Head Office</td>
+                  <td>No clock-out recorded</td>
+                  <td><span class="badge b-missing">Clock-out missing</span></td>
+                  <td class="num mono">4h 02m</td>
+                </tr>
+                <tr>
+                  <td><div class="who"><div class="avatar" aria-hidden="true">KB</div><div><b>Kwabena Mensah</b><span>Warehouse</span></div></div></td>
+                  <td>Tema Warehouse</td>
+                  <td>Correction requested: clock-out missing on 14 Oct</td>
+                  <td><span class="badge b-review">Requires review</span></td>
+                  <td class="num mono">1d 03h</td>
+                </tr>
+                <tr>
+                  <td><div class="who"><div class="avatar" aria-hidden="true">EA</div><div><b>Esi Amankwah</b><span>Accounts</span></div></div></td>
+                  <td>Sakumono Head Office</td>
+                  <td>Help request: PIN not accepted at kiosk</td>
+                  <td><span class="badge b-open">Open</span></td>
+                  <td class="num mono">2d 06h</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="panel">
+            <header>
+              <h2>Setup checklist</h2>
+              <span class="hint">6 of 8</span>
+            </header>
+            <ul class="checks">
+              <li><span class="tick done" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 5.2 4.3 7.5 8 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Business profile</b><span>Registered 4 Oct 2026</span></div><span></span></li>
+              <li><span class="tick done" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 5.2 4.3 7.5 8 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Shifts</b><span>Morning, Afternoon, Night</span></div><span></span></li>
+              <li><span class="tick done" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 5.2 4.3 7.5 8 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Employee assignments</b><span>46 of 46 assigned</span></div><span></span></li>
+              <li><span class="tick done" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 5.2 4.3 7.5 8 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Working calendar</b><span>Mon–Fri, 6 holidays</span></div><span></span></li>
+              <li><span class="tick done" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 5.2 4.3 7.5 8 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Sites and geo-fences</b><span>3 sites, all fenced</span></div><a class="go" href="#">Review</a></li>
+              <li><span class="tick done" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 5.2 4.3 7.5 8 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><b>Kiosk pairing</b><span>2 devices paired</span></div><a class="go" href="#">Manage</a></li>
+              <li><span class="tick todo" aria-hidden="true">○</span><div><b>Attendance policies</b><span>Late grace still at default</span></div><a class="go" href="#">Set policies</a></li>
+              <li><span class="tick todo" aria-hidden="true">○</span><div><b>Third device</b><span>Tema Warehouse kiosk not paired</span></div><a class="go" href="#">Pair device</a></li>
+            </ul>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+  <!-- ══════════════ SCREEN 2 — HR ATTENDANCE ══════════════ -->
+  <section>
+    <p class="screen-label">Screen 2 — HR · Attendance operations (exception-led)</p>
+    <div class="app">
+      <nav class="side" aria-label="HR">
+        <div class="brand">
+          <div class="mark" aria-hidden="true">A</div>
+          <div><b>AttendPro</b><span>Sakumono Logistics</span></div>
+        </div>
+
+        <div class="nav-group">
+          <p>Workspace</p>
+          <a class="nav-item" href="#" aria-current="page"><span class="dot" aria-hidden="true">▦</span>Overview</a>
+        </div>
+        <div class="nav-group">
+          <p>Attendance operations</p>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">≣</span>Attendance</a>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">!</span>Exceptions<span class="nav-count">7</span></a>
+        </div>
+        <div class="nav-group">
+          <p>People</p>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">◉</span>Employees</a>
+        </div>
+        <div class="nav-group">
+          <p>Requests</p>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">?</span>Help Requests<span class="nav-count">3</span></a>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">↻</span>Corrections<span class="nav-count">4</span></a>
+        </div>
+        <div class="nav-group">
+          <p>Reporting</p>
+          <a class="nav-item" href="#"><span class="dot" aria-hidden="true">◫</span>Reports</a>
+        </div>
+
+        <div class="side-foot">
+          <div class="avatar" aria-hidden="true">AB</div>
+          <div>Akosua Boateng<br /><span style="font-size:10.5px">HR</span></div>
+        </div>
+      </nav>
+
+      <main class="main">
+        <p class="crumbs">Attendance operations · Attendance</p>
+        <div class="page-head">
+          <div>
+            <h1>7 exceptions today</h1>
+            <p>Every row below is an exception. Switch the filter to All to see the full attendance table of 46 employees.</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-ghost" type="button">Export CSV</button>
+            <button class="btn btn-primary" type="button">Work exceptions</button>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:18px">
+          <div class="filters">
+            <label class="field search">
+              <span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Search employee, code, department or site" aria-label="Search attendance" />
+            </label>
+            <label class="field"><span aria-hidden="true">▤</span>16 Oct 2026</label>
+            <label class="field"><span aria-hidden="true">◎</span>All sites</label>
+            <button class="btn btn-ghost" type="button">More filters</button>
+          </div>
+
+          <div class="chips" role="group" aria-label="Filter by exception type">
+            <button class="chip" type="button" aria-pressed="true">Exceptions<span class="n">7</span></button>
+            <button class="chip" type="button" aria-pressed="false">All attendance<span class="n">46</span></button>
+            <button class="chip" type="button" aria-pressed="false">No clock-out<span class="n">2</span></button>
+            <button class="chip" type="button" aria-pressed="false">Outside geo-fence<span class="n">2</span></button>
+            <button class="chip" type="button" aria-pressed="false">Absent<span class="n">3</span></button>
+          </div>
+
+          <table>
+            <caption>Columns follow PRD §8. HR cannot edit a cell; a change goes through a correction and keeps its audit trail.</caption>
+            <thead>
+              <tr>
+                <th scope="col">Employee</th>
+                <th scope="col">Site</th>
+                <th scope="col">Shift</th>
+                <th scope="col">Clock-in</th>
+                <th scope="col">Clock-out</th>
+                <th scope="col">Status</th>
+                <th scope="col">Exception</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="who"><div class="avatar" aria-hidden="true">YM</div><div><b>Yaw Owusu</b><span>EMP-0114 · Dispatch</span></div></div></td>
+                <td>Tema Warehouse</td>
+                <td>Afternoon</td>
+                <td class="mono">02:04 PM</td>
+                <td class="mono">—</td>
+                <td><span class="badge b-review">Requires review</span></td>
+                <td>410 m outside the fence</td>
+                <td><a class="go" href="#">Review</a></td>
+              </tr>
+              <tr>
+                <td><div class="who"><div class="avatar" aria-hidden="true">AA</div><div><b>Abena Asante</b><span>EMP-0087 · Front desk</span></div></div></td>
+                <td>Sakumono Head Office</td>
+                <td>Morning</td>
+                <td class="mono">05:58 AM</td>
+                <td class="mono">—</td>
+                <td><span class="badge b-missing">Clock-out missing</span></td>
+                <td>Open past the shift window</td>
+                <td><a class="go" href="#">Review</a></td>
+              </tr>
+              <tr>
+                <td><div class="who"><div class="avatar" aria-hidden="true">KA</div><div><b>Kwabena Mensah</b><span>EMP-0031 · Warehouse</span></div></div></td>
+                <td>Tema Warehouse</td>
+                <td>Morning</td>
+                <td class="mono">05:55 AM</td>
+                <td class="mono">02:12 PM</td>
+                <td><span class="badge b-ontime">On time</span></td>
+                <td>—</td>
+                <td><a class="go" href="#">View</a></td>
+              </tr>
+              <tr>
+                <td><div class="who"><div class="avatar" aria-hidden="true">AB</div><div><b>Akosua Boateng</b><span>EMP-0044 · Accounts</span></div></div></td>
+                <td>Sakumono Head Office</td>
+                <td>Morning</td>
+                <td class="mono">06:00 AM</td>
+                <td class="mono">02:01 PM</td>
+                <td><span class="badge b-ontime">On time</span></td>
+                <td>—</td>
+                <td><a class="go" href="#">View</a></td>
+              </tr>
+              <tr>
+                <td><div class="who"><div class="avatar" aria-hidden="true">EA</div><div><b>Esi Amankwah</b><span>EMP-0102 · Accounts</span></div></div></td>
+                <td>Sakumono Head Office</td>
+                <td>Morning</td>
+                <td class="mono">—</td>
+                <td class="mono">—</td>
+                <td><span class="badge b-absent">Absent</span></td>
+                <td>No show, no approved schedule gap</td>
+                <td><a class="go" href="#">View</a></td>
+              </tr>
+              <tr>
+                <td><div class="who"><div class="avatar" aria-hidden="true">NA</div><div><b>Nana Adjei</b><span>EMP-0068 · Dispatch</span></div></div></td>
+                <td>Tema Warehouse</td>
+                <td>Night</td>
+                <td class="mono">10:00 PM</td>
+                <td class="mono">06:04 AM</td>
+                <td><span class="badge b-open">Open session</span></td>
+                <td>Overnight shift, closes at shift end</td>
+                <td><a class="go" href="#">View</a></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pager">
+            <span>Showing 1–6 of 7 exceptions</span>
+            <div class="btns">
+              <button type="button" disabled>Previous</button>
+              <button type="button">Next</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  function setTheme(name) {
+    document.documentElement.setAttribute('data-theme', name);
+    document.getElementById('t-paper').setAttribute('aria-pressed', String(name === 'paper'));
+    document.getElementById('t-console').setAttribute('aria-pressed', String(name === 'console'));
+  }
+</script>
+</body>
+</html>

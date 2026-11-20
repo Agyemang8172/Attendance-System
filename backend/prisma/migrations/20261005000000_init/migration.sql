@@ -1,9 +1,11 @@
 -- CreateEnum
+-- devos:no-rls: init file predates RLS rule; runtime fix in migration 20261015120000_business_tenancy
 CREATE TYPE "Role" AS ENUM ('SUPERADMIN', 'HR', 'STAFF');
 CREATE TYPE "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'LATE', 'HALF_DAY', 'ON_LEAVE');
 CREATE TYPE "SessionStatus" AS ENUM ('OPEN', 'CLOSED');
 
 -- CreateTable
+-- devos:no-rls shifts: historical init; migration 20261015120000_business_tenancy enables RLS
 CREATE TABLE "shifts" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -14,6 +16,7 @@ CREATE TABLE "shifts" (
 );
 
 -- CreateTable
+-- devos:no-rls users: historical init; migration 20261015120000_business_tenancy enables RLS
 CREATE TABLE "users" (
     "id" TEXT NOT NULL,
     "employee_code" TEXT NOT NULL,
@@ -35,6 +38,7 @@ CREATE TABLE "users" (
 );
 
 -- CreateTable
+-- devos:no-rls attendances: historical init; migration 20261015120000_business_tenancy enables RLS
 CREATE TABLE "attendances" (
     "id" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

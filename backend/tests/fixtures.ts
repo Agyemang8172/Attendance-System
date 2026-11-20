@@ -76,6 +76,28 @@ const ACCOUNTS: TestAccount[] = [
   },
 ];
 
+/**
+ * Every user row carries a required `businessId`, and every tenant-scoped
+ * controller resolves its scope from the caller's business. The tenancy
+ * migration bootstraps one `default-business` row with a fixed id; these
+ * accounts join it. The lookup (rather than a hard-coded id) keeps the suite
+ * working if that bootstrap row is ever renamed, and the create branch keeps it
+ * working on a database that was migrated before the bootstrap insert landed.
+ */
+const ensureDefaultBusinessId = async (): Promise<string> => {
+  const existing = await prisma.business.findFirst({
+    where: { slug: "default-business" },
+    select: { id: true },
+  });
+  if (existing) return existing.id;
+
+  const created = await prisma.business.create({
+    data: { name: "Default Business", slug: "default-business" },
+    select: { id: true },
+  });
+  return created.id;
+};
+
 let ensured = false;
 
 /**
@@ -88,6 +110,7 @@ export const ensureTestAccounts = async (): Promise<void> => {
   if (ensured) return;
 
   const password = await bcrypt.hash(TEST_PASSWORD, SALT_ROUNDS);
+  const businessId = await ensureDefaultBusinessId();
 
   for (const account of ACCOUNTS) {
     await prisma.user.upsert({
@@ -100,6 +123,7 @@ export const ensureTestAccounts = async (): Promise<void> => {
       },
       create: {
         ...account,
+        businessId,
         password,
         isActive: true,
         mustChangePassword: false,

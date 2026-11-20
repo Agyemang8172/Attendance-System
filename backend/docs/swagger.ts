@@ -1,6 +1,6 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
-import { Express } from "express";
+import type { Router } from "express";
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -266,7 +266,7 @@ Authorization: Bearer <JWT_TOKEN>
 
 const swaggerSpec = swaggerJsdoc(options);
 
-export const setupSwagger = (app: Express): void => {
+export const setupSwagger = (app: Router): void => {
   // Swagger UI
   app.use(
     "/api/docs",
