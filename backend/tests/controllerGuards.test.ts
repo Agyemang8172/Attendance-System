@@ -8,10 +8,10 @@
  * the exported handlers directly with a fake req/res and asserts the refusal.
  *
  * Most cases are unit tests and stub the tenant lookup. The account-controller
- * tenant-boundary cases read one existing administrator so they can prove that
+ * tenant-boundary cases read the named test administrator so they can prove that
  * changing only the business changes a 200 into a 401.
  */
-import { describe, it, expect, vi, beforeAll } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import type { Request, Response } from "express";
 import prisma from "../config/prismaClient.js";
 import assignmentController from "../controllers/assignmentController.js";
@@ -29,6 +29,7 @@ import siteController from "../controllers/siteController.js";
 import staffProfileController from "../controllers/staffProfileController.js";
 import staffScheduleController from "../controllers/staffScheduleController.js";
 import userController from "../controllers/userController.js";
+import { ensureTestAccounts, TEST_SUPERADMIN_EMAIL } from "./fixtures.js";
 
 // Stub the application client that the tenant proxy delegates to. Spying on
 // the outer proxy is unsafe because it creates a new wrapper on every access.
@@ -244,18 +245,42 @@ const malformedBodies: Record<string, Record<string, unknown>> = {
 };
 
 describe("the account controller refuses a caller from another business", () => {
-  let account: { id: string; businessId: string } | null = null;
+  let account: { id: string; businessId: string };
+  let restoreAccount: (() => Promise<void>) | undefined;
 
   beforeAll(async () => {
+    await ensureTestAccounts();
     // `findMany` rather than `findFirst`: the failure-path suite spies on
     // `findFirst` and `findUnique` on the shared client, and this lookup must
     // not be the call that a spy intercepts.
     const rows = await prisma.user.findMany({
-      where: { isActive: true, role: { in: ["HR", "SUPERADMIN"] } },
-      select: { id: true, businessId: true },
+      where: { email: TEST_SUPERADMIN_EMAIL },
+      select: { id: true, businessId: true, isActive: true, role: true, mustChangePassword: true, updatedAt: true },
       take: 1,
     });
-    account = rows[0] ?? null;
+    expect(rows).toHaveLength(1);
+    const original = rows[0];
+    account = { id: original.id, businessId: original.businessId };
+    restoreAccount = async () => {
+      await prisma.user.update({
+        where: { id: original.id },
+        data: { isActive: original.isActive, role: original.role, mustChangePassword: original.mustChangePassword, updatedAt: original.updatedAt },
+      });
+    };
+    await prisma.user.update({
+      where: { id: original.id },
+      data: { isActive: true, role: "SUPERADMIN", mustChangePassword: false },
+    });
+    const eligible = await prisma.user.findMany({
+      where: { id: account.id, businessId: account.businessId, isActive: true, role: "SUPERADMIN", mustChangePassword: false },
+      select: { id: true },
+    });
+    expect(eligible).toHaveLength(1);
+    expect(account.businessId).not.toBe("00000000-0000-0000-0000-0000000000ff");
+  });
+
+  afterAll(async () => {
+    await restoreAccount?.();
   });
 
   it.each(tenantMismatchHandlers)("%s answers 401", async (_name, handler) => {
@@ -263,12 +288,12 @@ describe("the account controller refuses a caller from another business", () => 
     await handler(
       fakeReq({
         user: {
-          userId: account?.id,
+          userId: account.id,
           role: "SUPERADMIN",
           businessId: "00000000-0000-0000-0000-0000000000ff",
         },
         body: { reason: "guard test" },
-        params: { id: account?.id },
+        params: { id: account.id },
       }),
       res
     );
@@ -279,13 +304,31 @@ describe("the account controller refuses a caller from another business", () => 
     const res = fakeRes();
     await userController.getAllUsers(
       fakeReq({
-        user: { userId: account?.id, role: "SUPERADMIN", businessId: account?.businessId },
+        user: { userId: account.id, role: "SUPERADMIN", businessId: account.businessId },
         query: {},
       }),
       res
     );
     // The refusal above is about the business, not about a missing account.
     expect(res.statusCode).toBe(200);
+  });
+
+  it("refuses an administrator required to change their password", async () => {
+    const previousFindFirst = appPrisma.user.findFirst;
+    appPrisma.user.findFirst = vi.fn(previousFindFirst).mockResolvedValue({
+      ...account, role: "SUPERADMIN", isActive: true, mustChangePassword: true,
+    } as never) as typeof appPrisma.user.findFirst;
+    try {
+      const res = fakeRes();
+      await userController.getAllUsers(
+        fakeReq({ user: { userId: account.id, role: "SUPERADMIN", businessId: account.businessId } }),
+        res
+      );
+      expect(res.statusCode).toBe(403);
+      expect(res.body).toEqual({ success: false, message: "Password change required" });
+    } finally {
+      appPrisma.user.findFirst = previousFindFirst;
+    }
   });
 });
 
