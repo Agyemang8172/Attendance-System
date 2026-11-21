@@ -715,15 +715,14 @@ describe('HrAudit interactions', () => {
   })
 })
 
-// ── HrExceptions dismiss ────────────────────────────────────────────────────
+// ── HrExceptions rendering ──────────────────────────────────────────────────
 describe('HrExceptions interactions', () => {
-  it('opens the dismiss confirm dialog', async () => {
+  it('renders an attendance exception', async () => {
     get.mockResolvedValue({
       data: { success: true, data: [{ id: 'att-1', kind: 'ATTENDANCE', status: 'REQUIRES_REVIEW', date: '2026-10-20', employee: { firstName: 'Ama', lastName: 'Boateng', employeeCode: 'EMP-0002' }, reason: 'Needs review' }], pagination: { currentPage: 1, totalPages: 1, total: 1, totalRecords: 1 } },
     })
     renderHr(<HrExceptions />, ['/hr-exceptions?startDate=2026-10-01&endDate=2026-10-31'])
 
-    const user = userEvent.setup()
     expect((await screen.findAllByText(/ama boateng/i)).length).toBeGreaterThan(0)
   })
 })
