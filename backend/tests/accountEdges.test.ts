@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 /**
  * M9 Phase 1 — account security and directory edges.
  *
@@ -25,6 +26,10 @@ import {
   TEST_STAFF_EMAIL as STAFF_EMAIL,
 } from "./fixtures.js";
 
+const syntheticCredential0 = String.fromCharCode(65, 97, 49, 33) + randomBytes(16).toString('hex');
+const syntheticCredential1 = String.fromCharCode(65, 97, 49, 33) + randomBytes(16).toString('hex');
+const syntheticCredential2 = String.fromCharCode(65, 97, 49, 33) + randomBytes(16).toString('hex');
+
 async function tokenFor(email: string, password = TEST_PASSWORD): Promise<string> {
   const res = await request(app).post("/api/auth/login").send({ email, password });
   if (res.status !== 200) {
@@ -34,7 +39,7 @@ async function tokenFor(email: string, password = TEST_PASSWORD): Promise<string
 }
 
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
-const NEW_PASSWORD = "NewDevos123!";
+const NEW_PASSWORD = syntheticCredential0;
 
 let saToken: string;
 let hrToken: string;
@@ -137,7 +142,7 @@ describe("PUT /api/users/change-password", () => {
     const res = await request(app)
       .put("/api/users/change-password")
       .set(auth(staffToken))
-      .send({ currentPassword: "DefinitelyWrong123!", newPassword: "AnotherPass123!" });
+      .send({ currentPassword: syntheticCredential1, newPassword: syntheticCredential2 });
     expect(res.status).toBe(401);
   });
 

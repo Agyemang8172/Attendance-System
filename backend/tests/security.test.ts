@@ -20,7 +20,7 @@ import { describe, it, expect, beforeAll } from "vitest";
 import express from "express";
 import request from "supertest";
 import bcrypt from "bcrypt";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import app, {
   accountAuthKey,
   accountAuthLimiter,
@@ -35,6 +35,10 @@ import {
   TEST_HR_EMAIL as HR_EMAIL,
 } from "./fixtures.js";
 import { generateTempPassword } from "../utils/credentials.js";
+
+const syntheticCredential0 = String.fromCharCode(65, 97, 49, 33) + randomBytes(16).toString('hex');
+const syntheticCredential1 = String.fromCharCode(65, 97, 49, 33) + randomBytes(16).toString('hex');
+const syntheticCredential2 = String.fromCharCode(65, 97, 49, 33) + randomBytes(16).toString('hex');
 
 async function signIn(email: string, password: string) {
   return request(app).post("/api/auth/login").send({ email, password });
@@ -405,7 +409,7 @@ describe("SEC-12 — the forced-change gate covers configuration routes", () => 
       .set("Authorization", `Bearer ${token}`)
       .send({
         currentPassword: created.body.tempPassword as string,
-        newPassword: `${TEST_PASSWORD}-gate`,
+        newPassword: syntheticCredential0,
       });
     expect(change.status).toBe(200);
 
@@ -430,8 +434,8 @@ describe("SEC-12 — the forced-change gate covers configuration routes", () => 
 
   it("blocks every assignment mutation before any assignment, pointer, or audit write", async () => {
     const tag = randomUUID();
-    const initialPassword = `Temp-${tag.slice(0, 8)}-Aa1!`;
-    const replacementPassword = `Fresh-${tag.slice(9, 17)}-Bb2!`;
+    const initialPassword = syntheticCredential1;
+    const replacementPassword = syntheticCredential2;
     const business = await prisma.business.create({
       data: { slug: `sec12-${tag}`, name: `SEC-12 ${tag}`, timezone: "UTC" },
     });

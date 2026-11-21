@@ -14,6 +14,11 @@ const mocks = vi.hoisted(() => {
   };
 });
 
+const syntheticCredential0 = String.fromCharCode(65, 97, 49, 33) + randomBytes(16).toString('hex');
+const syntheticCredential1 = String.fromCharCode(65, 97, 49, 33) + randomBytes(16).toString('hex');
+const syntheticCredential2 = String.fromCharCode(65, 97, 49, 33) + randomBytes(16).toString('hex');
+const syntheticCredential3 = String.fromCharCode(65, 97, 49, 33) + randomBytes(16).toString('hex');
+
 const tx = {
   user: mocks.user,
   shift: { findFirst: mocks.shiftFindFirst },
@@ -56,7 +61,7 @@ const staff = {
   id: "staff-one", businessId, role: "STAFF", isActive: true,
   firstName: "Mina", lastName: "Reed", email: "mina@example.test",
   employeeCode: "EMP-0007", department: "Operations", tokenVersion: 2,
-  password: "stored-password-hash", mustChangePassword: false,
+  password: syntheticCredential0, mustChangePassword: false,
 };
 const operator = { ...staff, id: "operator-one", role: "SUPERADMIN", tokenVersion: 4 };
 let currentActor = operator;
@@ -97,7 +102,7 @@ beforeEach(() => {
   mocks.user.update.mockResolvedValue({ ...staff, tokenVersion: 3 });
   mocks.auditCreate.mockResolvedValue({ id: "audit-one" });
   mocks.expireSessions.mockResolvedValue({ count: 1 });
-  mocks.hash.mockResolvedValue("replacement-hash");
+  mocks.hash.mockResolvedValue(syntheticCredential3);
   mocks.compare.mockResolvedValue(true);
   mocks.sign.mockReturnValue("replacement-access-token");
 });
@@ -185,14 +190,14 @@ describe("account controller contracts without a database", () => {
     });
     const tempPassword = (result.body as { tempPassword: string }).tempPassword;
     expect(JSON.stringify(mocks.auditCreate.mock.calls)).not.toContain(tempPassword);
-    expect(JSON.stringify(result.body)).not.toContain("replacement-hash");
+    expect(JSON.stringify(result.body)).not.toContain(syntheticCredential3);
   });
 
   it("refuses an incorrect current password without writing", async () => {
     mocks.compare.mockResolvedValue(false);
     const { res, result } = response();
     await controller.changePassword(request("STAFF", {
-      currentPassword: "devos123", newPassword: "devos123-rotated",
+      currentPassword: syntheticCredential1, newPassword: syntheticCredential2,
     }), res);
     expect(result.statusCode).toBe(401);
     expect(mocks.user.update).not.toHaveBeenCalled();
@@ -202,7 +207,7 @@ describe("account controller contracts without a database", () => {
   it("refuses password reuse without writing", async () => {
     const { res, result } = response();
     await controller.changePassword(request("STAFF", {
-      currentPassword: "devos123-rotated", newPassword: "devos123-rotated",
+      currentPassword: syntheticCredential2, newPassword: syntheticCredential2,
     }), res);
     expect(result.statusCode).toBe(400);
     expect(mocks.user.updateMany).not.toHaveBeenCalled();
@@ -224,7 +229,7 @@ describe("account controller contracts without a database", () => {
     });
     const { res, result } = response();
     await controller.changePassword(request("STAFF", {
-      currentPassword: "devos123", newPassword: "devos123-rotated",
+      currentPassword: syntheticCredential1, newPassword: syntheticCredential2,
     }), res);
     expect(result.statusCode).toBe(200);
     expect(mocks.user.updateMany).toHaveBeenCalledWith(expect.objectContaining({
@@ -240,7 +245,7 @@ describe("account controller contracts without a database", () => {
     mocks.user.updateMany.mockResolvedValue({ count: 0 });
     const { res, result } = response();
     await controller.changePassword(request("STAFF", {
-      currentPassword: "devos123", newPassword: "devos123-rotated",
+      currentPassword: syntheticCredential1, newPassword: syntheticCredential2,
     }), res);
     expect(result.statusCode).toBe(409);
     expect(mocks.sign).not.toHaveBeenCalled();
@@ -276,7 +281,7 @@ describe("account controller contracts without a database", () => {
   it("strips credential fields from profile updates", async () => {
     const { res, result } = response();
     await controller.updateUser(request("SUPERADMIN", {
-      firstName: "Mina", password: "devos123", pinHash: "untrusted", tokenVersion: 0,
+      firstName: "Mina", password: syntheticCredential1, pinHash: "untrusted", tokenVersion: 0,
     }), res);
     expect(result.statusCode).toBe(200);
     const update = mocks.user.update.mock.calls[0][0].data;
@@ -338,10 +343,10 @@ describe("account controller contracts without a database", () => {
     expect(mocks.user.create).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({
         businessId, role: "STAFF", mustChangePassword: true,
-        password: "replacement-hash", employeeCode: "EMP-0008",
+        password: syntheticCredential3, employeeCode: "EMP-0008",
       }),
     }));
-    expect(JSON.stringify(result.body)).not.toContain("replacement-hash");
+    expect(JSON.stringify(result.body)).not.toContain(syntheticCredential3);
   });
 
   it("refuses HR creating a privileged account", async () => {

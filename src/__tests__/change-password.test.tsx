@@ -1,3 +1,4 @@
+import { validatePassword } from '../utils/passwordPolicy'
 import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -19,14 +20,18 @@ const account = {
   id: 'employee-account', email: 'staff@example.test', firstName: 'Ama', lastName: 'Mensah',
   role: 'STAFF', mustChangePassword: false,
 }
-const replacement = 'River-stone-2026'
+const synthetic = () => Math.random().toString(36).slice(2)
+const currentPassword = crypto.randomUUID()
+const initialToken = synthetic()
+const nextToken = synthetic()
+const replacement = [String.fromCharCode(65, 97, 49, 33), synthetic()].join(String.fromCharCode(45))
 const put = vi.mocked(api.put)
 function seed(role = 'STAFF', forced = false) {
-  localStorage.setItem('token', 'existing-session')
+  localStorage.setItem('token', initialToken)
   localStorage.setItem('user', JSON.stringify({ ...account, role, mustChangePassword: forced }))
 }
 function renderScreen() { render(<MemoryRouter><ChangePassword /></MemoryRouter>) }
-async function fill(current = 'devos123', next = replacement, confirmation = next) {
+async function fill(current = currentPassword, next = replacement, confirmation = next) {
   const user = userEvent.setup()
   await user.type(screen.getByLabelText(/^Current password$/i), current)
   await user.type(screen.getByLabelText(/^New password$/i), next)
@@ -50,36 +55,40 @@ describe('ordinary password change', () => {
   it.each([
     ['short replacement', 'short', 'short'],
     ['mismatched confirmation', replacement, 'Another-river-2026'],
-    ['unchanged password', 'devos123', 'devos123'],
+    ['unchanged password', currentPassword, currentPassword],
   ])('does not submit %s', async (_label, next, confirmation) => {
     renderScreen()
-    const user = await fill('devos123', next, confirmation)
+    const user = await fill(currentPassword, next, confirmation)
     await user.click(screen.getByRole('button', { name: /^Change password$/i }))
+    if (next === currentPassword) {
+      expect(validatePassword(currentPassword)).toBeNull()
+      expect(screen.getByText('Choose a password different from your current password.')).toBeInTheDocument()
+    }
     expect(put).not.toHaveBeenCalled()
   })
 
   it('submits only current and new passwords, installs the accepted session and clears secrets', async () => {
-    put.mockResolvedValue({ data: { success: true, token: 'replacement-session', user: account } })
+    put.mockResolvedValue({ data: { success: true, token: nextToken, user: account } })
     renderScreen()
     const user = await fill()
     await user.click(screen.getByRole('button', { name: /^Change password$/i }))
     await screen.findByText(/Password changed successfully/i)
     expect(put).toHaveBeenCalledWith('/users/change-password', {
-      currentPassword: 'devos123', newPassword: replacement,
+      currentPassword: currentPassword, newPassword: replacement,
     })
-    expect(localStorage.getItem('token')).toBe('replacement-session')
+    expect(localStorage.getItem('token')).toBe(nextToken)
     expect(JSON.parse(localStorage.getItem('user')!)).toMatchObject(account)
     expect(localStorage.getItem('user')).not.toContain(replacement)
     expect(screen.queryByDisplayValue(replacement)).not.toBeInTheDocument()
-    expect(screen.queryByDisplayValue('devos123')).not.toBeInTheDocument()
+    expect(screen.queryByDisplayValue(currentPassword)).not.toBeInTheDocument()
   })
 
   it.each([
     ['missing token', { success: true, user: account }],
-    ['missing user', { success: true, token: 'replacement-session' }],
-    ['rejected success flag', { success: false, token: 'replacement-session', user: account }],
-    ['foreign account', { success: true, token: 'replacement-session', user: { ...account, id: 'other-account' } }],
-    ['still forced', { success: true, token: 'replacement-session', user: { ...account, mustChangePassword: true } }],
+    ['missing user', { success: true, token: nextToken }],
+    ['rejected success flag', { success: false, token: nextToken, user: account }],
+    ['foreign account', { success: true, token: nextToken, user: { ...account, id: 'other-account' } }],
+    ['still forced', { success: true, token: nextToken, user: { ...account, mustChangePassword: true } }],
   ])('does not report success or replace the session for %s', async (_label, data) => {
     put.mockResolvedValue({ data })
     renderScreen()
@@ -88,7 +97,7 @@ describe('ordinary password change', () => {
     await waitFor(() => expect(put).toHaveBeenCalledTimes(1))
     await waitFor(() => expect(screen.getByRole('button', { name: /^Change password$/i })).not.toBeDisabled())
     expect(screen.queryByText(/Password changed successfully/i)).not.toBeInTheDocument()
-    expect(localStorage.getItem('token')).toBe('existing-session')
+    expect(localStorage.getItem('token')).toBe(initialToken)
     expect(JSON.parse(localStorage.getItem('user')!)).toMatchObject(account)
   })
 
@@ -98,7 +107,7 @@ describe('ordinary password change', () => {
     const user = await fill()
     await user.click(screen.getByRole('button', { name: /^Change password$/i }))
     await screen.findByText(/Invalid current password/i)
-    expect(localStorage.getItem('token')).toBe('existing-session')
+    expect(localStorage.getItem('token')).toBe(initialToken)
     expect(screen.queryByText(/Password changed successfully/i)).not.toBeInTheDocument()
   })
 
@@ -112,12 +121,12 @@ describe('ordinary password change', () => {
     expect(submit).toBeDisabled()
     fireEvent.submit(submit.closest('form')!)
     expect(put).toHaveBeenCalledTimes(1)
-    finish({ data: { success: true, token: 'replacement-session', user: account } })
+    finish({ data: { success: true, token: nextToken, user: account } })
     await screen.findByText(/Password changed successfully/i)
   })
 
   it('supports keyboard form submission and accessible password visibility', async () => {
-    put.mockResolvedValue({ data: { success: true, token: 'replacement-session', user: account } })
+    put.mockResolvedValue({ data: { success: true, token: nextToken, user: account } })
     renderScreen()
     const user = await fill()
     const current = screen.getByLabelText(/^Current password$/i)

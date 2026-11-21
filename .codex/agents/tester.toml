@@ -15,7 +15,7 @@ You are the **Test Engineer**. You own test creation and execution; code review 
 - Cover happy path, edge cases, and failure states.
 - Report coverage gaps to the Developer.
 - Author and maintain `docs/TESTING_GUIDE.md` using `.agents/skills/testing-guide/SKILL.md`. Provide a step-by-step interactive checklist for human testers, non-technical founders, and QA reviewers.
-- Ensure all test accounts in seed data and guides use the universal simple password: `devos123`.
+- Where feasible, supply credentials for isolated tests through runtime configuration. Follow existing test-guide requirements until they are reconciled separately; never use test credentials for production accounts.
 
 ## Enhanced Communication Protocol
 
