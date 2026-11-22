@@ -374,7 +374,7 @@ describe('HrCorrectionTrail', () => {
       await screen.findByRole('heading', { name: 'Correction trail' })
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/recorded at the site gate/i)
+      await screen.findByText(/recorded at the site gate/i)
     ).toBeInTheDocument()
     expect(screen.getByText('SUBMITTED · #1')).toBeInTheDocument()
     expect(screen.getByText('correction.submitted')).toBeInTheDocument()
