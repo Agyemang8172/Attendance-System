@@ -50,7 +50,7 @@ M9 closes the AttendPro v1 programme. All features are built (M0–M8). This mil
 
 ### Phase 3 — Testing Guide (docs/TESTING_GUIDE.md)
 - Expand to cover all M1–M8 scenarios with step-by-step instructions
-- Add seed data definitions (dev accounts with `devos123` universal password)
+- Add seed data definitions (dev accounts with `historical test credential (removed)` universal password)
 - Include error state screenshots, expected API responses
 - Document browser testing checklist for 375/768/1440 viewports
 - Add troubleshooting section
@@ -140,6 +140,6 @@ The owner resolved the conflict on 2026-10-20 (option B):
 
 - Zero database schema changes in M9 (all migrations done M1–M8)
 - No new production dependencies without owner approval
-- All test accounts use universal password `devos123`
+- All test accounts use universal password `historical test credential (removed)`
 - Documentation must pass humanizer check
 - No git pushes without owner approval

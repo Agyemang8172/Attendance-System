@@ -41,7 +41,7 @@ Dev-OS operates in four distinct execution modes:
   2. `docs/PROJECT_REQUIREMENTS.md` (Product spec).
   3. `DESIGN.md` at project root (Extracted from `ui-ux-pro-max`).
   4. Database schema + realistic seed data.
-  5. `docs/TESTING_GUIDE.md` (Interactive step-by-step testing guide with `devos123` test accounts).
+  5. `docs/TESTING_GUIDE.md` (Interactive step-by-step testing guide with `ATTENDPRO_TEST_PASSWORD` test accounts).
   6. Humanized documentation with zero AI fluff.
 
 ### 4. `audit`
@@ -64,7 +64,7 @@ In `auto` mode, the team executes the following 10-stage pipeline:
 2. DESIGN GATE (UI Designer) ────────────► DESIGN.md (at project root via ui-ux-pro-max)
        │
        ▼
-3. ARCHITECTURE & DB (DBA) ──────────────► Migrations + Seed Fixtures (devos123)
+3. ARCHITECTURE & DB (DBA) ──────────────► Migrations + Seed Fixtures (ATTENDPRO_TEST_PASSWORD)
        │
        ▼
 4. TASK BOARD DAG (Orchestrator) ────────► docs/TASK_BOARD.md

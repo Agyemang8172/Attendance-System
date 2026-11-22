@@ -20,10 +20,11 @@
  * by every other test in the file.
  */
 import bcrypt from "bcrypt";
+import { resolveTestCredential } from "./testCredential.js";
 import prisma from "../config/prismaClient.js";
 
-/** Hard Rule 17 — one universal password for development and test accounts. */
-export const TEST_PASSWORD = "devos123";
+/** Runtime-supplied credential for isolated test fixtures only. */
+export const TEST_PASSWORD = resolveTestCredential();
 
 export const TEST_SUPERADMIN_EMAIL = "superadmin@test.attendpro.com";
 export const TEST_HR_EMAIL = "hr@test.attendpro.com";

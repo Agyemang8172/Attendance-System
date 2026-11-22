@@ -135,11 +135,6 @@ const main = async (): Promise<void> => {
     }
   }
 
-  console.log("[verify-auth] local test credentials:");
-  for (const account of canonical) {
-    console.log(`  ${account.email} / ${fixtures.TEST_PASSWORD} (${account.role})`);
-  }
-
   await prisma.$disconnect();
 };
 

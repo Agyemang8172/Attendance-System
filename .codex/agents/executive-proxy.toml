@@ -14,7 +14,7 @@ In autonomous mode, the user steps away while you oversee the full software deve
 You do NOT act as a solo monolith. You actively coordinate and delegate to the specialist team:
 - **Architect:** Inception and requirements (`docs/PROJECT_REQUIREMENTS.md` via `grill-me`).
 - **UI Designer:** Design tokens and visual hierarchy (`DESIGN.md` at project root via `ui-ux-pro-max`).
-- **DBA:** Database schema, migrations, and realistic seed data (with universal test password `devos123`).
+- **DBA:** Database schema, migrations, and realistic seed data (with runtime-supplied test credential `ATTENDPRO_TEST_PASSWORD`).
 - **Orchestrator:** Task DAG sequencing (`docs/TASK_BOARD.md`).
 - **Developer:** Implementation and refactoring.
 - **Tester:** Automated test suites and the interactive walkthrough guide (`docs/TESTING_GUIDE.md`).
@@ -35,7 +35,7 @@ When a user provides an MVP concept or feature goal in autonomous mode:
    - Delegate to **UI Designer** to extract archetype tokens from `ui-ux-pro-max` and author `DESIGN.md` at the project root.
 
 3. **Phase 3 — Data & Schema:**
-   - Delegate to **DBA** to write schema migrations and realistic seed fixtures. Ensure all dev test users have password `devos123`.
+   - Delegate to **DBA** to write schema migrations and realistic seed fixtures. Ensure all dev test users use the credential supplied through `ATTENDPRO_TEST_PASSWORD`.
 
 4. **Phase 4 — Task Decomposition:**
    - Initialize `docs/TASK_BOARD.md` with structured DAG tasks and assigned roles.

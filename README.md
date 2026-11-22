@@ -66,7 +66,7 @@ at the kiosk by design (PRD §7).
 
 ## Test accounts
 
-All fixture accounts use the password `devos123`.
+Supply a policy-compliant test credential privately through `ATTENDPRO_TEST_PASSWORD` before running the fixture initializer or tests. Do not log it or commit it. Do not run concurrent suites against the same test database.
 
 | Account | Role | Employee code |
 |---|---|---|
@@ -79,7 +79,7 @@ and one HR account. It refuses unless `SEED_CONFIRM=development` and
 `DATABASE_URL` matches `DEV_DB_HOST`. There is still no production bootstrap
 path (SSB-2). The automated suite uses the separate `attendpro_test` database:
 `backend/tests/fixtures.ts` (or `scripts/test-seed.ts`) writes the three
-`devos123` accounts there, and the guard refuses the development database.
+test accounts there, and the guard refuses the development database. Persistent development bootstrap credentials are configured separately.
 
 ## Running locally
 

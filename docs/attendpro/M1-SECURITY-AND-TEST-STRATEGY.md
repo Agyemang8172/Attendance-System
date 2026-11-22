@@ -78,7 +78,7 @@ Every database-backed test seeds at least two businesses so isolation is testabl
   to attempt access against.
 
 Fixtures run as `attendpro_owner` so RLS does not block seeding
-(`M1-ARCHITECTURE.md` §3.4). The universal seed password is `devos123` (Hard Rule 17).
+(`M1-ARCHITECTURE.md` §3.4). The test credential is supplied via `ATTENDPRO_TEST_PASSWORD` (Hard Rule 17).
 No fixture writes a real phone number or a real employee record.
 
 ---

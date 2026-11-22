@@ -340,7 +340,7 @@ Database is **no longer a blocker**: local Prisma Postgres is running, migrated,
 
 | Location | Finding |
 |---|---|
-| Application code (`backend/`, `src/`) | **No** `devos123`, **no** literal password |
+| Application code (`backend/`, `src/`) | Runtime-supplied test credential; no fixed fixture password |
 | `backend/prisma/seed.ts` | Reads `SUPERADMIN_PASSWORD`, `HR_PASSWORD`, `STAFF_PASSWORD` from env; throws if missing |
 | `backend/.env`, root `.env` | Not tracked |
 | Root `.env.example` (tracked) | Passwords are placeholders; `JWT_SECRET` is a lowercase template matching no live secret |

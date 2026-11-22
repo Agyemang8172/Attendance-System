@@ -1,3 +1,4 @@
+import { TEST_PASSWORD } from "./fixtures.js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import request from "supertest";
 import bcrypt from "bcrypt";
@@ -34,7 +35,7 @@ const createShift = async (active = true): Promise<string> => {
 const createEmployee = async (active = true, tenantId = businessId): Promise<string> => {
   const employee = await prisma.user.create({ data: { businessId: tenantId, employeeCode: `P11-${randomUUID().slice(0, 12)}`,
     firstName: "Lifecycle", lastName: "Tester", email: `p11-${randomUUID()}@test.attendpro.local`,
-    password: await bcrypt.hash("devos123", 4), role: "STAFF", isActive: active, mustChangePassword: false } });
+    password: await bcrypt.hash(TEST_PASSWORD, 4), role: "STAFF", isActive: active, mustChangePassword: false } });
   return employee.id;
 };
 const post = async (shiftId: string, employee: string, date: string, why: string) => {
@@ -58,10 +59,10 @@ beforeAll(async () => {
   businessId = business.id;
   const admin = await prisma.user.create({ data: { businessId, employeeCode: `P11A-${tag.slice(0, 10)}`,
     firstName: "Lifecycle", lastName: "Admin", email: `p11-admin-${tag}@test.attendpro.local`,
-    password: await bcrypt.hash("devos123", 4), role: "SUPERADMIN", mustChangePassword: false } });
+    password: await bcrypt.hash(TEST_PASSWORD, 4), role: "SUPERADMIN", mustChangePassword: false } });
   actorId = admin.id;
   employeeId = await createEmployee();
-  const login = await request(app).post("/api/auth/login").send({ email: admin.email, password: "devos123" });
+  const login = await request(app).post("/api/auth/login").send({ email: admin.email, password: TEST_PASSWORD });
   expect(login.status).toBe(200);
   token = login.body.token;
 });
@@ -144,7 +145,7 @@ describe("assignment lifecycle on isolated PostgreSQL", () => {
     expect(current.status).toBe(200);
     expect(current.body.data.map((row: { id: string }) => row.id)).toEqual([first.body.data.id]);
     const staff = await prisma.user.findUniqueOrThrow({ where: { id: employee }, select: { email: true } });
-    const login = await request(app).post("/api/auth/login").send({ email: staff.email, password: "devos123" });
+    const login = await request(app).post("/api/auth/login").send({ email: staff.email, password: TEST_PASSWORD });
     expect(login.status).toBe(200);
     const schedule = await request(app).get(`/api/staff/schedule?startDate=${day(9)}&endDate=${day(9)}`)
       .set(auth(login.body.token));
@@ -410,7 +411,7 @@ describe("assignment lifecycle on isolated PostgreSQL", () => {
     expect(currentInOldGap.status).toBe(200);
     expect(currentInOldGap.body.data.map((row: { id: string }) => row.id)).toEqual([beforeCurrent.id]);
     const staff = await prisma.user.findUniqueOrThrow({ where: { id: employee }, select: { email: true } });
-    const login = await request(app).post("/api/auth/login").send({ email: staff.email, password: "devos123" });
+    const login = await request(app).post("/api/auth/login").send({ email: staff.email, password: TEST_PASSWORD });
     expect(login.status).toBe(200);
     const throughOldGap = await request(app).get(`/api/staff/schedule?startDate=${day(12)}&endDate=${day(13)}`)
       .set(auth(login.body.token));
@@ -480,7 +481,7 @@ describe("assignment lifecycle on isolated PostgreSQL", () => {
     expect(current.status).toBe(200);
     expect(current.body.data).toEqual([]);
     const staff = await prisma.user.findUniqueOrThrow({ where: { id: employee }, select: { email: true } });
-    const login = await request(app).post("/api/auth/login").send({ email: staff.email, password: "devos123" });
+    const login = await request(app).post("/api/auth/login").send({ email: staff.email, password: TEST_PASSWORD });
     expect(login.status).toBe(200);
     const schedule = await request(app).get(`/api/staff/schedule?startDate=${day(13)}&endDate=${day(13)}`)
       .set(auth(login.body.token));

@@ -86,7 +86,7 @@ files and were committed separately as the verified harness correction.
 - **G11 review:** no secrets, machine-specific paths, or auto-approve bypasses in
   the 33 platform files. `AGENTS.md` and the agent personas enforce the human
   commit gate (raw `git commit` blocked; all commits via `commit.sh`; human
-  approval for heavy dependencies and breaking changes). `devos123` is the
+  approval for heavy dependencies and breaking changes). `historical test credential (removed)` is the
   documented universal dev fixture password, not a secret. No conflicting
   instructions were found. The only anomalies are illustrative obsolete stack
   examples in generic Dev-OS prompts, which do not encode project decisions.

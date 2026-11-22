@@ -159,7 +159,7 @@ or screen-reader text moved.
 1. **Browser walkthrough** of all three roles against `DESIGN_PROPOSAL`
    §10.1–§10.3 — STAFF (`staff@test.attendpro.com`), HR
    (`hr@test.attendpro.com`), SUPERADMIN (`superadmin@test.attendpro.com`),
-   password `devos123`, via `docs/TESTING_GUIDE.md`. Confirm the retained
+   password `historical test credential (removed)`, via `docs/TESTING_GUIDE.md`. Confirm the retained
    elements (§10.1), the redesigned ones (§10.2), and the resolved
    inconsistencies (§10.3).
 2. **In-browser contrast re-measure** of the §5 pairs — §5.2 ink table,

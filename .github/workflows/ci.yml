@@ -109,6 +109,10 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
+      - name: Generate isolated test credential
+        run: |
+          node -e 'const crypto = require("node:crypto"); const fs = require("node:fs"); const value = crypto.randomBytes(24).toString("hex"); process.stdout.write("::add-mask::" + value + "\n"); fs.appendFileSync(process.env.GITHUB_ENV, "ATTENDPRO_TEST_PASSWORD=" + value + "\n");'
+
       - name: Install dependencies
         run: npm ci
 

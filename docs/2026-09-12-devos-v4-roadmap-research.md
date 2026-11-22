@@ -296,7 +296,7 @@ Following review by the Engineering Lead, the following core architecture decisi
 3. **Interactive Human Tester Guide (`/docs/TESTING_GUIDE.md`):**
    - In `auto` mode, the testing stage produces a dedicated deliverable: `/docs/TESTING_GUIDE.md`.
    - This document provides a step-by-step interactive walkthrough for non-technical founders and QA testers.
-   - Includes seed data records, test accounts (`user@example.com`, `admin@example.com`), and simple test passwords: **`devos123` universally throughout for all users**.
+   - Includes seed data records, test accounts (`user@example.com`, `admin@example.com`), and simple test passwords: **`historical test credential (removed)` universally throughout for all users**.
 
 4. **Default Telemetry (`telemetry: on (recommended)`):**
    - During installation and manifest initialization, telemetry is enabled by default to capture anonymized failure events, error codes, and RCA reports locally in `.agents/telemetry/events.jsonl`.

@@ -27,12 +27,12 @@ const target = assertSafeTestDatabase(testDatabaseUrl, {
 
 // Prisma Client reads DATABASE_URL. Point it at the verified test target before
 // the client module is evaluated.
+process.env.DEV_DATABASE_URL = process.env.DEV_DATABASE_URL ?? process.env.DATABASE_URL;
 process.env.DATABASE_URL = testDatabaseUrl!;
 
 const { prismaUnscoped: prisma } = await import("../config/prismaClient.js");
 const {
   ensureTestAccounts,
-  TEST_PASSWORD,
   TEST_SUPERADMIN_EMAIL,
   TEST_HR_EMAIL,
   TEST_STAFF_EMAIL,
@@ -46,7 +46,6 @@ async function main(): Promise<void> {
   console.log(`  SUPERADMIN  ${TEST_SUPERADMIN_EMAIL}`);
   console.log(`  HR          ${TEST_HR_EMAIL}`);
   console.log(`  STAFF       ${TEST_STAFF_EMAIL}`);
-  console.log(`  Password    ${TEST_PASSWORD}`);
   console.log("");
   console.log("[test-seed] The accounts have no kiosk PIN or badge yet; issue them from");
   console.log("[test-seed] the Staff screen, or let the backend suite create them.");

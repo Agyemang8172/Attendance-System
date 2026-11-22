@@ -17,7 +17,7 @@ This project uses Dev-OS by Olives Technologies.
 12. Task Board Governance: Keep task states in `docs/TASK_BOARD.md` aligned with current execution.
 13. Mandatory Design Gate: Modifying frontend UI files without an approved `DESIGN.md` at project root is strictly blocked.
 14. Mechanical Humanizer Gate: Documentation in `docs/` must pass `.agents/scripts/humanize-check.sh`.
-15. Universal Test Credentials: Seed data and testing accounts must use `devos123`.
+15. Runtime Test Credentials: Seed data and testing accounts must use a credential supplied privately through `ATTENDPRO_TEST_PASSWORD`.
 16. Distinctive Craft & Anti-AI UI Gate: All frontend UI code must pass `.agents/scripts/ui-taste-check.sh` (zero raw emojis, zero sparkles, contextual navigation, tactile affordances, authentic entities).
 17. Environment & Config Parity Gate: All environment variables in code must be documented in `.env.example` with zero committed secrets (`.agents/scripts/env-check.sh`).
 18. Database & Migration Safety Gate: SQL migrations must enable RLS on all tables and avoid unapproved destructive operations (`.agents/scripts/db-check.sh`).
@@ -46,7 +46,7 @@ Orchestrator mode is locked per session in `.agents/memory/session.json`. Read i
 - Distinctive Craft & Anti-AI UI Gate: Frontend code must pass `.agents/scripts/ui-taste-check.sh`
 - Environment Parity Gate: `.env.example` sync enforced via `.agents/scripts/env-check.sh`
 - Database Safety Gate: SQL migrations & RLS enforced via `.agents/scripts/db-check.sh`
-- Universal Test Credentials: Seed data and testing accounts must use `devos123`
+- Runtime Test Credentials: Seed data and testing accounts must use a credential supplied privately through `ATTENDPRO_TEST_PASSWORD`
 - Task Board: `docs/TASK_BOARD.md`
 - Shared Memory Vault: `.agents/memory/`
 - Telemetry Buffer: `.agents/telemetry/events.jsonl`

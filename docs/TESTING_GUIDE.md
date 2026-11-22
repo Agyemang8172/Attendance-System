@@ -3,7 +3,7 @@
 **Application:** AttendPro — Attendance System
 **Environment:** Local Development (`http://localhost:5173`)
 **Target Audience:** Human QA Testers, Product Owners, Startup Founders
-**Test fixture password:** `devos123` (the three `attendpro_test` accounts; the development seed uses the passwords in `backend/.env`)
+**Test fixture password:** The value supplied through `ATTENDPRO_TEST_PASSWORD` (the three `attendpro_test` accounts; the development seed uses the passwords in `backend/.env`)
 
 ---
 
@@ -61,11 +61,11 @@ first time the backend suite runs, or by `scripts/test-seed.ts`. They are always
 active and never owe a password change. They do not exist in the development
 database unless you point the backend at `TEST_DATABASE_URL`.
 
-| Account | Employee code | Role | Password |
+| Account | Employee code | Role | Credential source (environment variable) |
 |---|---|---|---|
-| `superadmin@test.attendpro.com` | `EMP-9001` | SUPERADMIN | `devos123` |
-| `hr@test.attendpro.com` | `EMP-9002` | HR | `devos123` |
-| `staff@test.attendpro.com` | `EMP-9003` | STAFF | `devos123` |
+| `superadmin@test.attendpro.com` | `EMP-9001` | SUPERADMIN | `ATTENDPRO_TEST_PASSWORD` |
+| `hr@test.attendpro.com` | `EMP-9002` | HR | `ATTENDPRO_TEST_PASSWORD` |
+| `staff@test.attendpro.com` | `EMP-9003` | STAFF | `ATTENDPRO_TEST_PASSWORD` |
 
 ### Supporting data
 
@@ -84,14 +84,17 @@ database unless you point the backend at `TEST_DATABASE_URL`.
 
 ### Scenario A: Authentication & Role Verification
 
+For each sign-in below, use the value supplied privately through the named
+environment variable, not the variable name itself.
+
 - [ ] 1. Open `http://localhost:5173` — verify the public landing page renders
       at `/`. Click **Sign in to your AttendPro workspace** and verify the URL
       becomes `/login`.
-- [ ] 2. Sign in as `staff@test.attendpro.com` / `devos123`. Verify you land
+- [ ] 2. Sign in as `staff@test.attendpro.com` / `ATTENDPRO_TEST_PASSWORD`. Verify you land
       on the staff `/dashboard`.
 - [ ] 3. Sign out from the account menu. Sign in as `hr@test.attendpro.com` /
-      `devos123`. Verify you land on `/hr-dashboard`.
-- [ ] 4. Sign out. Sign in as `superadmin@test.attendpro.com` / `devos123`.
+      `ATTENDPRO_TEST_PASSWORD`. Verify you land on `/hr-dashboard`.
+- [ ] 4. Sign out. Sign in as `superadmin@test.attendpro.com` / `ATTENDPRO_TEST_PASSWORD`.
       Verify you land on `/superadmin-dashboard`.
 - [ ] 5. With HR signed in, open `http://localhost:5173/manage-staff` directly —
       verify no redirect. Open `/superadmin-dashboard` — verify HR is bounced
@@ -218,14 +221,15 @@ database unless you point the backend at `TEST_DATABASE_URL`.
 
 ---
 
+Store the login JSON in a private local file and set `TEST_LOGIN_REQUEST_FILE` to its path; never commit the file or print its contents.
+
 The scenarios below test features that live mostly on the API. To call them,
 sign in through the API once, copy the `token` from the response, and send it as
 an `Authorization: Bearer <token>` header on every call:
 
 ```
 curl -s -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"superadmin@test.attendpro.com","password":"devos123"}'
+  -H "Content-Type: application/json" \n  --data-binary @"$TEST_LOGIN_REQUEST_FILE"
 ```
 
 Where a step says `<id>`, paste an id you copied from an earlier response.
@@ -1121,7 +1125,7 @@ with the no-self-approval backstop, reports with the CSV export, and the audit
 trail. They follow the same API-walkthrough rules as Scenarios I–V. All four
 report routes, both help-request HR routes, the decision route, and the audit
 trail answer to an HR or SUPERADMIN token (`hr@test.attendpro.com` or
-`superadmin@test.attendpro.com`, password `devos123`); Scenario X's drift test
+`superadmin@test.attendpro.com`, password supplied through `ATTENDPRO_TEST_PASSWORD`); Scenario X's drift test
 reuses the `JOB_TOKEN` export from Scenario V's setup note.
 
 ### Scenario W: Help Requests End to End (STAFF self + HR lane, M7)
@@ -1503,7 +1507,7 @@ story in a single view.
   `DEV_DB_HOST`, and it creates one SUPERADMIN and one HR account, no STAFF. The
   automated suite uses the separate `attendpro_test` database, where
   `backend/tests/fixtures.ts` (or `scripts/test-seed.ts`) writes the three
-  `devos123` accounts. A fresh development database has no users until you run
+  `ATTENDPRO_TEST_PASSWORD` accounts. A fresh development database has no users until you run
   `npm run db:seed`. Any employee you create through the UI receives the
   temporary password shown once in the creation response.
 - **Staff attendance filters (open defect):** `/staff/attendance` sends
@@ -1561,7 +1565,7 @@ honest about being a product page rather than a live dashboard.
 
 ## 6. Staff Portal Walkthrough
 
-Sign in as `staff@test.attendpro.com` / `devos123`. The sidebar shows
+Sign in as `staff@test.attendpro.com` / `ATTENDPRO_TEST_PASSWORD`. The sidebar shows
 **Overview**, **My Attendance**, **My Schedule**, **Off-Days**, **Help
 Requests**, **Corrections**, **Profile & Security**, and **Change PIN**.
 
@@ -1652,7 +1656,7 @@ Requests**, **Corrections**, **Profile & Security**, and **Change PIN**.
 
 ## 7. HR Portal Walkthrough
 
-Sign in as `hr@test.attendpro.com` / `devos123`. HR sees its own navigation
+Sign in as `hr@test.attendpro.com` / `ATTENDPRO_TEST_PASSWORD`. HR sees its own navigation
 plus the staff-management screens; SUPERADMIN-only screens bounce HR to its
 home.
 
@@ -1726,7 +1730,7 @@ home.
 
 ## 8. Super Admin Portal Walkthrough
 
-Sign in as `superadmin@test.attendpro.com` / `devos123`. SUPERADMIN can open
+Sign in as `superadmin@test.attendpro.com` / `ATTENDPRO_TEST_PASSWORD`. SUPERADMIN can open
 every HR screen plus the setup screens below.
 
 ### 8.1 Dashboard (`/superadmin-dashboard`)
@@ -1887,7 +1891,7 @@ This account-security screen is separate from initial password setup. It uses th
 
 ### Human review checklist
 
-Use an existing authorized test account; seeded test-account passwords remain `devos123`. Do not create or alter production accounts for this review. A replacement password must satisfy the displayed existing password policy.
+Use an existing authorized test account; seeded test-account passwords are supplied through `ATTENDPRO_TEST_PASSWORD`. Do not create or alter production accounts for this review. A replacement password must satisfy the displayed existing password policy.
 
 - [ ] Open Profile and choose Change Password. Verify the URL is `/profile/change-password` and the ordinary account shell remains visible.
 - [ ] Verify STAFF, HR and SUPERADMIN accounts can open this screen after completing initial setup. An account still owing initial setup goes to `/set-password`; a signed-out visitor goes to login.
@@ -1914,7 +1918,7 @@ This slice adds the direct record read only. The Attendance Detail screen is not
 
 ### Human API review checklist
 
-Use only an already authorized test environment and existing account/record fixtures. Standard seeded account passwords remain `devos123`; do not create accounts or alter data for this read-only review. Keep credentials out of commands, screenshots and reports.
+Use only an already authorized test environment and existing account/record fixtures. Standard seeded account passwords are supplied through `ATTENDPRO_TEST_PASSWORD`; do not create accounts or alter data for this read-only review. Keep credentials out of commands, screenshots and reports.
 
 - [ ] As STAFF, request `GET /api/attendance/:id` for an existing own record. Verify `success`, the factual session/classification, punches and historical snapshots, with `Cache-Control: no-store`.
 - [ ] Request another employee's record in the same business as STAFF. Verify refusal. Request a missing or foreign-business record and verify the same generic not-found response.
@@ -2004,7 +2008,7 @@ Read-only HTTP checks returned200 from localhost5173 and localhost8000/api/healt
 
 ### Human review with existing authorized records
 
-- [ ] Sign in with an existing authorized HR or SUPERADMIN account; do not create records or reset credentials for this review. Existing seeded test passwords, where applicable, remain devos123.
+- [ ] Sign in with an existing authorized HR or SUPERADMIN account; do not create records or reset credentials for this review. Existing seeded test passwords, where applicable, are supplied through ATTENDPRO_TEST_PASSWORD.
 - [ ] Open Attendance Register at /hr-attendance; SUPERADMIN may also use the existing /admin-attendance compatibility route. Verify the count and single pager use the server total/page rather than a second page of only loaded rows.
 - [ ] Choose a Classification and Session state separately. Verify status is recorded classification, not a fixed clock-time lateness rule. Unsupported employee-name search is absent.
 - [ ] Set From and To UTC clock-in dates. Verify the explanatory copy identifies clock-in instant filtering and does not imply business-local attendance dates. The end boundary includes the UTC date through23:59:59.999Z. Configured business-day semantics remain part of P17.

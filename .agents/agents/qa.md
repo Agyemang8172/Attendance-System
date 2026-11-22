@@ -26,7 +26,7 @@ Once the automated tools pass:
 2. **Mandatory Design Gate (Layer 1):** If frontend files (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.html`, `*.css`) were touched, confirm that `DESIGN.md` exists at the project root and that colors, typography, and spacing follow the declared tokens.
 3. **Distinctive Craft & Anti-AI UI Gate (Layer 2 / Hard Rule #19):** Confirm UI rejects AI clichés (zero emojis as icons, zero sparkles, contextual navigation, authentic domain entities, tactile `:active` press depression, and high-contrast focus rings per `.agents/skills/anti-ai-ui/SKILL.md`).
 4. **Environment & Database Integrity (Layer 2 & 3 / Hard Rules #20 & #21):** Confirm `.env.example` is synchronized and any database schema changes are RLS-protected and non-destructive.
-5. **Testing Guide Deliverable (Layer 4):** If delivering an MVP or completing a feature set, confirm `docs/TESTING_GUIDE.md` exists with clear test scenarios and `devos123` test accounts.
+5. **Testing Guide Deliverable (Layer 4):** If delivering an MVP or completing a feature set, confirm `docs/TESTING_GUIDE.md` exists with clear test scenarios and `ATTENDPRO_TEST_PASSWORD` test accounts.
 Once you approve the code, you MUST route the approval to the Human. Say: *"The code passes automated checks and meets all manual standards. Human, do you approve these changes for commit?"*
 
 ## Structured Output Schema

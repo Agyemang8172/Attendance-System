@@ -203,7 +203,7 @@ Tech lead proxy for Autonomous Mode (`devos run` / `/auto`). Coordinates the spe
 
 - Oversees end-to-end MVP delivery from initial concept to tested, working software
 - Enforces strict delegation across the entire team (Architect → UI Designer → DBA → Developer → Tester → QA → Security → Release Manager)
-- Ensures delivery of `docs/TESTING_GUIDE.md` with universal test password `devos123`
+- Ensures delivery of `docs/TESTING_GUIDE.md` with runtime-supplied test credential `ATTENDPRO_TEST_PASSWORD`
 - Never acts as a monolithic solo worker
 
 ---
@@ -304,7 +304,7 @@ Dev-OS enforces a defense-in-depth quality pipeline to eliminate runtime failure
    - Migration Safety: `.agents/scripts/db-check.sh` (mandatory RLS on created tables, foreign key indexing, dry-run approval for destructive SQL).
 4. **Layer 4: Parallel Engineering Gate** (Multi-Agent Concurrent Evaluation)
    - QA Agent: Standards, linting, and verifying Layers 2 & 3 pass.
-   - Tester Agent: Unit/integration tests, coverage, and interactive `docs/TESTING_GUIDE.md` (`devos123`).
+   - Tester Agent: Unit/integration tests, coverage, and interactive `docs/TESTING_GUIDE.md` (`ATTENDPRO_TEST_PASSWORD`).
    - Security Agent: OWASP Top 10, auth/permission logic, and dependency vulnerability audits.
 5. **Layer 5: Human Checkpoint Gate** (Human-in-the-Loop)
    - Staged review and browser walkthrough before triggering `.agents/scripts/commit.sh`.
@@ -411,7 +411,7 @@ All agents can reference these skills from `skills/`. Each skill is a directory 
 | `shared-memory/` | Structured episodic & decision memory vault | Memory Manager, Orchestrator |
 | `task-board/` | Deterministic DAG task board state governance | Orchestrator |
 | `humanizer/` | De-fluff AI writing tells from documentation | Release Manager, QA |
-| `testing-guide/` | Interactive testing guide with devos123 passwords | Tester, QA |
+| `testing-guide/` | Interactive testing guide with ATTENDPRO_TEST_PASSWORD passwords | Tester, QA |
 | `autonomous-sdlc/` | Autonomous SDLC modes (interactive, guided, auto, audit) | Executive Proxy, Orchestrator |
 | `telemetry/` | Local failure logging and RCA feedback | Telemetry Agent |
 | `anti-ai-ui/` | Eliminates AI UI clichés and enforces authentic craft | UI Designer, Developer, QA |
@@ -437,7 +437,7 @@ All agents can reference these skills from `skills/`. Each skill is a directory 
 14. **Session-Start Freshness Check.** At session start, always run `git fetch --all --prune` and check `git status -sb` before scoping or beginning any task to prevent duplicate or regressive work on stale clones.
 15. **Mandatory Design Gate.** Creating or modifying frontend UI files (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.html`, `*.css`) without an established and approved `DESIGN.md` at the project root is strictly forbidden and mechanically blocked by runtime hooks. The UI Designer must first extract tokens from `ui-ux-pro-max` and produce `DESIGN.md`.
 16. **Mechanical Humanizer Gate.** All documentation, PR summaries, PRDs, and marketing copy in `/docs/` must pass the Humanizer scan (`.agents/scripts/humanize-check.sh`) before acceptance. Robotic AI writing tells (not-X-but-Y, forced triads, inflated fluff) are forbidden.
-17. **Universal Test Credentials.** All development seed fixtures, test accounts, and interactive walkthroughs (`docs/TESTING_GUIDE.md`) must use `devos123` as the universal password to eliminate authentication friction.
+17. **Runtime Test Credentials.** Supply isolated test credentials through `ATTENDPRO_TEST_PASSWORD`; never commit or log their values. Do not run concurrent suites against the same test database. Development bootstrap credentials remain separate.
 18. **Anti-Amnesia Delegation Mandate.** The Orchestrator and active agents must never act as a monolithic solo worker bypassing specialist agents and skills. Every task must be properly triaged and routed.
 19. **Distinctive Craft & Anti-AI UI Gate.** All frontend UI code (`*.tsx`, `*.jsx`, `*.vue`, `*.svelte`, `*.html`) must adhere to `.agents/skills/anti-ai-ui/SKILL.md` and pass `.agents/scripts/ui-taste-check.sh` before acceptance. Raw emojis as icons, sparkle icon clichés, cookie-cutter profile pills, lazy indigo-purple gradients, generic "Holy Trinity" card grids, and placeholder slop ("John Doe") are strictly forbidden.
 20. **Environment & Config Parity Gate.** All environment variables referenced in code (`process.env.*`, `os.environ[...]`, `env(...)`) must be documented in `.env.example` with dummy placeholder values and pass `.agents/scripts/env-check.sh`. Committing live credentials or private keys to `.env.example` or code is strictly forbidden.

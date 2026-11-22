@@ -1,3 +1,6 @@
+// Runtime-only synthetic input for the optional mock login handler.
+export const mockLoginPassword = globalThis.crypto.randomUUID()
+
 import { http, HttpResponse, HttpHandler } from 'msw'
 
 // Helper to simulate network delay
@@ -352,7 +355,7 @@ export const handlers: HttpHandler[] = [
     const body = (await request.json()) as LoginRequest
     const { email, password } = body
 
-    if (password !== 'devos123') {
+    if (password !== mockLoginPassword) {
       return HttpResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 

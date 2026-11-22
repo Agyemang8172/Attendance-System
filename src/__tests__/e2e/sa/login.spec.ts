@@ -7,12 +7,20 @@
 // database, so run it once before the e2e suite.
 import { test, expect } from '@playwright/test'
 
+test.use({ trace: 'off', screenshot: 'off', video: 'off' })
+
 test.describe('Super Admin portal — login', () => {
   test('SUPERADMIN signs in and lands on the Super Admin dashboard', async ({ page }) => {
+    const testPassword = process.env.ATTENDPRO_TEST_PASSWORD
+    if (!testPassword) throw new Error('ATTENDPRO_TEST_PASSWORD is required for login tests')
     await page.goto('/login')
 
     await page.getByLabel(/email/i).fill('superadmin@test.attendpro.com')
-    await page.getByLabel(/password/i).fill('devos123')
+    try {
+      await page.getByLabel(/password/i).fill(testPassword)
+    } catch {
+      throw new Error('Unable to enter the test credential')
+    }
     await page.getByRole('button', { name: /sign in/i }).click()
 
     await expect(page).toHaveURL(/\/superadmin-dashboard$/)
