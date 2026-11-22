@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import AttendanceTable from '../components/ui/AttendanceTable'
+import AttendanceTable from '../components/ui/AttendanceTable.tsx'
 
 // Local-time safe clock-in, so the 06:30 late threshold reads the same
 // regardless of the host timezone.

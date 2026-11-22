@@ -10,7 +10,7 @@ Execute autonomous SDLC mode on behalf of the startup founder or product sponsor
 
 1. **Inception:** Invoke the Architect agent with skill `grill-me` to produce `docs/PROJECT_REQUIREMENTS.md`.
 2. **Design System:** Invoke the UI Designer agent with skill `ui-ux-pro-max` to produce `DESIGN.md` at the project root.
-3. **Database Architecture:** Invoke the DBA agent to design migrations and realistic seed fixtures with universal test password `devos123`.
+3. **Database Architecture:** Invoke the DBA agent to design migrations and realistic seed fixtures with runtime-supplied test credential `ATTENDPRO_TEST_PASSWORD`.
 4. **Task DAG:** Initialize `docs/TASK_BOARD.md` and sequence subtasks.
 5. **Implementation:** Supervise the Developer implementing features sequentially.
 6. **Testing & QA Guide:** Trigger the Tester agent to run test suites and author `docs/TESTING_GUIDE.md` with step-by-step verification flows.

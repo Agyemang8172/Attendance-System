@@ -1,5 +1,7 @@
 .env
-.env.example
+# The example file carries placeholders only; it is tracked so the backend and
+# root templates stay in step (SEC-16).
+!.env.example
 .env local
 node_modules
 *.log

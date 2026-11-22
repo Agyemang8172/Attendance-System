@@ -37,7 +37,7 @@ Suites are defined in `.agents/evals/suites/*.eval.json`:
 | `harness-parity` | Compatibility | Multi-Platform AI Harness Parity | Claude, Antigravity, Cursor, OpenCode, and Codex config parity & Hard Rules digest |
 | `memory-preservation` | State | Shared Memory Vault & State Governance | `context.json`, `docs/TASK_BOARD.md` DAG, `docs/CURRENT_STATE.md`, ADRs & handoffs |
 | `agent-authority` | Governance | Role Boundaries & Specialization | Orchestrator, Developer, QA, Tester, DBA, Security authority constraints |
-| `workflow-integrity` | Workflow | Autonomous SDLC Lifecycle | Standard Feature Delivery, Circuit Breaker (3 loops), Solo Session Protocol, `devos123` password |
+| `workflow-integrity` | Workflow | Autonomous SDLC Lifecycle | Standard Feature Delivery, Circuit Breaker (3 loops), Solo Session Protocol, `ATTENDPRO_TEST_PASSWORD` password |
 
 ---
 

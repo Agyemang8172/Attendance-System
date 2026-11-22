@@ -19,7 +19,7 @@ version: 2
 secret:
   ignored_paths:
     - backend/validators/index.ts      # PASSWORD_BLOCKLIST — public reference data
-    - backend/tests/fixtures.ts        # devos123 — Hard Rule 17 universal test credential
+    - backend/tests/fixtures.ts        # runtime-supplied credential — Hard Rule 17 universal test credential
     - backend/tests/auth.test.ts       # deliberately-wrong password used to test 401s
     - backend/tests/user.test.ts       # deliberately-weak non-secrets for the D7 policy tests
     - src/__tests__/staff-workflows.test.jsx  # deliberately-fake temp passwords for the reset/reveal tests

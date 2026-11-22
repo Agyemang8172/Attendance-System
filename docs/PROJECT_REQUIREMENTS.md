@@ -1,3 +1,5 @@
+> **Historical requirements draft.** This retained snapshot is not the current product contract. Read `attendpro/DECISION-REGISTER.md` and the current documentation map for approved decisions; later owner rulings supersede conflicting requirements here. Implementation is evidence of behavior, not automatic approval of a requirement.
+
 # Project Requirements — AttendPro Attendance System
 
 > Generated with the Dev-OS `project-requirements` skill.

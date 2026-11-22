@@ -1,3 +1,4 @@
+/// <reference types="vitest/jsdom" />
 /**
  * Runs before each test file. Registered as an afterEach by testing-library, so
  * `cleanup()` and `localStorage.clear()` below execute once per test: route
@@ -6,7 +7,10 @@
  */
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
-import { afterEach } from 'vitest'
+import { afterEach, vi } from 'vitest'
+
+// Node exposes a localStorage global that Vitest does not replace with JSDOM storage.
+vi.stubGlobal('localStorage', jsdom.window.localStorage)
 
 // jsdom does not implement matchMedia, but react-hot-toast consults it for
 // the "prefers-reduced-motion" flag the moment a toast renders. Without a

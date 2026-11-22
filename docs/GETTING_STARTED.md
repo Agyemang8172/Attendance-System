@@ -104,7 +104,7 @@ Dev-OS supports major agentic AI coding harnesses with parity:
   - Multi-agent role delegation rules.
   - Solo session protocol for single-agent runs.
   - Mechanical commit gates and the Mandatory Design Gate (`DESIGN.md`).
-  - Standard testing passwords (`devos123`).
+  - Standard testing passwords (`ATTENDPRO_TEST_PASSWORD`).
 
 ### Anthropic Claude Code
 - Compiles agent personas into `.claude/agents/*.md` and slash commands into `.claude/commands/*.md`.
@@ -142,7 +142,7 @@ Inside your AI harness, trigger the pipeline with:
 The **Executive Proxy Agent** oversees all 10 stages:
 1. **Inception:** Architect creates `docs/PROJECT_REQUIREMENTS.md`.
 2. **Design Gate:** UI Designer creates `DESIGN.md` at project root (required before UI coding).
-3. **Database Architecture:** DBA writes migrations and seed scripts with universal test credentials (`devos123`).
+3. **Database Architecture:** DBA writes migrations and seed scripts with Runtime Test Credentials (`ATTENDPRO_TEST_PASSWORD`).
 4. **Task Decomposition:** Orchestrator creates dependency DAG in `docs/TASK_BOARD.md`.
 5. **Implementation:** Developer implements components and services.
 6. **Test Suite:** Tester writes unit, integration, and regression tests.
@@ -197,7 +197,7 @@ Dev-OS enforces code quality through automated runtime gates:
 1. **Mechanical Commit Gate:** Raw `git commit` is blocked by pre-commit hooks. Changes must be committed using `.agents/scripts/commit.sh` or with `DEVOS_COMMIT_APPROVED=true`.
 2. **Mandatory Design Gate:** Modifying frontend UI files (`.tsx`, `.jsx`, `.vue`, `.svelte`, `.html`, `.css`) without an approved `DESIGN.md` at project root is blocked by `.agents/hooks/pre-tool-use.sh`.
 3. **Mechanical Humanizer Gate:** Documentation in `docs/` must pass `.agents/scripts/humanize-check.sh` to remove robotic text patterns before merging.
-4. **Universal Test Password:** Standard test accounts and seed fixtures must use `devos123` to eliminate authentication friction for human testers.
+4. **runtime-supplied test credential:** Standard test accounts and seed fixtures must use a credential supplied privately through `ATTENDPRO_TEST_PASSWORD` to eliminate authentication friction for human testers.
 5. **Zero Secret Policy:** API keys and credentials must never be committed or written into repository files.
 
 ---

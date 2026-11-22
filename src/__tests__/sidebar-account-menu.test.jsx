@@ -1,16 +1,30 @@
 /**
- * M5 — Sidebar navigation with the R7 accessible account menu.
+ * M8 — Sidebar navigation with the R7 accessible account menu.
  *
  * Covers the two behaviours the route suite cannot: that navigation items are
  * filtered by the signed-in role, and that the account menu is a real
  * accessible popover — aria-expanded state, Escape, click-outside, arrow-key
  * cycling, and a sign-out that clears the session and leaves the app.
  */
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
+
+// Sign-out fires a fire-and-forget `/auth/logout`. Left to the real client it
+// reaches an absent server, the 401 interceptor assigns `window.location`,
+// and jsdom tears down the document while the next test is still rendering.
+// The sidebar's job here is the menu, not the network.
+vi.mock('../api/axios', () => ({
+  default: {
+    post: vi.fn(() => Promise.resolve({ data: {} })),
+    get: vi.fn(() => new Promise(() => {})),
+    put: vi.fn(() => Promise.resolve({ data: {} })),
+    patch: vi.fn(() => Promise.resolve({ data: {} })),
+    delete: vi.fn(() => Promise.resolve({ data: {} })),
+  },
+}))
 
 const PathProbe = () => {
   const { pathname } = useLocation()
@@ -29,7 +43,7 @@ function seedSession(role, overrides = {}) {
 function renderSidebar(role = 'STAFF', overrides = {}) {
   seedSession(role, overrides)
   return render(
-    <MemoryRouter initialEntries={['/profile']}>
+    <MemoryRouter initialEntries={['/dashboard']}>
       <Sidebar isOpen={false} onClose={() => {}} />
       <PathProbe />
     </MemoryRouter>
@@ -50,12 +64,15 @@ describe('navigation is filtered by role', () => {
   it('shows STAFF its own links only', () => {
     renderSidebar('STAFF')
 
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('My Profile')).toBeInTheDocument()
+    expect(screen.getByText('Overview')).toBeInTheDocument()
+    expect(screen.getByText('My Attendance')).toBeInTheDocument()
     expect(screen.getByText('My Schedule')).toBeInTheDocument()
-    expect(screen.getByText('Settings')).toBeInTheDocument()
+    expect(screen.getByText('Off-Days')).toBeInTheDocument()
+    expect(screen.getByText('Help Requests')).toBeInTheDocument()
+    expect(screen.getByText('Corrections')).toBeInTheDocument()
     expect(screen.queryByText('HR Dashboard')).not.toBeInTheDocument()
     expect(screen.queryByText('Manage Staff')).not.toBeInTheDocument()
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument()
   })
 
   it('shows HR its links and hides staff only ones', () => {
@@ -63,9 +80,17 @@ describe('navigation is filtered by role', () => {
 
     expect(screen.getByText('HR Dashboard')).toBeInTheDocument()
     expect(screen.getByText('Manage Staff')).toBeInTheDocument()
-    expect(screen.getByText('My Profile')).toBeInTheDocument()
-    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+    expect(screen.getByText('Attendance')).toBeInTheDocument()
+    expect(screen.getByText('Exceptions')).toBeInTheDocument()
+    expect(screen.getByText('Help Requests')).toBeInTheDocument()
+    expect(screen.getByText('Corrections')).toBeInTheDocument()
+    expect(screen.getByText('Reports')).toBeInTheDocument()
+    expect(screen.getByText('Audit History')).toBeInTheDocument()
+    expect(screen.queryByText('Overview')).not.toBeInTheDocument()
+    expect(screen.queryByText('My Attendance')).not.toBeInTheDocument()
     expect(screen.queryByText('My Schedule')).not.toBeInTheDocument()
+    expect(screen.queryByText('Off-Days')).not.toBeInTheDocument()
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument()
   })
 
   it('shows SUPERADMIN staff management on top of its links', () => {
@@ -73,8 +98,14 @@ describe('navigation is filtered by role', () => {
 
     expect(screen.getByText('Manage Staff')).toBeInTheDocument()
     expect(screen.getByText('HR Dashboard')).toBeInTheDocument()
-    expect(screen.queryByText('Dashboard')).not.toBeInTheDocument()
+    expect(screen.getByText('Business Settings')).toBeInTheDocument()
+    expect(screen.getByText('Overview')).toBeInTheDocument()
+    expect(screen.queryByText('My Attendance')).not.toBeInTheDocument()
     expect(screen.queryByText('My Schedule')).not.toBeInTheDocument()
+    expect(screen.queryByText('Off-Days')).not.toBeInTheDocument()
+    // SUPERADMIN sees HR versions of Help Requests/Corrections (same labels, different paths)
+    expect(screen.getByText('Help Requests')).toBeInTheDocument()
+    expect(screen.getByText('Corrections')).toBeInTheDocument()
   })
 })
 
@@ -90,9 +121,20 @@ describe('the account menu (R7)', () => {
 
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('menu', { name: /account menu/i })).toBeInTheDocument()
-    expect(screen.getByRole('menuitem', { name: /my profile/i })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /profile & security/i })).toBeInTheDocument()
+    // The kiosk PIN is a STAFF credential; the endpoint refuses HR and
+    // SUPERADMIN, so the shared menu must not offer the dead-end action.
+    expect(screen.queryByRole('menuitem', { name: /change pin/i })).not.toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /settings/i })).toBeInTheDocument()
     expect(screen.getByRole('menuitem', { name: /sign out/i })).toBeInTheDocument()
+  })
+
+  it('offers the PIN screen to STAFF', async () => {
+    renderSidebar('STAFF', { firstName: 'Ada', lastName: 'Lovelace' })
+
+    await userEvent.click(screen.getByRole('button', { name: /ada lovelace/i }))
+
+    expect(screen.getByRole('menuitem', { name: /change pin/i })).toBeInTheDocument()
   })
 
   it('closes on Escape', async () => {
@@ -125,7 +167,10 @@ describe('the account menu (R7)', () => {
     const menu = screen.getByRole('menu')
     expect(menu).toBeInTheDocument()
 
-    // Opening focuses the first item (My Profile); ArrowDown steps forward.
+    // Opening focuses the first item (Profile & Security); ArrowDown steps forward.
+    fireEvent.keyDown(menu, { key: 'ArrowDown' })
+    expect(screen.getByRole('menuitem', { name: /change pin/i })).toHaveFocus()
+
     fireEvent.keyDown(menu, { key: 'ArrowDown' })
     expect(screen.getByRole('menuitem', { name: /settings/i })).toHaveFocus()
 

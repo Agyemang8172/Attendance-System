@@ -1,3 +1,5 @@
+> **Historical audit snapshot (2026-10-01).** Original findings below are retained unchanged and are not a current defect/status list. Later owner decisions, implemented milestones, and accepted recovery verification supersede individual findings; use `docs/attendpro/DECISION-REGISTER.md` and the current documentation map to establish authority. This notice does not assert that every historical finding is resolved.
+
 # Attendance System - Comprehensive Audit Report
 
 **Date:** 2026-10-01  

@@ -31,7 +31,7 @@
     },
     {
       "id": "workflow-universal-password",
-      "name": "Universal test password devos123 is codified in testing guide standards",
+      "name": "runtime-supplied test credential ATTENDPRO_TEST_PASSWORD is codified in testing guide standards",
       "workflow": "testing-guide",
       "critical": true
     },

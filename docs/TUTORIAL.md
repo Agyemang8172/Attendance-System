@@ -27,7 +27,7 @@ The Orchestrator delegates to specialist agents:
 - **UI Designer**: Crafts `DESIGN.md` at project root before frontend development starts (Mandatory Design Gate).
 - **DBA & DevOps**: Database migrations, seed fixtures, infrastructure, and deployment pipelines.
 - **Developer**: Writes code and presents work for staged review.
-- **QA, Tester, Security**: The parallel quality gate. Tester authors unit tests and `docs/TESTING_GUIDE.md` (universal password: `devos123`).
+- **QA, Tester, Security**: The parallel quality gate. Tester authors unit tests and `docs/TESTING_GUIDE.md` (runtime-supplied credential via `ATTENDPRO_TEST_PASSWORD`).
 - **Telemetry & Eval Engineer**: Local failure diagnostics and test benchmark harnesses.
 - **Memory Manager & Release Manager**: Handles state tracking (`CURRENT_STATE.md`, `LESSONS.md`), changelogs, and document de-fluffing.
 
@@ -96,7 +96,7 @@ You can omit these instructions from your prompts:
 - **"Do not write code until you prompt me for .env keys"**: Hard Rule #2 and pre-tool hooks block secret hardcoding. When external services (Supabase, Paystack, Stripe) are involved, the DBA and Developer pause and request environment variables before running migrations.
 - **"Grill me and brainstorm first"**: When given a high-level goal in autonomous mode (`/auto`), the Architect agent runs `grill-me` and authors `docs/PROJECT_REQUIREMENTS.md`.
 - **"Make it mobile responsive and clean"**: The UI Designer agent must author `DESIGN.md` at the project root before anyone writes frontend code. The hook `.agents/hooks/pre-tool-use.sh` blocks UI files until tokens for mobile, tablet, and desktop breakpoints are established.
-- **"Write unit tests and manual instructions"**: The Tester agent is obligated to produce automated test suites and the walkthrough guide in `docs/TESTING_GUIDE.md` using the universal password `devos123`.
+- **"Write unit tests and manual instructions"**: The Tester agent is obligated to produce automated test suites and the walkthrough guide in `docs/TESTING_GUIDE.md` using the universal password supplied through `ATTENDPRO_TEST_PASSWORD`.
 
 ### Case Study: Restaurant POS & Voice Ordering
 

@@ -4,9 +4,25 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
+import correctionRoutes from "./routes/correctionRoutes.js";
+import shiftRoutes from "./routes/shiftRoutes.js";
+import assignmentRoutes from "./routes/assignmentRoutes.js";
+import policyRoutes from "./routes/policyRoutes.js";
+import hrRoutes from "./routes/hrRoutes.js";
+import siteRoutes from "./routes/siteRoutes.js";
+import calendarRoutes from "./routes/calendarRoutes.js";
+import qrRoutes from "./routes/qrRoutes.js";
+import kioskDeviceRoutes from "./routes/kioskDeviceRoutes.js";
+import kioskVerifyRoutes from "./routes/kioskVerifyRoutes.js";
+import jobRoutes from "./routes/jobRoutes.js";
+import staffHelpRoutes from "./routes/staffHelpRoutes.js";
+import staffProfileRoutes from "./routes/staffProfileRoutes.js";
+import staffScheduleRoutes from "./routes/staffScheduleRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import businessRoutes from "./routes/businessRoutes.js";
+import auditRoutes from "./routes/auditRoutes.js";
 import securityHeaders from "./middleware/securityHeaders.js";
 import { logger, correlationIdMiddleware, requestLogger, logError } from "./utils/logger.js";
-import { setupSwagger } from "./docs/swagger.js";
 
 dotenv.config();
 
@@ -27,19 +43,55 @@ app.use(requestLogger);
 
 // ── Swagger API Documentation ──────────────────────────────────────────────────
 
-setupSwagger(app);
+// SEC-10: the raw contract is a map of every route and schema. It is useful in
+// development and unnecessary exposure in production, so it is not mounted
+// there at all.
+export const swaggerEnabled = (nodeEnv: string | undefined): boolean =>
+  nodeEnv !== "production";
+
+export const setupLazySwagger = (
+  target: express.Express,
+  nodeEnv: string | undefined
+): void => {
+  if (!swaggerEnabled(nodeEnv)) return;
+
+  let documentation: Promise<express.Router> | undefined;
+  target.use((req, res, next) => {
+    if (!/^\/api\/docs(?:\/|$)|^\/api\/docs\.json\/?$/i.test(req.path)) {
+      next();
+      return;
+    }
+
+    documentation ??= import("./docs/swagger.js").then(({ setupSwagger }) => {
+      const router = express.Router();
+      setupSwagger(router);
+      return router;
+    });
+    documentation.then((router) => router(req, res, next)).catch(next);
+  });
+};
+
+setupLazySwagger(app, process.env.NODE_ENV);
 
 // ── Middleware ──────────────────────────────────────────────────────────────────
 
 app.use(express.json({ limit: "10kb" }));
 
-// Strict CORS — only allow specific origins
-const ALLOWED_ORIGINS = [
+// Strict CORS — only allow specific origins. SEC-11: the local development
+// ports are conveniences, not production policy, so they are added only
+// outside production.
+const DEV_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
+];
+
+export const allowedOriginsFor = (nodeEnv: string | undefined): string[] => [
+  ...(nodeEnv === "production" ? [] : DEV_ORIGINS),
   process.env.CORS_ORIGIN || "",
 ].filter(Boolean);
+
+const ALLOWED_ORIGINS = allowedOriginsFor(process.env.NODE_ENV);
 
 app.use(
   cors({
@@ -61,7 +113,8 @@ app.use(
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────────
 
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import { isIPv4, isIPv6 } from "node:net";
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -86,6 +139,53 @@ const authLimiter = rateLimit({
 });
 
 /**
+ * The coarse network an address belongs to: /24 for IPv4, /64 for IPv6
+ * (SEC-14). An exact address is deliberately never part of the limiter key —
+ * that is what let an attacker rotate sources without bound.
+ *
+ * `ipKeyGenerator` is express-rate-limit's own helper: it maps IPv4-mapped
+ * IPv6 addresses (`::ffff:a.b.c.d`) back to dotted IPv4 and masks native IPv6
+ * at the requested prefix. Anything unparseable falls back to one shared
+ * "unknown" bucket rather than to the raw value, so the limiter fails closed.
+ */
+export const coarseNetwork = (ip: string | undefined): string => {
+  if (!ip) return "unknown";
+
+  // A zone id (`fe80::1%eth0`) is scoped to one host and is not part of the
+  // network, so it is stripped before validation.
+  const address = ip.trim().split("%")[0];
+
+  if (isIPv4(address)) {
+    return `${address.split(".").slice(0, 3).join(".")}.0/24`;
+  }
+
+  if (isIPv6(address)) {
+    try {
+      const masked = ipKeyGenerator(address, 64);
+      if (isIPv4(masked)) {
+        return `${masked.split(".").slice(0, 3).join(".")}.0/24`;
+      }
+      return masked;
+    } catch {
+      return "unknown";
+    }
+  }
+
+  return "unknown";
+};
+
+/**
+ * One account-limiter key for every source on the same network: the submitted
+ * email (normalised) plus its /24 (IPv4) or /64 (IPv6). The limiter therefore
+ * bounds guesses against one account across addresses while still keeping
+ * different accounts on a shared office network on separate counters.
+ */
+export const accountAuthKey = (req: express.Request): string => {
+  const email = String(req.body?.email ?? "").trim().toLowerCase();
+  return `account:${email}:${coarseNetwork(req.ip)}`;
+};
+
+/**
  * D9 — a limiter keyed on the account as well as the address.
  *
  * The IP limiter above cannot see the difference between one person trying one
@@ -93,13 +193,12 @@ const authLimiter = rateLimit({
  * different accounts. It also stops mattering the moment an attacker rotates
  * addresses. This one bounds guesses against a single account however many
  * sources they come from, which is the axis a credential attack actually runs
- * along.
+ * along (SEC-14).
  */
-const accountAuthLimiter = rateLimit({
+export const accountAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 8,
-  keyGenerator: (req) =>
-    `account:${String(req.body?.email || "").toLowerCase()}:${req.ip}`,
+  keyGenerator: (req) => accountAuthKey(req),
   message: {
     success: false,
     message: "Too many sign-in attempts for this account, please try again later.",
@@ -108,7 +207,7 @@ const accountAuthLimiter = rateLimit({
   legacyHeaders: false,
   // The library validates that keyGenerator output is a bare IP against its
   // IPv6 subnet rules and throws during construction when it is not. This key
-  // deliberately joins an address to an email, so that check cannot apply.
+  // deliberately joins a network to an email, so that check cannot apply.
   validate: false,
 });
 
@@ -126,6 +225,57 @@ if (process.env.NODE_ENV !== "test") {
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/attendance", attendanceRoutes);
+// Correction submission rides its exact path under /api/attendance (contracts
+// §8). Mounting the full prefix — not inside attendanceRoutes — keeps the POST
+// /corrections route away from the attendance router's /:id param route, so
+// neither can ever shadow the other.
+app.use("/api/attendance/corrections", correctionRoutes);
+app.use("/api/business/shifts", shiftRoutes);
+app.use("/api/business", assignmentRoutes);
+app.use("/api/business/policies", policyRoutes);
+app.use("/api/hr", hrRoutes);
+app.use("/api/sites", siteRoutes);
+app.use("/api/business/calendars", calendarRoutes);
+app.use("/api/business", qrRoutes);
+
+// Kiosk device routes are mounted at their own prefix; no wider /api mount
+// exists today that could shadow them, so this joins the route group above.
+app.use("/api/kiosk", kioskDeviceRoutes);
+
+// Kiosk verification rides the same prefix (contracts §7): identify,
+// verify-pin and cancel all sit behind the device-token middleware, leaving
+// /pair the only public kiosk route.
+app.use("/api/kiosk", kioskVerifyRoutes);
+
+// Background jobs (contracts §9): the auto-clock-out trigger and its status
+// read. Mounted at its own prefix; the run route authenticates on the job
+// service token, not on any session middleware.
+app.use("/api/jobs", jobRoutes);
+
+// Staff self-service lane (contracts §3): help requests only for now. Its
+// own prefix keeps these staff routes out of the wider attendance router.
+app.use("/api/staff", staffHelpRoutes);
+
+// Staff self-service profile lane (M8-R1): PIN change.
+app.use("/api/staff/profile", staffProfileRoutes);
+
+// Staff self-service schedule lane (M8-R2): schedule and off-days.
+app.use("/api/staff", staffScheduleRoutes);
+
+// Reports (contracts §10, O9): register, punctuality summary, exceptions and
+// the streamed CSV export. Its own prefix keeps the four GET rows away from
+// every other router's params.
+app.use("/api/reports", reportRoutes);
+
+// Business settings (contracts §5 rows 1-2, M7 Phase 3): the settings read
+// and write. Mounted at the shared /api/business prefix like the assignment
+// and QR routers; this file defines only the /settings subpaths, so there is
+// no shadowing in either direction.
+app.use("/api/business", businessRoutes);
+
+// Audit (contracts §11, M7 Phase 3): the correction trail read. Own prefix
+// because no router owns /api/audit today.
+app.use("/api/audit", auditRoutes);
 
 // Health check
 app.get("/api/health", async (_req, res) => {

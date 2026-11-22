@@ -114,16 +114,50 @@ describe('route guards reject callers outside the declared role', () => {
     seedSession('HR')
     visit('/hr-dashboard')
 
-    await screen.findByText(/full attendance overview/i)
+    // The M8 dashboard opens with the person's name rather than the old
+    // "full attendance overview" paragraph.
+    await screen.findByText(/welcome,/i)
     expect(window.location.pathname).toBe('/hr-dashboard')
   })
 })
 
-describe('the root path lands each role on its own home', () => {
-  it('sends an unauthenticated visitor to the sign-in page', async () => {
-    visit('/')
+// A leftover token is not a session. Without a user + known role the guard
+// cannot pick a destination; it used to redirect to /dashboard (its own
+// fallback) and render a blank page instead of the sign-in screen.
+describe('a stale or invalid session is treated as signed out', () => {
+  it('sends a token with no user to the sign-in page', async () => {
+    localStorage.setItem('token', 'stale-token')
+    visit('/dashboard')
 
     await waitFor(() => expect(window.location.pathname).toBe('/login'))
+    expect(await screen.findByRole('button', { name: /sign in/i })).toBeInTheDocument()
+  })
+
+  it('sends a token with an unknown role to the sign-in page', async () => {
+    localStorage.setItem('token', 'stale-token')
+    localStorage.setItem('user', JSON.stringify({ role: 'ADMIN' }))
+    visit('/dashboard')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+  })
+
+  it('treats a corrupt user value as signed out', async () => {
+    localStorage.setItem('token', 'stale-token')
+    localStorage.setItem('user', 'not-json')
+    visit('/dashboard')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/login'))
+  })
+})
+
+describe('the root path lands each role on its own home', () => {
+  it('shows the public landing page to an unauthenticated visitor', async () => {
+    visit('/')
+
+    // M8 §6: "/" is the public site when signed out; it does not bounce to
+    // /login. The sign-in link lives in the landing header.
+    await screen.findByText(/AttendPro helps businesses record staff attendance/i)
+    expect(window.location.pathname).toBe('/')
   })
 
   it('lands STAFF on the staff dashboard', async () => {
@@ -216,6 +250,31 @@ describe('the password screen refuses accounts that already set one', () => {
   })
 })
 
+// P04 — the kiosk PIN belongs to STAFF accounts. The backend refuses the
+// other roles, so the route guard must not let them reach a dead-end screen.
+describe('the staff PIN screen is staff-only', () => {
+  it('bounces HR to the HR dashboard', async () => {
+    seedSession('HR')
+    visit('/profile/change-pin')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/hr-dashboard'))
+  })
+
+  it('bounces SUPERADMIN to the superadmin dashboard', async () => {
+    seedSession('SUPERADMIN')
+    visit('/profile/change-pin')
+
+    await waitFor(() => expect(window.location.pathname).toBe('/superadmin-dashboard'))
+  })
+
+  it('renders for STAFF', async () => {
+    seedSession('STAFF')
+    visit('/profile/change-pin')
+
+    expect(await screen.findByRole('heading', { name: /change pin/i })).toBeInTheDocument()
+  })
+})
+
 describe('setting the first password', () => {
   it('rejects a password the shared policy forbids (S7)', async () => {
     seedSession('STAFF', { mustChangePassword: true })
@@ -233,7 +292,7 @@ describe('setting the first password', () => {
 
   it('clears the flag locally and lands on the role home after a valid change', async () => {
     seedSession('STAFF', { mustChangePassword: true })
-    api.put.mockResolvedValue({ data: { success: true } })
+    api.put.mockResolvedValue({ data: { success: true, token: 'fresh-token' } })
     visit('/set-password')
 
     const user = userEvent.setup()
@@ -244,6 +303,8 @@ describe('setting the first password', () => {
 
     await waitFor(() => expect(window.location.pathname).toBe('/dashboard'))
     expect(JSON.parse(localStorage.getItem('user')).mustChangePassword).toBe(false)
+    // The server revoked the old token and returned a fresh one.
+    expect(localStorage.getItem('token')).toBe('fresh-token')
     expect(api.put).toHaveBeenCalledWith('/users/change-password', {
       currentPassword: 'TempPass9!',
       newPassword: 'Adifferent0ne!',

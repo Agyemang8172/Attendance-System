@@ -542,10 +542,14 @@ describe("deactivated accounts lose their session immediately", () => {
       });
     expect(change.status).toBe(200);
 
+    // SEC-08: the change revokes the old token and returns a fresh one.
+    const changedToken = change.body.token as string;
+    expect(changedToken).toBeTruthy();
+
     // Works while the account is active.
     const before = await request(app)
       .get("/api/attendance/my-attendance")
-      .set("Authorization", `Bearer ${targetToken}`);
+      .set("Authorization", `Bearer ${changedToken}`);
     expect(before.status).toBe(200);
 
     const deactivate = await request(app)
@@ -556,7 +560,7 @@ describe("deactivated accounts lose their session immediately", () => {
     // Same token, same signature, still inside its lifetime.
     const after = await request(app)
       .get("/api/attendance/my-attendance")
-      .set("Authorization", `Bearer ${targetToken}`);
+      .set("Authorization", `Bearer ${changedToken}`);
     expect(after.status).toBe(401);
     expect(after.body.code).toBe("ACCOUNT_DEACTIVATED");
   });
@@ -578,11 +582,13 @@ describe("forced password change on first sign-in", () => {
     expect(blocked.status).toBe(403);
     expect(blocked.body.code).toBe("PASSWORD_CHANGE_REQUIRED");
 
-    const blockedClock = await request(app)
-      .post("/api/attendance/clock-in")
-      .set("Authorization", `Bearer ${token}`)
-      .send({});
-    expect(blockedClock.status).toBe(403);
+    // The punch lane is kiosk-authenticated since M5, so the gate is checked on
+    // a staff read route that still carries requirePasswordChange().
+    const blockedAttendance = await request(app)
+      .get("/api/attendance/my-attendance")
+      .set("Authorization", `Bearer ${token}`);
+    expect(blockedAttendance.status).toBe(403);
+    expect(blockedAttendance.body.code).toBe("PASSWORD_CHANGE_REQUIRED");
 
     // Changing it is allowed, and is the point.
     const change = await request(app)
@@ -594,10 +600,12 @@ describe("forced password change on first sign-in", () => {
       });
     expect(change.status).toBe(200);
 
-    // The gate is down for the rest of the session.
+    // The gate is down for the rest of the session. The change revoked the
+    // old token, so the fresh one from the response carries the new version.
+    const freshToken = change.body.token as string;
     const after = await request(app)
       .get("/api/attendance/my-attendance")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${freshToken}`);
     expect(after.status).toBe(200);
 
     // And the old credential no longer works.
@@ -634,5 +642,92 @@ describe("forced password change on first sign-in", () => {
         newPassword: target.tempPassword,
       });
     expect(unchanged.status).toBe(400);
+  });
+});
+
+describe("SEC-08 — session revocation", () => {
+  async function signedInDisposable(label: string) {
+    const target = await createDisposableStaff(superadminToken, label);
+    const signInRes = await signIn(target.email, target.tempPassword);
+    expect(signInRes.status).toBe(200);
+
+    const first = signInRes.body.token as string;
+    const change = await request(app)
+      .put("/api/users/change-password")
+      .set("Authorization", `Bearer ${first}`)
+      .send({
+        currentPassword: target.tempPassword,
+        newPassword: STRONG_NEW_PASSWORD,
+      });
+    expect(change.status).toBe(200);
+
+    return {
+      target,
+      firstToken: first,
+      liveToken: change.body.token as string,
+    };
+  }
+
+  it("rejects a token minted before the token-version claim existed", async () => {
+    const target = await createDisposableStaff(superadminToken, "oldclaim");
+    const jwt = (await import("jsonwebtoken")).default;
+    const forged = jwt.sign(
+      { userId: target.id, role: "STAFF" },
+      process.env.JWT_SECRET as string,
+      { expiresIn: "1h" }
+    );
+
+    const res = await request(app)
+      .get("/api/attendance/my-attendance")
+      .set("Authorization", `Bearer ${forged}`);
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("TOKEN_REVOKED");
+  });
+
+  it("revokes the old token on a self-service password change", async () => {
+    const { firstToken, liveToken } = await signedInDisposable("selfrevoke");
+
+    const old = await request(app)
+      .get("/api/attendance/my-attendance")
+      .set("Authorization", `Bearer ${firstToken}`);
+    expect(old.status).toBe(401);
+    expect(old.body.code).toBe("TOKEN_REVOKED");
+
+    const fresh = await request(app)
+      .get("/api/attendance/my-attendance")
+      .set("Authorization", `Bearer ${liveToken}`);
+    expect(fresh.status).toBe(200);
+  });
+
+  it("revokes the target's token on an admin password reset", async () => {
+    const { target, liveToken } = await signedInDisposable("adminrevoke");
+
+    const reset = await request(app)
+      .put(`/api/users/${target.id}/reset-password`)
+      .set("Authorization", `Bearer ${superadminToken}`)
+      .send({});
+    expect(reset.status).toBe(200);
+
+    const after = await request(app)
+      .get("/api/attendance/my-attendance")
+      .set("Authorization", `Bearer ${liveToken}`);
+    expect(after.status).toBe(401);
+    expect(after.body.code).toBe("TOKEN_REVOKED");
+  });
+
+  it("revokes the target's token on a role change", async () => {
+    const { target, liveToken } = await signedInDisposable("rolerevoke");
+
+    const updated = await request(app)
+      .put(`/api/users/${target.id}`)
+      .set("Authorization", `Bearer ${superadminToken}`)
+      .send({ role: "HR" });
+    expect(updated.status).toBe(200);
+
+    const after = await request(app)
+      .get("/api/attendance/my-attendance")
+      .set("Authorization", `Bearer ${liveToken}`);
+    expect(after.status).toBe(401);
+    expect(after.body.code).toBe("TOKEN_REVOKED");
   });
 });

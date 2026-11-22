@@ -1,0 +1,3 @@
+# Dev-OS Cursor Rules
+Follow all Hard Rules defined in .agents/AGENTS.md and .cursor/rules/devos.mdc.
+Always use .agents/scripts/commit.sh for committing changes.

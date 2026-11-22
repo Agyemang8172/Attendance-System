@@ -1,3 +1,7 @@
+> **Current delivery pointer, 2026-10-31:** use [the approved Master Plan](attendpro/MASTER-GAP-REQUIREMENTS.md), [final IA](attendpro/INFORMATION-ARCHITECTURE.md), and [phased execution proposal](attendpro/PHASED-IMPLEMENTATION-PLAN.md), subordinate to the Decision Register and root DESIGN.md. Execution is not started by this pointer.
+
+> **Historical unapproved plan (2026-10-08).** Retained for provenance; its original body is unchanged. Its reference to an approved authentication proposal is not approval evidence: `AUTH_DESIGN_PROPOSAL.md` explicitly says NOT APPROVED. Later owner rulings in `attendpro/DECISION-REGISTER.md` and approved milestone plans govern current work.
+
 # IMPLEMENTATION_PLAN.md
 
 > **Status: PROPOSED — NOT APPROVED. No implementation performed.**
